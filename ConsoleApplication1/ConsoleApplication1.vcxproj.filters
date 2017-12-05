@@ -1,0 +1,156 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="头文件\net">
+      <UniqueIdentifier>{881fe5c1-85c9-462c-9fdf-ab8815485b6a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\module">
+      <UniqueIdentifier>{1d76cf8a-26cc-4383-b44c-8f6babf7d39b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\layer">
+      <UniqueIdentifier>{099250c9-962c-419d-8725-7c3b49ee6d25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\util">
+      <UniqueIdentifier>{242b89f5-0830-4f02-8ce4-63f3a1dca9fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\define">
+      <UniqueIdentifier>{22b521a9-c7d1-4514-8709-9057551f9864}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseModule.h">
+      <Filter>头文件\module</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseLayer.h">
+      <Filter>头文件\layer</Filter>
+    </ClInclude>
+    <ClInclude Include="LogicLayer.h">
+      <Filter>头文件\layer</Filter>
+    </ClInclude>
+    <ClInclude Include="TcpNetLayer.h">
+      <Filter>头文件\layer</Filter>
+    </ClInclude>
+    <ClInclude Include="Block.h">
+      <Filter>头文件\util</Filter>
+    </ClInclude>
+    <ClInclude Include="Lock.h">
+      <Filter>头文件\util</Filter>
+    </ClInclude>
+    <ClInclude Include="LoopArray.h">
+      <Filter>头文件\util</Filter>
+    </ClInclude>
+    <ClInclude Include="LoopFactor.h">
+      <Filter>头文件\util</Filter>
+    </ClInclude>
+    <ClInclude Include="Single.h">
+      <Filter>头文件\util</Filter>
+    </ClInclude>
+    <ClInclude Include="FactorManager.h">
+      <Filter>头文件\util</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>头文件\util</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPoolc.h">
+      <Filter>头文件\util</Filter>
+    </ClInclude>
+    <ClInclude Include="MsgModule.h">
+      <Filter>头文件\module</Filter>
+    </ClInclude>
+    <ClInclude Include="Define.h">
+      <Filter>头文件\define</Filter>
+    </ClInclude>
+    <ClInclude Include="MsgDefine.h">
+      <Filter>头文件\define</Filter>
+    </ClInclude>
+    <ClInclude Include="DataDefine.h">
+      <Filter>头文件\define</Filter>
+    </ClInclude>
+    <ClInclude Include="LTime.h">
+      <Filter>头文件\util</Filter>
+    </ClInclude>
+    <ClInclude Include="NetObjectModule.h">
+      <Filter>头文件\module</Filter>
+    </ClInclude>
+    <ClInclude Include="LoopServer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TcpServerModule.h">
+      <Filter>头文件\net</Filter>
+    </ClInclude>
+    <ClInclude Include="NetModule.h">
+      <Filter>头文件\net</Filter>
+    </ClInclude>
+    <ClInclude Include="TcpClientModule.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ScheduleModule.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TestModule.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ConsoleApplication1.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MsgModule.cpp">
+      <Filter>头文件\module</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseLayer.cpp">
+      <Filter>头文件\layer</Filter>
+    </ClCompile>
+    <ClCompile Include="NetObjectModule.cpp">
+      <Filter>头文件\module</Filter>
+    </ClCompile>
+    <ClCompile Include="LoopServer.cpp">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadPool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TcpServerModule.cpp">
+      <Filter>头文件\net</Filter>
+    </ClCompile>
+    <ClCompile Include="NetModule.cpp">
+      <Filter>头文件\net</Filter>
+    </ClCompile>
+    <ClCompile Include="TcpClientModule.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ScheduleModule.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestModule.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LogicLayer.cpp">
+      <Filter>头文件\layer</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
