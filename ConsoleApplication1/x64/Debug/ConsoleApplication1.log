@@ -1,4 +1,0 @@
-﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(387,5): warning MSB8028: 中间目录(x64\Debug\)包含从另一个项目(ConsoleApplication1.vcxproj)共享的文件。   这会导致错误的清除和重新生成行为。
-  NetObjectModule.cpp
-  ConsoleApplication1.vcxproj -> C:\Users\Administrator.MICROSO-BNQ0U5T.001\source\repos\ConsoleApplication1\x64\Debug\Loop.exe
-  ConsoleApplication1.vcxproj -> C:\Users\Administrator.MICROSO-BNQ0U5T.001\source\repos\ConsoleApplication1\x64\Debug\Loop.pdb (Partial PDB)
