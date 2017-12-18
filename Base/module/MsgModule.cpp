@@ -18,6 +18,7 @@ void MsgModule::Execute()
 {
 
 }
+
 void MsgModule::SendMsg(const int& msgid, void* data)
 {
 	auto msg = new BaseMsg();
@@ -34,7 +35,7 @@ void MsgModule::MsgCallBack(void* msg)
 	if (it != m_callBack.end())
 		it->second(nmsg->data);
 	else
-		delete nmsg->data;
+		assert(0);//delete nmsg->data;
 	delete nmsg;
 }
 

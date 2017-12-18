@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
 project(Loop)
 
+set(LPOutDir ${PROJECT_SOURCE_DIR}/_out/)
+
 include_directories(
 ${PROJECT_SOURCE_DIR} 
 ${PROJECT_SOURCE_DIR}/Base/ 
@@ -34,3 +36,4 @@ add_library(Loop STATIC ${HEAD_FILES} ${SOUCE_FILES})
 target_link_libraries(Loop ${lib_link})
 
 add_subdirectory(Test)
+add_subdirectory(proxy)

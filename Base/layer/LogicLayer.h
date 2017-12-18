@@ -11,9 +11,9 @@ public:
 	virtual ~LogicLayer() {};
 
 protected:
-	void init();
-	void loop();
-	void close();
+	virtual void init();
+	virtual void loop();
+	virtual void close();
 
 	
 private:

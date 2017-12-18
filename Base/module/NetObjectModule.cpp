@@ -117,10 +117,15 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 	m_serverTmp.erase(it);
 
 	//发送注册消息
-	ServerNode* xMsg = new ServerNode();
-	xMsg->serid = ser->serid;
-	xMsg->type = ser->type;
-	SendNetMsg(ser->socket, (char*)xMsg, N_REGISTE_SERVER, sizeof(ServerNode));
+	LPMsg::ServerInfo xMsg;
+	xMsg.set_id(ser->serid);
+	xMsg.set_type(ser->type);
+	int msize;
+	auto msg = PB::PBToChar(xMsg, msize);
+	//ServerNode* xMsg = new ServerNode();
+	//xMsg->serid = ser->serid;
+	//xMsg->type = ser->type;
+	SendNetMsg(ser->socket, msg, N_REGISTE_SERVER, msize);
 }
 
 void NetObjectModule::OnServerClose(NetSocket* ser)
@@ -147,11 +152,13 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 	m_objects[msg->socket] = it->second;
 	m_objects_tmp.erase(it);
 	//用 proto 替换
-	ServerNode* sernode = (ServerNode*)msg->msg;
+	LPMsg::ServerInfo xMsg;
+	xMsg.ParseFromArray(msg->msg, msg->len);
+	//ServerNode* sernode = (ServerNode*)msg->msg;
 	NetServer* server = GetLayer()->GetLoopObj<NetServer>();
 
-	server->serid = sernode->serid;
-	server->type = sernode->type;
+	server->serid = xMsg.id();
+	server->type = xMsg.type();
 	server->socket = msg->socket;
 	server->state = CONN_STATE::CONNECT;
 	m_eventModule->SendEvent(E_SERVER_CONNECT, server);

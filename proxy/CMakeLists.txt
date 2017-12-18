@@ -1,7 +1,7 @@
 #cmake_minimum_required(VERSION 3.1)
-set(ProjectName "Test")
+set(ProjectName "LoopProxy")
 
-project(Test)
+project(LoopProxy)
 
 set(test_lib
 ws2_32.lib
@@ -13,10 +13,10 @@ Loop.lib
 libuv.lib
 )
 
-file(GLOB_RECURSE TEST_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
-file(GLOB_RECURSE TEST_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
+file(GLOB_RECURSE PROXY_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
+file(GLOB_RECURSE PROXY_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
-add_executable(${ProjectName} ${TEST_HEAD_FILES} ${TEST_SOUCE_FILES})
+add_executable(${ProjectName} ${PROXY_HEAD_FILES} ${PROXY_SOUCE_FILES})
 target_link_libraries(${ProjectName} ${test_lib})
 
 set_target_properties(${ProjectName} PROPERTIES 

@@ -46,7 +46,7 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 	if (nread < 0) {
 		/* Error or EOF */
 		ASSERT(nread == UV_EOF);
-		delete buf->base;
+		delete[] buf->base;
 		auto shutdown = server->GetLayer()->GetLoopObj<uv_shutdown_t>();
 		shutdown->data = server;
 		ASSERT(0 == uv_shutdown(shutdown, client, NetModule::after_shutdown));
@@ -55,7 +55,7 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 
 	if (nread == 0) {
 		/* Everything OK, but nothing read. */
-		delete buf->base;
+		delete[] buf->base;
 		return;
 	}
 	auto sc = (uv_tcp_t*)client;
@@ -65,7 +65,7 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 		shutdown->data = server;
 		ASSERT(0 == uv_shutdown(shutdown, client, NetModule::after_shutdown));
 	}
-	delete buf->base;
+	delete[] buf->base;
 }
 
 void NetModule::on_close_client(uv_handle_t* client) {

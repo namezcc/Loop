@@ -1,0 +1,8 @@
+syntax = "proto3";
+package LPMsg;
+
+message ServerInfo
+{
+	int32		type = 1;
+	int32		id 	 = 2;
+}

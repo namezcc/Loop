@@ -2,7 +2,6 @@
 #include "MsgModule.h"
 #include "NetObjectModule.h"
 #include "ScheduleModule.h"
-#include "TestModule.h"
 #include "EventModule.h"
 #include "TransMsgModule.h"
 #include <iostream>
@@ -11,7 +10,6 @@ void LogicLayer::init() {
 	auto msgmd = CreateModule<MsgModule>();
 	CreateModule<NetObjectModule>();
 	CreateModule<ScheduleModule>();
-	CreateModule<TestModule>();
 	CreateModule<EventModule>();
 	CreateModule<TransMsgModule>();
 

@@ -2,7 +2,7 @@
 #define LOOP_SERVER_H
 #include "BaseLayer.h"
 #include "ThreadPool.h"
-#include "MsgDefine.h"
+#include "DataDefine.h"
 
 class LoopServer
 {

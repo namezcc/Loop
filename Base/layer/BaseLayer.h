@@ -4,7 +4,6 @@
 #include "LoopArray.h"
 #include "FactorManager.h"
 #include <memory>
-#include "MsgDefine.h"
 
 #define SHARE std::shared_ptr
 
@@ -12,6 +11,7 @@ typedef std::function<void(void*)> LayerMsg;
 typedef LoopList<void*> PIPE;
 
 class BaseModule;
+struct ServerNode;
 
 typedef struct RWPipe
 {
@@ -57,6 +57,8 @@ public:
 	template<typename T>
 	T* CreateModule()
 	{
+		if (m_modules.find(typeid(T).hash_code()) != m_modules.end())
+			assert(0);
 		auto md = SHARE<T>(new T(this));
 		m_modules[typeid(T).hash_code()] = md;
 		return md.get();

@@ -1,6 +1,8 @@
 #ifndef MSG_DEFINE_H
 #define MSG_DEFINE_H
 #include <string>
+#include "protoPB/LPBase.pb.h"
+#include "protoPB/LPDefine.pb.h"
 
 enum MSG_FROM_LAYER
 {
@@ -39,18 +41,12 @@ typedef struct _BaseMsg
 	void* data;
 }BaseMsg;
 
-struct NetSocket
-{
-	NetSocket(int sk) :socket(sk) {};
-	int socket;
-};
-
 struct NetMsg
 {
 	~NetMsg()
 	{
 		if (msg)
-			delete msg;
+			delete[] msg;
 	};
 	int socket;
 	int mid;
@@ -58,39 +54,16 @@ struct NetMsg
 	char* msg;
 };
 
-enum CONN_STATE
+struct PB
 {
-	CONNECT,
-	CLOSE,
-};
-
-enum SERVER_TYPE
-{
-
-
-
-};
-
-struct NetServer
-{
-	int type;
-	int serid;
-	int socket;
-	int state;
-	std::string ip;
-	int port;
-};
-
-struct TransHead
-{
-	int size;
-	int index;
-};
-
-struct ServerNode
-{
-	int type;
-	int serid;
+	static char* PBToChar(google::protobuf::Message& msg,int& msize)
+	{
+		msize = msg.ByteSize();
+		assert(msize != 0);
+		char* buff = new char[msize];
+		assert(msg.SerializeToArray(buff, msize));
+		return buff;
+	}
 };
 
 #endif

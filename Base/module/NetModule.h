@@ -22,7 +22,7 @@ struct NetBuffer
 			if (buf)
 			{
 				memcpy(room, buf, use);
-				delete buf;
+				delete[] buf;
 			}
 			memcpy(room + use, newbuf, nlen);
 			buf = room;
@@ -54,7 +54,7 @@ struct Conn:public LoopObject
 	void recycle(FactorManager* fm)
 	{
 		if (buffer.buf)
-			delete buffer.buf;
+			delete[] buffer.buf;
 		fm->recycle(conn);
 	}
 
@@ -70,7 +70,7 @@ struct Write_t:public LoopObject
 
 	void recycle(FactorManager* fm)
 	{
-		delete buf.base;
+		delete[] buf.base;
 	}
 
 	uv_buf_t buf;

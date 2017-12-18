@@ -60,7 +60,7 @@ void TransMsgModule::OnServerClose(const int& nEvent, NetServer* ser)
 void TransMsgModule::TransMsgToServer(vector<ServerNode*>& sers, const int& mid, const int& len, char* msg)
 {
 	ExitCall exitcall([msg](){
-		delete msg;
+		delete[] msg;
 	});
 
 	if (sers.size() < 2)
