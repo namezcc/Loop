@@ -4,6 +4,7 @@
 #include "MsgDefine.h"
 #include "DataDefine.h"
 #include "Utils.h"
+#include "LPStringUtil.h"
 #include <iostream>
 
 using namespace std;
@@ -16,10 +17,10 @@ public:
 
 	};
 
+	inline BaseLayer* GetLayer() { return m_layer; };
+
 	virtual void Init() = 0;
 	virtual void Execute() = 0;
-
-	inline BaseLayer* GetLayer() { return m_layer; };
 private:
 	BaseLayer* m_layer;
 };

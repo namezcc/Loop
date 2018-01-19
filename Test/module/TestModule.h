@@ -4,6 +4,8 @@
 
 class ScheduleModule;
 class NetObjectModule;
+class TransMsgModule;
+class MsgModule;
 class TestModule:public BaseModule
 {
 public:
@@ -15,9 +17,14 @@ protected:
 	virtual void Execute() override;
 
 	void RunPrint(int64_t nt);
+	void TransTest(int64_t nt);
+
+	void OnTransTest(NetMsg* msg);
 private:
 	ScheduleModule* m_schedule;
 	NetObjectModule* m_netObject;
+	TransMsgModule* m_trans;
+	MsgModule* m_msg;
 };
 
 #endif

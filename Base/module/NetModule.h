@@ -21,7 +21,8 @@ struct NetBuffer
 			char* room = new char[use + nlen];
 			if (buf)
 			{
-				memcpy(room, buf, use);
+				if(use>0)
+					memcpy(room, buf, use);
 				delete[] buf;
 			}
 			memcpy(room + use, newbuf, nlen);
@@ -33,10 +34,11 @@ struct NetBuffer
 
 	void moveHalf(const int& readed)
 	{
-		int nuse = use - readed;
-		if (readed == 0 || nuse <= 0)
+		if (readed == 0)
 			return;
-		memcpy(buf, buf + readed, nuse);
+		int nuse = use - readed;
+		if(nuse>0)
+			memcpy(buf, buf + readed, nuse);
 		use = nuse;
 	}
 };
@@ -130,12 +132,12 @@ protected:
 	void Init();
 	void Execute();
 
-	static void after_shutdown(uv_shutdown_t* shutdown, int status)
+	/*static void after_shutdown(uv_shutdown_t* shutdown, int status)
 	{
 		auto server = (NetModule*)shutdown->data;
 		uv_close((uv_handle_t*)shutdown->handle, shutdown->handle->close_cb);
 		server->GetLayer()->Recycle(shutdown);
-	}
+	}*/
 
 	static void on_close_client(uv_handle_t* client);
 

@@ -42,14 +42,20 @@ void NetModule::Connected(uv_tcp_t* conn, bool client)
 void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf)
 {
 	auto server = (NetModule*)client->data;
-
+	auto sc = (uv_tcp_t*)client;
+	auto sock = sc->socket;
 	if (nread < 0) {
 		/* Error or EOF */
-		ASSERT(nread == UV_EOF);
+		//ASSERT(nread == UV_EOF);
 		delete[] buf->base;
-		auto shutdown = server->GetLayer()->GetLoopObj<uv_shutdown_t>();
-		shutdown->data = server;
-		ASSERT(0 == uv_shutdown(shutdown, client, NetModule::after_shutdown));
+		//auto shutdown = server->GetLayer()->GetLoopObj<uv_shutdown_t>();
+		//shutdown->data = server;
+
+		//uv_close 会把 socket 置空 所以先保存
+		uv_close((uv_handle_t*)client, client->close_cb);
+		//再置回
+		sc->socket = sock;
+		//ASSERT(0 == uv_shutdown(shutdown, client, NetModule::after_shutdown));
 		return;
 	}
 
@@ -58,12 +64,14 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 		delete[] buf->base;
 		return;
 	}
-	auto sc = (uv_tcp_t*)client;
+	
 	if (!server->ReadPack(sc->socket,buf->base, nread))
 	{
-		auto shutdown = server->GetLayer()->GetLoopObj<uv_shutdown_t>();
+		/*auto shutdown = server->GetLayer()->GetLoopObj<uv_shutdown_t>();
 		shutdown->data = server;
-		ASSERT(0 == uv_shutdown(shutdown, client, NetModule::after_shutdown));
+		ASSERT(0 == uv_shutdown(shutdown, client, NetModule::after_shutdown));*/
+		uv_close((uv_handle_t*)client, client->close_cb);
+		sc->socket = sock;
 	}
 	delete[] buf->base;
 }
@@ -108,7 +116,7 @@ bool NetModule::ReadPack(int socket, char* buf, int len)
 			break;
 		}
 
-		if (head.size >= oldbuf.use - read)
+		if (head.size <= oldbuf.use - read)
 		{//cpm pack
 			auto msg = new NetMsg();
 			msg->len = head.size - MsgHead::HEAD_SIZE;

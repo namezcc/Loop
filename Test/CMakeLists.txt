@@ -11,6 +11,8 @@ user32.lib
 userenv.lib
 Loop.lib
 libuv.lib
+libprotobuf.lib
+jsoncpp.lib
 )
 
 file(GLOB_RECURSE TEST_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)

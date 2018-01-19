@@ -10,7 +10,7 @@ public:
 	LoopServer();
 	~LoopServer();
 
-	void Init(const int& stype, const int& serid);
+	void InitServer(int argc, char** args);
 
 	template<typename T,typename... Args>
 	enable_if_t<is_base_of_v<BaseLayer,T>,T*> CreateLayer(Args&&... args)
@@ -30,6 +30,10 @@ public:
 	}
 
 	void Run();
+
+	int m_port;
+protected:
+	void Init(const int& stype, const int& serid);
 
 private:
 	SHARE<ThreadPool> m_pool;

@@ -3,16 +3,11 @@
 #include "TcpNetLayer.h"
 #include "LogicLayer.h"
 
-using namespace std;
-
-#define IP "127.0.0.1"
-#define PORT 15001
-
-int main()
+int main(int argc, char* args[])
 {
 	LoopServer ser;
-
-	auto nl = ser.CreateLayer<TcpNetLayer>(IP,PORT);
+	ser.InitServer(argc, args);
+	auto nl = ser.CreateLayer<TcpNetLayer>(ser.m_port);
 	auto ll = ser.CreateLayer<LogicLayer>();
 
 	ser.BuildPipe(nl, ll);
@@ -21,7 +16,6 @@ int main()
 
 	while (1)
 	{
-		//cout << "Sleep 1 sec ..." << endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
     return 0;

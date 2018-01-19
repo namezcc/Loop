@@ -84,6 +84,12 @@ public:
 	}
 
 	template<typename T>
+	std::shared_ptr<T> GetSharedLoop()
+	{
+		return m_factor->GetSharedLoop<T>();
+	}
+
+	template<typename T>
 	void Recycle(T* t)
 	{
 		m_factor->recycle(t);

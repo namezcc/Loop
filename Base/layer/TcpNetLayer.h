@@ -10,7 +10,7 @@
 class TcpNetLayer:public BaseLayer
 {
 public:
-	TcpNetLayer(const std::string& ip,const int& port) :m_ip(ip),m_port(port)
+	TcpNetLayer(const int& port) :m_port(port)
 	{
 	};
 	virtual ~TcpNetLayer() {
@@ -21,7 +21,7 @@ public:
 protected:
 	void init() {
 		auto msgmd = CreateModule<MsgModule>();
-		CreateModule<TcpServer>()->start(m_ip.c_str(),m_port);
+		CreateModule<TcpServer>()->start(m_port);
 		CreateModule<TcpClientModule>();
 		CreateModule<NetModule>();
 
@@ -39,7 +39,6 @@ protected:
 	};
 	
 private:
-	std::string m_ip;
 	int m_port;
 };
 

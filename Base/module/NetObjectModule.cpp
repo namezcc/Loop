@@ -117,14 +117,12 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 	m_serverTmp.erase(it);
 
 	//发送注册消息
+	auto myser = GetLayer()->GetServer();
 	LPMsg::ServerInfo xMsg;
-	xMsg.set_id(ser->serid);
-	xMsg.set_type(ser->type);
+	xMsg.set_id(myser->serid);
+	xMsg.set_type(myser->type);
 	int msize;
 	auto msg = PB::PBToChar(xMsg, msize);
-	//ServerNode* xMsg = new ServerNode();
-	//xMsg->serid = ser->serid;
-	//xMsg->type = ser->type;
 	SendNetMsg(ser->socket, msg, N_REGISTE_SERVER, msize);
 }
 
@@ -151,10 +149,10 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 
 	m_objects[msg->socket] = it->second;
 	m_objects_tmp.erase(it);
-	//用 proto 替换
+	
 	LPMsg::ServerInfo xMsg;
 	xMsg.ParseFromArray(msg->msg, msg->len);
-	//ServerNode* sernode = (ServerNode*)msg->msg;
+	
 	NetServer* server = GetLayer()->GetLoopObj<NetServer>();
 
 	server->serid = xMsg.id();
@@ -169,9 +167,9 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 void NetObjectModule::CheckReconnect()
 {
 	auto nt = GetSecend();
-	if (nt <= m_lastTime)
+	if (nt < m_lastTime)
 		return;
-	m_lastTime = nt;
+	m_lastTime = nt+2;//2 secend check once
 	for (auto& it:m_serverTmp)
 	{
 		auto msg = new NetServer(*it.second);

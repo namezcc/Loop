@@ -1,0 +1,37 @@
+{
+	"struct":{
+		"game":{
+			"pgs":{"ltype":1},
+			"pg":{"ltype":1}
+		},
+		"pgs":{
+			"game":{"ltype":20},
+			"sql":{"ltype":0}
+		},
+		"sql":{
+			"pgs":{"ltype":0}
+		},
+		"pg":{
+			"game":{"ltype":30},
+			"pp":{"ltype":-1}
+		},
+		"pp":{
+			"pg":{"ltype":0}
+		}
+	},
+	"path":{
+		"game-game":[
+			["game","pg","game"],
+			["game","pg","pp","pg","game"]
+		],
+		"game-pp":[
+			["game","pg","pp"]
+		],
+		"game-sql":[
+			["game","pgs","sql"]
+		],
+		"sql-game":[
+			["sql","pgs","game"]
+		]
+	}
+}

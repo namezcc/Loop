@@ -2,6 +2,7 @@
 #define FACTOR_MANAGER_H
 #include "LoopFactor.h"
 #include <unordered_map>
+#include <memory>
 
 class FactorManager;
 
@@ -43,6 +44,15 @@ public:
 		auto lf = GetFactor<T>();
 		t->recycle(this);
 		lf->recycle(t);
+	}
+
+	template<typename T>
+	std::shared_ptr<T> GetSharedLoop()
+	{
+		std::shared_ptr<T> p(getLoopObj<T>(), [this](T* ptr) {
+			recycle(ptr);
+		});
+		return p;
 	}
 
 	~FactorManager() {
