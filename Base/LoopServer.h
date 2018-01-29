@@ -38,7 +38,7 @@ protected:
 private:
 	SHARE<ThreadPool> m_pool;
 	vector<SHARE<BaseLayer>> m_layers;
-	ServerNode m_serverNode;
+	//ServerNode m_serverNode;
 };
 
 #endif

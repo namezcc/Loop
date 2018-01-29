@@ -74,11 +74,9 @@ public:
 	{
 		LN(T t):data(t),next(NULL)
 		{
-			++LoopList<T>::LN_numN;
 		}
 		~LN()
 		{
-			++LoopList<T>::LN_numD;
 		}
 		T data;
 		LN* next;
@@ -91,7 +89,6 @@ public:
 
 		LP():head(NULL),tail(NULL)
 		{
-			++LoopList<T>::LP_numN;
 		}
 
 		~LP()
@@ -102,7 +99,6 @@ public:
 				head = head->next;
 				delete n;
 			}
-			++LoopList<T>::LP_numD;
 		}
 		
 		void push(T t)
@@ -179,10 +175,6 @@ public:
 		return true;
 	}
 
-	static int LN_numN;
-	static int LN_numD;
-	static int LP_numN;
-	static int LP_numD;
 protected:
 	size_t IncIndex(size_t idx)
 	{
@@ -202,17 +194,5 @@ private:
 	size_t m_ridx;
 	size_t m_widx;
 };
-
-template<typename T>
-int LoopList<T>::LP_numN = 0;
-
-template<typename T>
-int LoopList<T>::LN_numN = 0;
-
-template<typename T>
-int LoopList<T>::LP_numD = 0;
-
-template<typename T>
-int LoopList<T>::LN_numD = 0;
 
 #endif

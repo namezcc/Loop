@@ -17,15 +17,15 @@ void NetModule::Execute()
 
 void NetModule::Connected(uv_tcp_t* conn, bool client)
 {
-	if (client)
-		conn->close_cb = &NetModule::on_close_client;
+	//if (client)
+	conn->close_cb = &NetModule::on_close_client;
 
 	auto it = m_conns.find(conn->socket);
 	assert(it == m_conns.end());
 
 	auto ser = (NetModule*)conn->data;
 
-	auto cn = ser->GetLayer()->GetLoopObj<Conn>();
+	auto cn = ser->GetLayer()->GetSharedLoop<Conn>();
 	cn->conn = conn;
 	m_conns[conn->socket] = cn;
 	
@@ -35,7 +35,7 @@ void NetModule::Connected(uv_tcp_t* conn, bool client)
 		m_mgsModule->SendMsg(L_SOCKET_CONNET, sock);
 	}
 
-	int r = uv_read_start((uv_stream_t*)conn, read_alloc, after_read);
+	int r = uv_read_start((uv_stream_t*)conn, read_alloc, conn->read_cb);
 	ASSERT(r == 0);
 }
 
@@ -48,14 +48,11 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 		/* Error or EOF */
 		//ASSERT(nread == UV_EOF);
 		delete[] buf->base;
-		//auto shutdown = server->GetLayer()->GetLoopObj<uv_shutdown_t>();
-		//shutdown->data = server;
 
 		//uv_close 会把 socket 置空 所以先保存
 		uv_close((uv_handle_t*)client, client->close_cb);
 		//再置回
 		sc->socket = sock;
-		//ASSERT(0 == uv_shutdown(shutdown, client, NetModule::after_shutdown));
 		return;
 	}
 
@@ -67,9 +64,6 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 	
 	if (!server->ReadPack(sc->socket,buf->base, nread))
 	{
-		/*auto shutdown = server->GetLayer()->GetLoopObj<uv_shutdown_t>();
-		shutdown->data = server;
-		ASSERT(0 == uv_shutdown(shutdown, client, NetModule::after_shutdown));*/
 		uv_close((uv_handle_t*)client, client->close_cb);
 		sc->socket = sock;
 	}
@@ -88,12 +82,7 @@ void NetModule::on_close_client(uv_handle_t* client) {
 
 void NetModule::RemoveConn(const int& socket)
 {
-	auto it = m_conns.find(socket);
-	if (it != m_conns.end())
-	{
-		GetLayer()->Recycle(it->second);
-		m_conns.erase(it);
-	}
+	m_conns.erase(socket);
 }
 
 bool NetModule::ReadPack(int socket, char* buf, int len)
@@ -130,12 +119,10 @@ bool NetModule::ReadPack(int socket, char* buf, int len)
 		}
 		else
 		{//half
-			oldbuf.moveHalf(read);
 			break;
 		}
 	}
-	if (read > 0)
-		oldbuf.moveHalf(read);
+	oldbuf.moveHalf(read);
 	return res;
 }
 
@@ -145,7 +132,6 @@ void NetModule::OnCloseSocket(NetSocket* msg)
 	if (it != m_conns.end())
 	{
 		uv_close((uv_handle_t*)it->second->conn, NULL);
-		GetLayer()->Recycle(it->second);
 		m_conns.erase(it);
 	}
 }

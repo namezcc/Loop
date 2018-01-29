@@ -13,16 +13,16 @@ public:
 
 	virtual void Init() override;
 	virtual void Execute() override;
-
+	inline void Setuvloop(uv_loop_t* loop) { m_uvloop = loop; };
 protected:
 
 	void OnConnectServer(NetServer* ser);
 	static void Connect_cb(uv_connect_t* req, int status);
-	static void On_server_close(uv_handle_t* client);
+	//static void On_server_close(uv_handle_t* client);
 private:
-
 	NetModule* m_netmodule;
 	MsgModule* m_msgmodule;
+	uv_loop_t* m_uvloop;
 };
 
 #endif

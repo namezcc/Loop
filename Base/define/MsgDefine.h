@@ -10,10 +10,13 @@ enum MSG_FROM_LAYER
 	L_SOCKET_CONNET,
 	L_SOCKET_CLOSE,
 	L_SOCKET_SEND_DATA,
+	L_SOCKET_SEND_HTTP_DATA,
 
 	L_TO_CONNET_SERVER,
 	L_SERVER_CONNECTED,
-	L_SERVER_CLOSE,
+
+	L_CONNECT_PHP_CGI,
+	L_PHP_CGI_CONNECTED,
 
 	L_END,
 };
@@ -26,23 +29,43 @@ enum MSG_FROM_NET
 	N_TRANS_SERVER_MSG,
 	N_TRANS_TEST,
 
+	N_RECV_HTTP_MSG,
+	N_RECV_PHP_CGI_MSG,
+
 	N_END,
 };
 
 enum BASE_EVENT
 {
+	E_SOCKEK_CONNECT,
+
 	E_SERVER_CONNECT,
 	E_SERVER_CLOSE,
 
+	E_CLIENT_HTTP_CONNECT,
+	E_CLIENT_HTTP_CLOSE,
+
+	E_PHP_CGI_CONNECT,
+	E_PHP_CGI_CLOSE,
+};
+
+struct BaseData
+{
+	virtual ~BaseData()
+	{}
 };
 
 typedef struct _BaseMsg
 {
+	virtual ~_BaseMsg()
+	{
+		delete data;
+	}
 	int msgId;
-	void* data;
+	BaseData* data;
 }BaseMsg;
 
-struct NetMsg
+struct NetMsg:public BaseData
 {
 	~NetMsg()
 	{
@@ -53,6 +76,22 @@ struct NetMsg
 	int mid;
 	int len;
 	char* msg;
+};
+
+struct NetSocket:public BaseData
+{
+	NetSocket(int sk) :socket(sk) {};
+	int socket;
+};
+
+struct NetServer:public BaseData
+{
+	int type;
+	int serid;
+	int socket;
+	int state;
+	std::string ip;
+	int port;
 };
 
 struct PB

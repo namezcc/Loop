@@ -13,15 +13,16 @@ public:
 	{};
 	~TcpServer() {};
 
-	void Init();
+	virtual void Init();
 	void Execute() {};
 
-	void start(const int& port)
+	void start(const int& port, uv_loop_t* loop)
 	{
+		m_uvloop = loop;
 		struct sockaddr_in addr;
 		ASSERT(0 == uv_ip4_addr("0.0.0.0", port, &addr));
 		int r;
-		r = uv_tcp_init(uv_default_loop(), &m_hand);
+		r = uv_tcp_init(m_uvloop, &m_hand);
 		ASSERT(r == 0);
 		r = uv_tcp_bind(&m_hand, (const struct sockaddr*) &addr, 0);
 		ASSERT(r == 0);
@@ -35,9 +36,10 @@ protected:
 
 	
 
-private:
+protected:
 	NetModule* m_netModule;
 	uv_tcp_t m_hand;
+	uv_loop_t* m_uvloop;
 };
 
 #endif

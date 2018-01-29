@@ -20,6 +20,8 @@ public:
 	inline BaseLayer* GetLayer() { return m_layer; };
 
 	virtual void Init() = 0;
+	virtual void AfterInit() 
+	{};
 	virtual void Execute() = 0;
 private:
 	BaseLayer* m_layer;

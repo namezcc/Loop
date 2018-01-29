@@ -13,7 +13,7 @@ public:
 	MsgModule(BaseLayer* l);
 	~MsgModule();
 
-	void SendMsg(const int& msgid, void* data);
+	void SendMsg(const int& msgid, BaseData* data);
 
 	template<typename Arg,typename T, typename F>
 	void AddMsgCallBack(const int mId, T&&t, F&&f)
@@ -22,7 +22,7 @@ public:
 		m_callBack[mId] = move([call](void* msg) {
 			auto mdata = static_cast<Arg*>(msg);
 			call(mdata);
-			delete mdata;
+			//delete mdata; 上级已经delete了
 		});
 	}
 

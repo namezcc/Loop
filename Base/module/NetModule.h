@@ -3,46 +3,6 @@
 #include "BaseModule.h"
 #include <uv.h>
 
-struct NetBuffer
-{
-	char* buf;
-	int len;
-	int use;
-
-	void combin(char* newbuf, int nlen)
-	{
-		if (use + nlen <= len)
-		{
-			memcpy(buf + use, newbuf, nlen);
-			use += nlen;
-		}
-		else
-		{
-			char* room = new char[use + nlen];
-			if (buf)
-			{
-				if(use>0)
-					memcpy(room, buf, use);
-				delete[] buf;
-			}
-			memcpy(room + use, newbuf, nlen);
-			buf = room;
-			len = use + nlen;
-			use = len;
-		}
-	}
-
-	void moveHalf(const int& readed)
-	{
-		if (readed == 0)
-			return;
-		int nuse = use - readed;
-		if(nuse>0)
-			memcpy(buf, buf + readed, nuse);
-		use = nuse;
-	}
-};
-
 struct Conn:public LoopObject
 {
 	void init(FactorManager* fm)
@@ -128,29 +88,22 @@ public:
 	void Connected(uv_tcp_t* conn,bool client=true);
 	void RemoveConn(const int& socket);
 	inline MsgModule* GetMsgModule() { return m_mgsModule; };
+	inline void Setuvloop(uv_loop_t* loop) { m_uvloop = loop; };
 protected:
-	void Init();
-	void Execute();
-
-	/*static void after_shutdown(uv_shutdown_t* shutdown, int status)
-	{
-		auto server = (NetModule*)shutdown->data;
-		uv_close((uv_handle_t*)shutdown->handle, shutdown->handle->close_cb);
-		server->GetLayer()->Recycle(shutdown);
-	}*/
+	virtual void Init();
+	virtual void Execute();
 
 	static void on_close_client(uv_handle_t* client);
 
-	bool ReadPack(int socket, char* buf, int len);
+	virtual bool ReadPack(int socket, char* buf, int len);
 	static void After_write(uv_write_t* req, int status);
-private:
 
 	void OnCloseSocket(NetSocket* msg);
 	void OnSocketSendData(NetMsg* nMsg);
-
-private:
+protected:
 	MsgModule* m_mgsModule;
-	std::unordered_map<int, Conn*> m_conns;
+	std::unordered_map<int, SHARE<Conn>> m_conns;
+	uv_loop_t* m_uvloop;
 };
 
 #endif

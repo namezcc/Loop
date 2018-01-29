@@ -21,20 +21,13 @@ public:
 	void AddEventCallBack(const int& ev,T&&t, F&&f)
 	{
 		auto call = AnyFuncBind::Bind(forward<F>(f),forward<T>(t));
+		assert(call);
 		auto callpter = new decltype(call)(call);
-		auto it = m_events.find(ev);
-		if (it == m_events.end())
-		{
-			vector<void*> calls;
-			calls.push_back((void*)callpter);
-			m_events[ev] = move(calls);
-		}
-		else
-			it->second.push_back((void*)callpter);
+		m_events[ev].push_back((void*)callpter);
 	}
 
 	template<typename... Args>
-	void SendEvent(const int& ev, Args... args)
+	void SendEvent(const int& ev, Args&&... args)
 	{
 		auto it = m_events.find(ev);
 		if (it == m_events.end())
@@ -42,8 +35,8 @@ public:
 		
 		for (auto& call:it->second)
 		{
-			auto callpter = static_cast<FuncType<int, Args...>*>(call);
-			callpter->operator()(ev, forward<Args>(args)...);
+			auto callpter = static_cast<FuncType<Args...>*>(call);
+			callpter->operator()(forward<Args>(args)...);
 		}
 	}
 protected:

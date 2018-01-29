@@ -19,8 +19,8 @@ protected:
 	//gen server net struct
 	void InitServerNet();
 
-	void OnServerConnect(const int& nEvent, NetServer* ser);
-	void OnServerClose(const int& nEvent, NetServer* ser);
+	void OnServerConnect(SHARE<NetServer>& ser);
+	void OnServerClose(SHARE<NetServer>& ser);
 
 	void TransMsgToServer(vector<SHARE<ServerNode>>& sers,const int& mid,const int& len, char* msg);
 
@@ -35,7 +35,7 @@ private:
 	NetObjectModule* m_netObjMod;
 	MsgModule* m_msgModule;
 
-	map<int, map<int, NetServer*>> m_serverList;
+	map<int, map<int, SHARE<NetServer>>> m_serverList;
 
 	map<string, int> m_serverType;
 	map<string, list<vector<int>>> m_serverPath;

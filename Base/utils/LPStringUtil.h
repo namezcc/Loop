@@ -59,4 +59,53 @@ static R loop_cast(T&& t)
 	return r;
 }
 
+struct Slice
+{
+	Slice(char* nb,char* ne) :_pb(nb), _pe(ne)
+	{};
+
+	string CutWord()
+	{
+		Slice s = CutWordSlice();
+		return string(s._pb, s._pe);
+	}
+
+	Slice CutWordSlice()
+	{
+		char *b = _pb;
+		while (_pb < _pe && isspace(*b)) ++b;
+		char *e = b;
+		while (e < _pe && !isspace(*e)) ++e;
+		_pb = e;
+		return Slice(b, e);
+	}
+
+	string CutToChar(char c)
+	{
+		char* e = _pb;
+		while (e < _pe && *e != c) e++;
+		char* b = _pb;
+		_pb = e;
+		return string(b, e);
+	}
+
+	void CutHead(size_t n)
+	{
+		while (n > 0 && _pb < _pe)
+		{
+			--n;
+			++_pb;
+		}
+	}
+
+	bool Over()
+	{
+		return _pb == _pe;
+	}
+
+protected:
+	char* _pb;
+	char* _pe;
+};
+
 #endif

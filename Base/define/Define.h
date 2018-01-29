@@ -24,4 +24,6 @@
 
 #define TOSTR(S) #S
 
+#define SHARE std::shared_ptr
+
 #endif

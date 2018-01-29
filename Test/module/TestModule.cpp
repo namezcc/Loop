@@ -23,8 +23,8 @@ void TestModule::Init()
 
 	m_msg->AddMsgCallBack<NetMsg>(N_TRANS_TEST, this, &TestModule::OnTransTest);
 
-	m_schedule->AddInterValTask(this, &TestModule::RunPrint, 1,1,3);
-	m_schedule->AddInterValTask(this, &TestModule::TransTest, 1, 1, 10);
+	m_schedule->AddInterValTask(this, &TestModule::RunPrint, 1000,1,3000);
+	m_schedule->AddInterValTask(this, &TestModule::TransTest, 1000, 1, 10000);
 }
 
 void TestModule::Execute()
@@ -33,7 +33,7 @@ void TestModule::Execute()
 
 void TestModule::RunPrint(int64_t nt)
 {
-	auto ser = GetLayer()->GetServer();
+	auto ser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
 
 	if(ser->type==SERVER_TYPE::LOOP_GAME)
 		m_netObject->AddServerConn(SERVER_TYPE::LOOP_PROXY_GS, 1, "127.0.0.1", 25001);
@@ -43,7 +43,7 @@ void TestModule::RunPrint(int64_t nt)
 
 void TestModule::TransTest(int64_t nt)
 {
-	auto ser = GetLayer()->GetServer();
+	auto ser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
 	if (ser->type != SERVER_TYPE::LOOP_GAME)
 		return;
 

@@ -3,9 +3,8 @@
 #include <functional>
 #include "LoopArray.h"
 #include "FactorManager.h"
+#include "Define.h"
 #include <memory>
-
-#define SHARE std::shared_ptr
 
 typedef std::function<void(void*)> LayerMsg;
 typedef LoopList<void*> PIPE;
@@ -24,7 +23,8 @@ typedef struct RWPipe
 class BaseLayer
 {
 public:
-	BaseLayer():m_msgCall(NULL){
+	BaseLayer():m_msgCall(NULL)
+	{
 		++LID;
 		m_id = LID;
 		m_factor = Single::NewLocal<FactorManager>();
@@ -95,8 +95,8 @@ public:
 		m_factor->recycle(t);
 	}
 
-	inline void SetServer(ServerNode* server) { m_server = server; };
-	inline ServerNode* GetServer() { return m_server; };
+	/*inline void SetServer(ServerNode* server) { m_server = server; };
+	inline ServerNode* GetServer() { return m_server; };*/
 protected:
 	void startRead(const RWPipe& pipe)
 	{
@@ -127,14 +127,14 @@ protected:
 	virtual void close()=0;
 
 	std::unordered_map<int, RWPipe>& GetPipes() { return m_pipes; };
-private:
+protected:
 	int m_id;
 	static int LID;
 	SHARE<LayerMsg> m_msgCall;
 	std::unordered_map<int, RWPipe> m_pipes;
 	std::unordered_map<size_t, SHARE<BaseModule>> m_modules;
 	FactorManager* m_factor;
-	ServerNode* m_server;
+	//ServerNode* m_server;
 };
 
 #endif

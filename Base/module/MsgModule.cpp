@@ -19,7 +19,7 @@ void MsgModule::Execute()
 
 }
 
-void MsgModule::SendMsg(const int& msgid, void* data)
+void MsgModule::SendMsg(const int& msgid, BaseData* data)
 {
 	auto msg = new BaseMsg();
 	msg->msgId = msgid;
@@ -34,8 +34,6 @@ void MsgModule::MsgCallBack(void* msg)
 	auto it = m_callBack.find(nmsg->msgId);
 	if (it != m_callBack.end())
 		it->second(nmsg->data);
-	else
-		assert(0);//delete nmsg->data;
 	delete nmsg;
 }
 
@@ -44,6 +42,5 @@ void MsgModule::TransMsgCall(NetMsg* msg)
 	auto it = m_callBack.find(msg->mid);
 	if (it != m_callBack.end())
 		it->second(msg);
-	else
-		delete msg;
+	delete msg;
 }

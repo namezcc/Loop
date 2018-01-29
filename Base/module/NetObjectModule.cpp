@@ -19,22 +19,28 @@ void NetObjectModule::Init()
 	m_msgModule->AddMsgCallBack<NetSocket>(L_SOCKET_CONNET,this,&NetObjectModule::OnSocketConnet);
 	m_msgModule->AddMsgCallBack<NetSocket>(L_SOCKET_CLOSE, this, &NetObjectModule::OnSocketClose);
 	m_msgModule->AddMsgCallBack<NetServer>(L_SERVER_CONNECTED, this, &NetObjectModule::OnServerConnet);
-	m_msgModule->AddMsgCallBack<NetSocket>(L_SERVER_CLOSE, this, &NetObjectModule::OnServerClose);
 	m_msgModule->AddMsgCallBack<NetMsg>(N_REGISTE_SERVER, this, &NetObjectModule::OnServerRegiste);
 	
+	m_msgModule->AddMsgCallBack<NetServer>(L_PHP_CGI_CONNECTED, this, &NetObjectModule::OnPHPCgiConnect);
+
+	m_eventModule->AddEventCallBack(E_CLIENT_HTTP_CONNECT, this, &NetObjectModule::OnHttpClientConnect);
+	
+	m_outTime = 5;
 }
 
 void NetObjectModule::Execute()
 {
+	CheckOutTime();
 	CheckReconnect();
 }
 
 void NetObjectModule::OnSocketConnet(NetSocket * sock)
 {
-	auto netobj = GetLayer()->GetLoopObj<NetObject>();
+	auto netobj = GetLayer()->GetSharedLoop<NetObject>();
 	netobj->socket = sock->socket;
-	
+	netobj->ctime = GetSecend()+m_outTime;
 	m_objects_tmp[sock->socket] = netobj;
+	m_eventModule->SendEvent(E_SOCKEK_CONNECT, sock->socket);
 }
 
 void NetObjectModule::OnSocketClose(NetSocket * sock)
@@ -42,12 +48,7 @@ void NetObjectModule::OnSocketClose(NetSocket * sock)
 	auto it = m_objects.find(sock->socket);
 	if (it != m_objects.end())
 	{
-		if (it->second->type == SERVER)
-		{
-			m_eventModule->SendEvent(E_SERVER_CLOSE, (NetServer*)it->second->data);
-			GetLayer()->Recycle((NetServer*)it->second->data);
-		}
-		GetLayer()->Recycle(it->second);
+		NoticeSocketClose(it->second.get());
 		m_objects.erase(it);
 		return;
 	}
@@ -55,8 +56,25 @@ void NetObjectModule::OnSocketClose(NetSocket * sock)
 	it = m_objects_tmp.find(sock->socket);
 	if (it != m_objects_tmp.end())
 	{
-		GetLayer()->Recycle(it->second);
 		m_objects_tmp.erase(it);
+	}
+}
+
+void NetObjectModule::NoticeSocketClose(NetObject* obj)
+{
+	switch (obj->type)
+	{
+	case CONN_CLIENT:
+		break;
+	case CONN_SERVER:
+		ServerClose(obj->socket);
+		break;
+	case CONN_HTTP_CLIENT:
+		m_eventModule->SendEvent(E_CLIENT_HTTP_CLOSE, obj->socket);
+		break;
+	case CONN_PHP_CGI:
+		m_eventModule->SendEvent(E_PHP_CGI_CLOSE, obj->socket);
+		break;
 	}
 }
 
@@ -72,6 +90,17 @@ void NetObjectModule::SendNetMsg(const int& socket, char* msg, const int& mid, c
 	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
 }
 
+void NetObjectModule::SendHttpMsg(const int& socket, NetBuffer& buf)
+{
+	NetMsg* nMsg = new NetMsg();
+	nMsg->socket = socket;
+	nMsg->len = buf.use;
+	nMsg->msg = buf.buf;
+
+	buf.buf = nullptr;
+	m_msgModule->SendMsg(L_SOCKET_SEND_HTTP_DATA, nMsg);
+}
+
 void NetObjectModule::CloseNetObject(const int& socket)
 {
 	auto it = m_objects.find(socket);
@@ -81,14 +110,12 @@ void NetObjectModule::CloseNetObject(const int& socket)
 	NetSocket* sock = new NetSocket(socket);
 
 	m_msgModule->SendMsg(L_SOCKET_CLOSE, sock);
-
-	GetLayer()->Recycle(it->second);
 	m_objects.erase(it);
 }
 
 void NetObjectModule::AddServerConn(const int& sType, const int& sid, const std::string& ip, const int& port)
 {
-	auto ser = GetLayer()->GetLoopObj<NetServer>();
+	auto ser = GetLayer()->GetSharedLoop<NetServer>();
 	ser->type = sType;
 	ser->ip = ip;
 	ser->port = port;
@@ -96,6 +123,12 @@ void NetObjectModule::AddServerConn(const int& sType, const int& sid, const std:
 	ser->state = CONN_STATE::CLOSE;
 	ser->socket = -1;
 	m_serverTmp[ser->serid] = ser;
+}
+
+void NetObjectModule::ConnectPHPCgi(NetServer& cgi)
+{
+	auto msg = new NetServer(cgi);
+	m_msgModule->SendMsg(L_CONNECT_PHP_CGI, msg);
 }
 
 void NetObjectModule::OnServerConnet(NetServer* ser)
@@ -109,15 +142,16 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 
 	m_serverConn[ser->socket] = it->second;
 	//添加进 m_object 里
-	auto netobj = GetLayer()->GetLoopObj<NetObject>();
+	auto netobj = GetLayer()->GetSharedLoop<NetObject>();
 	netobj->socket = ser->socket;
+	netobj->type = CONN_SERVER;
 	m_objects[netobj->socket] = netobj;
 	//通知连接成功
 	m_eventModule->SendEvent(E_SERVER_CONNECT, it->second);
 	m_serverTmp.erase(it);
 
 	//发送注册消息
-	auto myser = GetLayer()->GetServer();
+	auto myser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
 	LPMsg::ServerInfo xMsg;
 	xMsg.set_id(myser->serid);
 	xMsg.set_type(myser->type);
@@ -126,16 +160,16 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 	SendNetMsg(ser->socket, msg, N_REGISTE_SERVER, msize);
 }
 
-void NetObjectModule::OnServerClose(NetSocket* ser)
+void NetObjectModule::ServerClose(const int& socket)
 {
-	auto it = m_serverConn.find(ser->socket);
+	auto it = m_serverConn.find(socket);
 	if (it == m_serverConn.end())
 		return;
 	it->second->socket = -1;
 	it->second->state = CONN_STATE::CLOSE;
 	m_serverTmp[it->second->serid] = it->second;
 	//从 m_object里删除
-	m_objects.erase(ser->socket);
+	m_objects.erase(socket);
 	//事件通知
 	m_eventModule->SendEvent(E_SERVER_CLOSE, it->second);
 	m_serverConn.erase(it);
@@ -147,13 +181,15 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 	if (it == m_objects_tmp.end())
 		return;
 
+	it->second->type = CONN_SERVER;
 	m_objects[msg->socket] = it->second;
 	m_objects_tmp.erase(it);
 	
+	//待优化
 	LPMsg::ServerInfo xMsg;
 	xMsg.ParseFromArray(msg->msg, msg->len);
 	
-	NetServer* server = GetLayer()->GetLoopObj<NetServer>();
+	auto server = GetLayer()->GetSharedLoop<NetServer>();
 
 	server->serid = xMsg.id();
 	server->type = xMsg.type();
@@ -164,8 +200,53 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 	cout << "Server registe type:" << server->type << " ID:" << server->serid << endl;
 }
 
+void NetObjectModule::OnPHPCgiConnect(NetServer* ser)
+{
+	//添加进 m_object 里
+	auto netobj = GetLayer()->GetSharedLoop<NetObject>();
+	netobj->socket = ser->socket;
+	netobj->type = CONN_PHP_CGI;
+	m_objects[netobj->socket] = netobj;
+	//通知连接成功
+	m_eventModule->SendEvent(E_PHP_CGI_CONNECT, ser);
+}
+
+void NetObjectModule::OnHttpClientConnect(const int& socket)
+{
+	auto it = m_objects_tmp.find(socket);
+	if (it == m_objects_tmp.end())
+		return;
+
+	it->second->type = CONN_HTTP_CLIENT;
+	m_objects[socket] = it->second;
+	m_objects_tmp.erase(it);
+}
+
+void NetObjectModule::CheckOutTime()
+{
+	if (m_objects_tmp.size() == 0)
+		return;
+	auto nt = GetSecend();
+	if (nt < m_tmpObjTime)
+		return;
+	m_tmpObjTime = nt + 1;
+	for (auto it=m_objects_tmp.begin();it!=m_objects_tmp.end();)
+	{
+		if (it->second->ctime < nt)
+		{
+			NetSocket* sock = new NetSocket(it->second->socket);
+			m_msgModule->SendMsg(L_SOCKET_CLOSE, sock);
+			m_objects_tmp.erase(it++);
+		}
+		else
+			it++;
+	}
+}
+
 void NetObjectModule::CheckReconnect()
 {
+	if (m_serverTmp.size() == 0)
+		return;
 	auto nt = GetSecend();
 	if (nt < m_lastTime)
 		return;

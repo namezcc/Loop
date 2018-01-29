@@ -90,37 +90,25 @@ void TransMsgModule::InitServerNet()
 	}
 }
 
-void TransMsgModule::OnServerConnect(const int& nEvent, NetServer* ser)
+void TransMsgModule::OnServerConnect(SHARE<NetServer>& ser)
 {
-	auto it = m_serverList.find(ser->type);
-	if (it == m_serverList.end())
-	{
-		map<int, NetServer*> sermap;
-		sermap[ser->serid] = ser;
-		m_serverList[ser->type] = move(sermap);
-		return;
-	}
 	//判断如果已有,则关掉老的
-	auto its = it->second.find(ser->serid);
-	if (its != it->second.end())
+	auto its = m_serverList[ser->type].find(ser->serid);
+	if (its != m_serverList[ser->type].end())
 	{
 		m_netObjMod->CloseNetObject(its->second->socket);
-		GetLayer()->Recycle(its->second);
 	}
-	it->second[ser->serid] = ser;
+	m_serverList[ser->type][ser->serid] = ser;
 }
 
-void TransMsgModule::OnServerClose(const int& nEvent, NetServer* ser)
+void TransMsgModule::OnServerClose(SHARE<NetServer>& ser)
 {
-	auto it = m_serverList.find(ser->type);
-	if (it == m_serverList.end())
-		return;
-	it->second.erase(ser->serid);
+	m_serverList[ser->type].erase(ser->serid);
 }
 
 void TransMsgModule::SendToServer(ServerNode& ser, const int& mid, const int& len, char* msg)
 {
-	auto myser = GetLayer()->GetServer();
+	auto myser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
 	vector<SHARE<ServerNode>> path;
 	GetTransPath(*myser, ser, path);
 	TransMsgToServer(path, mid, len, msg);
@@ -175,7 +163,7 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 	{
 		auto ser = first + head->index;
 		//终点
-		auto myser = GetLayer()->GetServer();
+		auto myser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
 		if (ser->type == myser->type && (ser->serid == myser->serid ||ser->serid==0))
 		{
 			int mlen = nmsg->len - sizeof(int) - sizeof(ServerNode)*head->size - sizeof(TransHead);
@@ -187,7 +175,7 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 			xMsg->mid = *mid;
 
 			memcpy(xMsg->msg, nmsg->msg + (nmsg->len - mlen), mlen);
-			m_msgModule->TransMsgCall(xMsg);
+			m_msgModule->TransMsgCall(xMsg);//由函数内delete 待定
 		}
 	}
 	else {
@@ -212,15 +200,15 @@ NetServer* TransMsgModule::GetServer(const int& type, const int& serid)
 	{
 		auto fir = it->second.begin();
 		auto last = it->second.rbegin();
-		auto ser = GetLayer()->GetServer();
+		auto ser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
 		int slot = (ser->serid + last->first) % (last->first - fir->first + 1) + fir->first;
 		auto its = it->second.lower_bound(slot);
-		return its->second;
+		return its->second.get();
 	}
 	auto its = it->second.find(serid);
 	if (its == it->second.end())
 		return nullptr;
-	return its->second;
+	return its->second.get();
 }
 
 void TransMsgModule::GetTransPath(ServerNode& beg, ServerNode& end, vector<SHARE<ServerNode>>& path)

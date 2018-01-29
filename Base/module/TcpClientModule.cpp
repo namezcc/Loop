@@ -35,7 +35,7 @@ void TcpClientModule::OnConnectServer(NetServer* ser)
 	ASSERT(client != NULL);
 	ASSERT(connect_req != NULL);
 
-	r = uv_tcp_init(uv_default_loop(), client);
+	r = uv_tcp_init(m_uvloop, client);
 	ASSERT(r == 0);
 
 	client->data = new NetServer(*ser);
@@ -58,8 +58,8 @@ void TcpClientModule::Connect_cb(uv_connect_t* req, int status)
 		md->m_msgmodule->SendMsg(L_SERVER_CONNECTED, ser);
 
 		cli->data = md->m_netmodule;
-		cli->close_cb = &TcpClientModule::On_server_close;
-		md->m_netmodule->Connected(cli, false);
+		cli->read_cb = NetModule::after_read;
+		md->m_netmodule->Connected(cli,false);
 	}
 	else {
 		delete ser;
@@ -68,11 +68,11 @@ void TcpClientModule::Connect_cb(uv_connect_t* req, int status)
 	md->GetLayer()->Recycle(req);
 }
 
-void TcpClientModule::On_server_close(uv_handle_t* client)
-{
-	auto tcpcli = (uv_tcp_t*)client;
-	auto server = (NetModule*)tcpcli->data;
-	auto sock = new NetSocket(tcpcli->socket);
-	server->GetMsgModule()->SendMsg(L_SERVER_CLOSE, sock);
-	server->RemoveConn(tcpcli->socket);
-}
+//void TcpClientModule::On_server_close(uv_handle_t* client)
+//{
+//	auto tcpcli = (uv_tcp_t*)client;
+//	auto server = (NetModule*)tcpcli->data;
+//	auto sock = new NetSocket(tcpcli->socket);
+//	server->GetMsgModule()->SendMsg(L_SERVER_CLOSE, sock);
+//	server->RemoveConn(tcpcli->socket);
+//}

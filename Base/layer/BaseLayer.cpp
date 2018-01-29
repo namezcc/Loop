@@ -14,6 +14,9 @@ void BaseLayer::StartRun()
 	for (auto& it : m_modules)
 		it.second->Init();
 
+	for (auto& it : m_modules)
+		it.second->AfterInit();
+
 	while (true)
 	{
 		for (auto& it : m_pipes)
