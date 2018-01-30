@@ -12,7 +12,7 @@ struct Timer
 	TimeTask task;
 };
 
-class ScheduleModule:public BaseModule
+class LOOP_EXPORT ScheduleModule:public BaseModule
 {
 public:
 	ScheduleModule(BaseLayer* l);

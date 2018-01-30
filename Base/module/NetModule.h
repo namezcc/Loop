@@ -72,7 +72,7 @@ typedef struct MsgHead:public Head
 	}
 }MsgHead;
 
-class NetModule:public BaseModule
+class LOOP_EXPORT NetModule:public BaseModule
 {
 public:
 	NetModule(BaseLayer* l):BaseModule(l) 

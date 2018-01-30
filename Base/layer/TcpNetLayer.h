@@ -7,7 +7,7 @@
 #include "TcpClientModule.h"
 #include <iostream>
 
-class TcpNetLayer:public BaseLayer
+class LOOP_EXPORT TcpNetLayer:public BaseLayer
 {
 public:
 	TcpNetLayer(const int& port) :m_port(port)

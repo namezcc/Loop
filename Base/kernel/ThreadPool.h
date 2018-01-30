@@ -6,11 +6,12 @@
 #include <queue>
 #include <condition_variable>
 #include <mutex>
+#include "Define.h"
 
 using namespace std;
 
 typedef function<void()> task;
-class ThreadPool
+class LOOP_EXPORT ThreadPool
 {
 public:
 	ThreadPool(size_t threads);

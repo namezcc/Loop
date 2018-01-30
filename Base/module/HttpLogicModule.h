@@ -111,7 +111,7 @@ struct FileCash:public LoopObject
 #define CASH_SIZE 10
 #define CHECK_TIME 300000
 
-class HttpLogicModule:public BaseModule
+class LOOP_EXPORT HttpLogicModule:public BaseModule
 {
 public:
 	typedef function<void(HttpMsg*)> HttpCall;

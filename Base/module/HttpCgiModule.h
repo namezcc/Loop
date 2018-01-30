@@ -62,7 +62,7 @@ class EventModule;
 class NetObjectModule;
 class HttpLogicModule;
 
-class HttpCgiModule:public BaseModule
+class LOOP_EXPORT HttpCgiModule:public BaseModule
 {
 public:
 	HttpCgiModule(BaseLayer* l);

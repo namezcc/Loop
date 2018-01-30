@@ -5,7 +5,8 @@
 #include "HttpNetLayer.h"
 #include "HttpLogicModule.h"
 #include "HttpCgiModule.h"
-//#include "Test/module/TestModule.h"
+#include "MysqlModule.h"
+#include "Test/module/TestModule.h"
 //#include "Test/layer/TestLayer.h"
 
 int main(int argc,char* args[])
@@ -19,6 +20,8 @@ int main(int argc,char* args[])
 
 	ll->CreateModule<HttpLogicModule>()->SetWebRoot("web");
 	ll->CreateModule<HttpCgiModule>()->ConnectCgi("127.0.0.1", 9000);
+	ll->CreateModule<TestModule>();
+	ll->CreateModule<MysqlModule>();
 
 	ser.BuildPipe(nl, ll);
 	ser.Run();

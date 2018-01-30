@@ -4,7 +4,7 @@
 #include "ThreadPool.h"
 #include "DataDefine.h"
 
-class LoopServer
+class LOOP_EXPORT LoopServer
 {
 public:
 	LoopServer();

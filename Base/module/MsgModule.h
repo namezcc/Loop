@@ -7,7 +7,7 @@
 typedef std::function<void(void*)> MsgCall;
 typedef std::function<int()> ChooseLayer;
 
-class MsgModule:public BaseModule
+class LOOP_EXPORT MsgModule:public BaseModule
 {
 public:
 	MsgModule(BaseLayer* l);

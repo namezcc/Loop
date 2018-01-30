@@ -3,7 +3,7 @@
 
 #include "TcpServerModule.h"
 
-class HttpServerModule:public TcpServer
+class LOOP_EXPORT HttpServerModule:public TcpServer
 {
 public:
 	HttpServerModule(BaseLayer* l):TcpServer(l)

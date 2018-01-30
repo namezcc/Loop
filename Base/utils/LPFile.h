@@ -1,12 +1,13 @@
 #ifndef LP_FILE_H
 #define LP_FILE_H
 #include <fstream>
+#include "Define.h"
 
 using namespace std;
 
 class NetBuffer;
 
-class LoopFile
+class LOOP_EXPORT LoopFile
 {
 public:
 	LoopFile();

@@ -4,7 +4,7 @@
 #include "MsgModule.h"
 #include "NetObjectModule.h"
 
-class LogicLayer:public BaseLayer
+class LOOP_EXPORT LogicLayer:public BaseLayer
 {
 public:
 	LogicLayer() {};

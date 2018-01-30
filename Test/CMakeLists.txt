@@ -4,16 +4,10 @@ set(ProjectName "Test")
 project(Test)
 
 set(test_lib
-ws2_32.lib
-psapi.lib
-iphlpapi.lib
-user32.lib
-userenv.lib
 Loop.lib
-libuv.lib
-libprotobuf.lib
-jsoncpp.lib
 )
+
+
 
 file(GLOB_RECURSE TEST_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE TEST_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)

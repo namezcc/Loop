@@ -8,7 +8,7 @@
 #include <iostream>
 
 using namespace std;
-class BaseModule
+class LOOP_EXPORT BaseModule
 {
 public:
 	BaseModule(BaseLayer* layer):m_layer(layer) {

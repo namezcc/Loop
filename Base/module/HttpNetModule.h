@@ -2,7 +2,7 @@
 #define HTTP_NET_MODULE_H
 #include "NetModule.h"
 
-class HttpNetModule:public NetModule
+class LOOP_EXPORT HttpNetModule:public NetModule
 {
 public:
 	HttpNetModule(BaseLayer* l) :NetModule(l) 

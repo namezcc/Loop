@@ -20,7 +20,7 @@ typedef struct RWPipe
 	PIPE* wpipe;
 }RWPipe;
 
-class BaseLayer
+class LOOP_EXPORT BaseLayer
 {
 public:
 	BaseLayer():m_msgCall(NULL)

@@ -6,7 +6,7 @@ class EventModule;
 class NetObjectModule;
 class MsgModule;
 
-class TransMsgModule:public BaseModule
+class LOOP_EXPORT TransMsgModule:public BaseModule
 {
 public:
 	TransMsgModule(BaseLayer* l);

@@ -4,15 +4,7 @@ set(ProjectName "LoopProxy")
 project(LoopProxy)
 
 set(test_lib
-ws2_32.lib
-psapi.lib
-iphlpapi.lib
-user32.lib
-userenv.lib
 Loop.lib
-libuv.lib
-libprotobuf.lib
-jsoncpp.lib
 )
 
 file(GLOB_RECURSE PROXY_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)

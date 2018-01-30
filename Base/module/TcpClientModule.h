@@ -5,7 +5,7 @@
 
 class NetModule;
 class MsgModule;
-class TcpClientModule:public BaseModule
+class LOOP_EXPORT TcpClientModule:public BaseModule
 {
 public:
 	TcpClientModule(BaseLayer* l);

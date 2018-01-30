@@ -6,7 +6,7 @@
 
 class NetModule;
 
-class TcpServer:public BaseModule
+class LOOP_EXPORT TcpServer:public BaseModule
 {
 public:
 	TcpServer(BaseLayer* l):BaseModule(l)

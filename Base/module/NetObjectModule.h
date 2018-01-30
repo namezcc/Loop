@@ -4,7 +4,7 @@
 class MsgModule;
 class EventModule;
 
-class NetObjectModule:public BaseModule
+class LOOP_EXPORT NetObjectModule:public BaseModule
 {
 public:
 	NetObjectModule(BaseLayer* l);

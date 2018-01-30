@@ -11,7 +11,7 @@ struct Event
 template<typename... Args>
 using FuncType = typename Event<Args...>::FuncType;
 
-class EventModule:public BaseModule
+class LOOP_EXPORT EventModule:public BaseModule
 {
 public:
 	EventModule(BaseLayer* l);
