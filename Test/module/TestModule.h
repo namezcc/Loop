@@ -7,6 +7,7 @@ class NetObjectModule;
 class TransMsgModule;
 class MsgModule;
 class MysqlModule;
+class RedisModule;
 
 class TestModule:public BaseModule
 {
@@ -23,6 +24,7 @@ protected:
 	void TransTest(int64_t nt);
 
 	void SqlTest(int64_t nt);
+	void RedisTest(int64_t nt);
 
 	void OnTransTest(NetMsg* msg);
 private:
@@ -31,6 +33,7 @@ private:
 	TransMsgModule* m_trans;
 	MsgModule* m_msg;
 	MysqlModule* m_mysqlModule;
+	RedisModule* m_redisModule;
 };
 
 #endif

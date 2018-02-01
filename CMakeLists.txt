@@ -18,18 +18,20 @@ ${PROJECT_SOURCE_DIR}/librarys/libuv/include/
 ${PROJECT_SOURCE_DIR}/librarys/protobuf/include/ 
 ${PROJECT_SOURCE_DIR}/librarys/jsoncpp/include/ 
 ${PROJECT_SOURCE_DIR}/librarys/mysql/include/
+${PROJECT_SOURCE_DIR}/librarys/redis/
 )
+
+set(LPBaseOut ${PROJECT_SOURCE_DIR}/librarys/libs/win)
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	link_directories(
 	${PROJECT_SOURCE_DIR}/librarys/libs/win/Debug/
 	)
-	set(LPBaseOut ${PROJECT_SOURCE_DIR}/librarys/libs/win/Debug)
+	
 else()
 	link_directories(
 	${PROJECT_SOURCE_DIR}/librarys/libs/win/Release/
 	)
-	set(LPBaseOut ${PROJECT_SOURCE_DIR}/librarys/libs/win/Release)
 endif()
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
@@ -48,6 +50,10 @@ mysqlpp_d.lib
 )
 endif()
 
+if(WIN32)
+set(lib_link ${lib_link} anet_win64.lib)
+endif()
+
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/Base/*.cpp)
 file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/Base/*.h)
 file(GLOB_RECURSE PROTO_FILES ${PROJECT_SOURCE_DIR}/protoPB/*.*)
@@ -64,10 +70,13 @@ set_target_properties(Loop PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY ${LPBaseOut}
 	LIBRARY_OUTPUT_DIRECTORY ${LPBaseOut} )
 	
+target_compile_definitions(Loop
+ PRIVATE	LOOP_MAKE_DLL
+ PRIVATE 	LIBPROTOC_EXPORTS
+)
+
 add_definitions(
--DLOOP_MAKE_DLL
 -DPROTOBUF_USE_DLLS
--DLIBPROTOC_EXPORTS
 )
 
 add_subdirectory(Test)

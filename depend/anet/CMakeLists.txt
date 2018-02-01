@@ -1,0 +1,6 @@
+PROJECT(anet)
+if(WIN32)
+add_subdirectory(anet_win32)
+else()
+add_subdirectory(anet)
+endif()

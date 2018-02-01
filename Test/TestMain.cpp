@@ -6,6 +6,7 @@
 #include "HttpLogicModule.h"
 #include "HttpCgiModule.h"
 #include "MysqlModule.h"
+#include "RedisModule.h"
 #include "Test/module/TestModule.h"
 //#include "Test/layer/TestLayer.h"
 
@@ -22,6 +23,7 @@ int main(int argc,char* args[])
 	ll->CreateModule<HttpCgiModule>()->ConnectCgi("127.0.0.1", 9000);
 	ll->CreateModule<TestModule>();
 	ll->CreateModule<MysqlModule>();
+	ll->CreateModule<RedisModule>();
 
 	ser.BuildPipe(nl, ll);
 	ser.Run();

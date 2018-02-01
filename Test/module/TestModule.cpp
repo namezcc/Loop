@@ -4,6 +4,7 @@
 #include "TransMsgModule.h"
 #include "MsgModule.h"
 #include "MysqlModule.h"
+#include "RedisModule.h"
 #include <iostream>
 #include <iomanip>
 
@@ -23,16 +24,19 @@ void TestModule::Init()
 	//m_trans = GetLayer()->GetModule<TransMsgModule>();
 	m_msg = GetLayer()->GetModule<MsgModule>();
 	m_mysqlModule = GetLayer()->GetModule<MysqlModule>();
+	m_redisModule = GetLayer()->GetModule<RedisModule>();
 
 	//m_msg->AddMsgCallBack<NetMsg>(N_TRANS_TEST, this, &TestModule::OnTransTest);
 
-	m_schedule->AddInterValTask(this, &TestModule::SqlTest, 1000,1,3000);
+	m_schedule->AddInterValTask(this, &TestModule::RedisTest, 1000,1,3000);
 	//m_schedule->AddInterValTask(this, &TestModule::TransTest, 1000, 1, 10000);
 }
 
 void TestModule::AfterInit()
 {
 	m_mysqlModule->Connect("test", "127.0.0.1", "root", "123456");
+	if (m_redisModule->Connect("127.0.0.1", "NoahGameFrame"))
+		cout << "connect redis success..." << endl;
 }
 
 void TestModule::Execute()
@@ -77,6 +81,19 @@ void TestModule::SqlTest(int64_t nt)
 		for (auto& v:row)
 			cout << setw(w) << v;
 		cout << endl;
+	}
+}
+
+void TestModule::RedisTest(int64_t nt)
+{
+	string key("S6:Player:6-104000022");
+
+	vector<pair<string, string>> res;
+	m_redisModule->HGetAll(key, res);
+
+	for (auto& p:res)
+	{
+		cout << p.first << "  <------------>  " << p.second << endl;
 	}
 }
 
