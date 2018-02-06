@@ -4,8 +4,7 @@
 #include <unordered_map>
 #include "BaseModule.h"
 
-typedef std::function<void(void*)> MsgCall;
-typedef std::function<int()> ChooseLayer;
+typedef std::function<void(BaseData*)> MsgCall;
 
 class LOOP_EXPORT MsgModule:public BaseModule
 {
@@ -14,6 +13,7 @@ public:
 	~MsgModule();
 
 	void SendMsg(const int& msgid, BaseData* data);
+	void SendMsg(const int& ltype, const int& lid, const int& msgid, BaseData* data);
 
 	template<typename Arg,typename T, typename F>
 	void AddMsgCallBack(const int mId, T&&t, F&&f)
@@ -27,9 +27,6 @@ public:
 	}
 
 	void TransMsgCall(NetMsg* msg);
-
-	void SetGetLayerFunc(const ChooseLayer& func) { m_getLayerId = func; };
-	void SetGetLayerFunc(ChooseLayer&& func) { m_getLayerId = std::move(func); };
 private:
 	void Init();
 	void Execute();
@@ -37,7 +34,6 @@ private:
 
 private:
 	std::unordered_map<int, MsgCall> m_callBack;
-	ChooseLayer m_getLayerId;
 };
 
 #endif

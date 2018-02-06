@@ -104,6 +104,7 @@ void HttpNetModule::Connect_cb(uv_connect_t* req, int status)
 		md->Connected(cli, false);
 	}
 	else {
+		cout << "PHP CGI not run on host:" << ser->ip << " port:" << ser->port << endl;
 		delete ser;
 		md->GetLayer()->Recycle(cli);
 	}

@@ -28,8 +28,23 @@ void MysqlModule::Init()
 {
 }
 
+void MysqlModule::AfterInit()
+{
+	if (!m_sqlConn->connected())
+		Reconnect();
+}
+
 void MysqlModule::Execute()
 {
+}
+
+void MysqlModule::SetConnect(const string & dbname, const string & ip, const string & user, const string & pass, const int & port)
+{
+	m_dbname = dbname;
+	m_ip = ip;
+	m_user = user;
+	m_pass = pass;
+	m_port = port;
 }
 
 bool MysqlModule::Connect(const string& dbname, const string & ip, const string & user, const string & pass, const int & port)

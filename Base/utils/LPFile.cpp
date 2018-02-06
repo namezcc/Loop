@@ -1,6 +1,7 @@
 #include "LPFile.h"
 #include "DataDefine.h"
 #include <io.h>
+#include <direct.h>
 
 LoopFile::LoopFile()
 {
@@ -31,4 +32,15 @@ int LoopFile::GetContent(const string& file, NetBuffer & context)
 		return 0;
 	}
 	return -1;
+}
+
+void LoopFile::GetRootPath(string & res)
+{
+	char curpath[MAX_PATH];
+	getcwd(curpath, MAX_PATH);
+	string path(curpath);
+	auto pos = path.find_first_of("Loop");
+
+	res.assign(path.data(), path.data() + pos);
+	res.append("Loop/");
 }

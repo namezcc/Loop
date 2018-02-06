@@ -7,7 +7,10 @@
 class LOOP_EXPORT LogicLayer:public BaseLayer
 {
 public:
-	LogicLayer() {};
+	LogicLayer(const int& ltype):BaseLayer(ltype)
+	{
+		
+	};
 	virtual ~LogicLayer() {};
 
 protected:
@@ -17,6 +20,10 @@ protected:
 
 	
 private:
+
+
+	// Í¨¹ý BaseLayer ¼Ì³Ð
+	virtual void GetDefaultTrans(int & ltype, int & lid) override;
 
 };
 

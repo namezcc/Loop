@@ -23,28 +23,32 @@ typedef struct RWPipe
 class LOOP_EXPORT BaseLayer
 {
 public:
-	BaseLayer():m_msgCall(NULL)
+	BaseLayer(const int& ltype):m_msgCall(NULL),m_type(ltype)
 	{
-		++LID;
-		m_id = LID;
-		m_factor = Single::NewLocal<FactorManager>();
+		m_factor.reset(Single::NewLocal<FactorManager>());
 	};
 	virtual ~BaseLayer();
 
 	void StartRun();
-	int GetID() { return m_id; };
+	inline int GetType() { return m_type; };
 
-	void regPipe(int layer, PIPE* rp, PIPE* wp)
+	void regPipe(int ltype, PIPE* rp, PIPE* wp)
 	{
-		m_pipes[layer] = RWPipe(rp, wp);
+		m_pipes[ltype].push_back(RWPipe(rp, wp));
 	}
 
-	template<typename T>
-	void writePipe(const int& lid,T* msg)
+	void writePipe(void* msg)
 	{
-		auto it = m_pipes.find(lid);
+		int ltype, lid;
+		GetDefaultTrans(ltype, lid);
+		writePipe(ltype, lid, msg);
+	}
+
+	void writePipe(const int& ltype,const int& lid, void* msg)
+	{
+		auto it = m_pipes.find(ltype);
 		assert(it != m_pipes.end());
-		it->second.wpipe->write((void*)msg);
+		it->second[lid].wpipe->write(msg);
 	}
 
 	template<typename F,typename T>
@@ -94,9 +98,6 @@ public:
 	{
 		m_factor->recycle(t);
 	}
-
-	/*inline void SetServer(ServerNode* server) { m_server = server; };
-	inline ServerNode* GetServer() { return m_server; };*/
 protected:
 	void startRead(const RWPipe& pipe)
 	{
@@ -126,15 +127,15 @@ protected:
 	virtual void loop()=0;
 	virtual void close()=0;
 
-	std::unordered_map<int, RWPipe>& GetPipes() { return m_pipes; };
+	virtual void GetDefaultTrans(int& ltype,int& lid)=0;
+
+	std::unordered_map<int, std::vector<RWPipe>>& GetPipes() { return m_pipes; };
 protected:
-	int m_id;
-	static int LID;
+	int m_type;
 	SHARE<LayerMsg> m_msgCall;
-	std::unordered_map<int, RWPipe> m_pipes;
+	std::unordered_map<int,std::vector<RWPipe>> m_pipes;
 	std::unordered_map<size_t, SHARE<BaseModule>> m_modules;
-	FactorManager* m_factor;
-	//ServerNode* m_server;
+	SHARE<FactorManager> m_factor;
 };
 
 #endif

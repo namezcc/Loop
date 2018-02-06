@@ -63,7 +63,11 @@ struct Slice
 {
 	Slice(char* nb,char* ne) :_pb(nb), _pe(ne)
 	{};
-
+	Slice(const char* nb,const char* ne)
+	{
+		_pb = (char*)nb;
+		_pe = (char*)ne;
+	};
 	string CutWord()
 	{
 		Slice s = CutWordSlice();

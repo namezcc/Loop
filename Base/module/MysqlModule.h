@@ -1,6 +1,7 @@
 #ifndef MYSQL_MODULE_H
 #define MYSQL_MODULE_H
 #include "BaseModule.h"
+#include "Reflection.h"
 
 #define MYSQL_TRY try{
 
@@ -30,6 +31,9 @@
         std::cout << "std::exception [" <<msg << "] Error:Unknown " << std::endl; \
         return false; \
     }
+
+#define TABLE_FLAG
+#define FIELD_FLAG
 
 namespace mysqlpp {
 	class Connection;
@@ -67,6 +71,7 @@ public:
 	MysqlModule(BaseLayer* l);
 	~MysqlModule();
 
+	void SetConnect(const string& dbname, const string& ip, const string& user, const string& pass, const int& port = 3306);
 	bool Connect(const string& dbname,const string& ip, const string& user, const string& pass, const int& port=3306);
 	bool Reconnect();
 
@@ -78,9 +83,81 @@ public:
 	bool Update(SqlParam& p);
 	bool Select(SqlParam& p);
 
+	template<typename T>
+	bool Insert(T&t)
+	{
+		auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		param->tab = Reflect<T>::Name();
+		param->field.assign(Reflect<T>::arr_fields.begin(), Reflect<T>::arr_fields.end());
+		auto p = (char*)&t;
+		for (size_t i = 0; i < Reflect<T>::Size(); i++)
+		{
+			param->value.push_back(move(ReflectField::GetVal(p+ Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i])));
+		}
+		return Inster(*param.get());
+	}
+
+	template<typename T>
+	bool Update(Reflect<T>& rf)
+	{
+		auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		param->tab = Reflect<T>::Name();
+		param->kname.assign(ParamKey<T>::paramkey.begin(), ParamKey<T>::paramkey.end());
+		auto p = (char*)rf.mptr;
+		for (auto& k: ParamKey<T>::paramkey)
+		{
+			int idx = Reflect<T>::GetFieldIndex(k);
+			param->kval.push_back(ReflectField::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
+		}
+		for (size_t i = 0; i < Reflect<T>::Size(); i++)
+		{
+			if (rf.changeFlag & (((int64_t)1) << i))
+			{
+				param->field.push_back(Reflect<T>::arr_fields[i]);
+				param->value.push_back(ReflectField::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]))
+			}
+		}
+		return Update(*param.get());
+	}
+
+	template<typename T>
+	bool Delete(T&t)
+	{
+		auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		param->tab = Reflect<T>::Name();
+		param->kname.assign(ParamKey<T>::paramkey.begin(), ParamKey<T>::paramkey.end());
+		auto p = (char*)&t;
+		for (auto& k : ParamKey<T>::paramkey)
+		{
+			int idx = Reflect<T>::GetFieldIndex(k);
+			param->kval.push_back(ReflectField::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
+		}
+		return Delete(*param.get());
+	}
+
+	template<typename T>
+	bool Select(vector<SHARE<T>>& res,const string& sql)
+	{
+		MultRow tmp;
+		SqlRow files;
+		if (!Select(sql, tmp, files))
+			return false;
+		for (size_t i = 0; i < tmp.size(); i++)
+		{
+			SHARE<T> t = GetLayer()->GetSharedLoop<T>();
+			for (size_t j = 0; j < files.size(); j++)
+			{
+				Reflect<T>::SetFieldValue(*t.get(), files[j], tmp[i][j]);
+			}
+			res.push_back(t);
+		}
+		return true;
+	}
+
 protected:
 	// Í¨¹ý BaseModule ¼Ì³Ð
 	virtual void Init() override;
+	virtual void AfterInit()override;
 	virtual void Execute() override;
 
 	void Qupdate(mysqlpp::Query& q, const string& tab, SqlRow& fields, SqlRow& vals);

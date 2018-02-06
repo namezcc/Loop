@@ -7,14 +7,10 @@
 
 void LogicLayer::init() {
 	auto msgmd = CreateModule<MsgModule>();
+
 	CreateModule<NetObjectModule>();
 	CreateModule<ScheduleModule>();
 	CreateModule<EventModule>();
-
-	msgmd->SetGetLayerFunc([this]() {
-		auto it = GetPipes().begin();
-		return it->first;
-	});
 };
 void LogicLayer::loop() {
 	//std::cout << "LogicLayer loop..." << endl;
@@ -22,4 +18,9 @@ void LogicLayer::loop() {
 };
 void LogicLayer::close() {
 
-};
+}
+void LogicLayer::GetDefaultTrans(int & ltype, int & lid)
+{
+	ltype = LY_NET;
+	lid = 0;
+}

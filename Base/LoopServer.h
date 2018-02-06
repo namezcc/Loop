@@ -25,8 +25,8 @@ public:
 		auto p1 = GET_LOOP(PIPE);
 		auto p2 = GET_LOOP(PIPE);
 
-		l1->regPipe(l2->GetID(), p1, p2);
-		l2->regPipe(l1->GetID(), p2, p1);
+		l1->regPipe(l2->GetType(), p1, p2);
+		l2->regPipe(l1->GetType(), p2, p1);
 	}
 
 	void Run();

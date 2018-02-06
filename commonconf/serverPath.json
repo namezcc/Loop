@@ -29,9 +29,6 @@
 		],
 		"game-sql":[
 			["game","pgs","sql"]
-		],
-		"sql-game":[
-			["sql","pgs","game"]
 		]
 	}
 }

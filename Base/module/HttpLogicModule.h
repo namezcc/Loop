@@ -42,8 +42,12 @@ struct HttpBase
 
 	virtual void Init() = 0;
 	virtual void Clear() = 0;
-	virtual void Recycle();
-	string GetHead(const string& head);
+	virtual void Recycle()
+	{
+		Clear();
+		buff.Clear();
+	}
+	inline string GetHead(const string& head) { return heads[head];};
 };
 
 struct HttpRequest :public HttpBase
@@ -72,7 +76,11 @@ struct HttpResponse :public HttpBase
 	void Encode(NetBuffer& nbuff);
 	void EncodePHP(NetBuffer& nbuff);
 
-	void SetStatus(int code, const string& info);
+	void SetStatus(int code, const string& info)
+	{
+		state = code;
+		statusInfo = move(info);
+	};
 };
 
 struct HttpMsg:public LoopObject
@@ -115,6 +123,18 @@ class LOOP_EXPORT HttpLogicModule:public BaseModule
 {
 public:
 	typedef function<void(HttpMsg*)> HttpCall;
+	typedef function<bool(HttpMsg*)> HttpCheck;
+
+	class regex_orderable : public regex 
+	{
+		std::string str;
+	public:
+		regex_orderable(const char *regex_cstr) : regex(regex_cstr), str(regex_cstr) {}
+		regex_orderable(std::string regex_str) : regex(regex_str), str(std::move(regex_str)) {}
+		bool operator<(const regex_orderable &rhs) const noexcept {
+			return str < rhs.str;
+		}
+	};
 
 public:
 	HttpLogicModule(BaseLayer* l) :BaseModule(l)
@@ -124,6 +144,18 @@ public:
 	
 	void SetWebRoot(const string& root);
 	void OnGetPHPContent(const int& sock,NetBuffer& content);
+
+	template<typename T,typename F>
+	void AddUrlCallBack(const string& url, const string& math,T&&t, F&&f)
+	{
+		m_httpCall[url][math] = AnyFuncBind::Bind(forward<F>(f), forward<T>(t));
+	}
+
+	template<typename T,typename F>
+	void AddRequestCheck(T&&t,F&&f)
+	{
+		m_reqCheck = SHARE<HttpCheck>(new HttpCheck(ANY_BIND(t,f)));
+	}
 protected:
 	virtual void Init() override;
 	virtual void Execute() override;
@@ -132,6 +164,9 @@ protected:
 	void OnHttpClientClose(const int& sock);
 	void OnRecvHttpMsg(NetMsg* msg);
 	void OnRequest(HttpMsg* msg);
+
+	void DoResPonse(HttpMsg* msg);
+
 	void CloseClient(const int& sock);
 
 	void OnGetFileResouce(HttpMsg* msg);
@@ -142,6 +177,7 @@ protected:
 	bool GetFromCash(const string& file, NetBuffer& buff);
 	void AddCashFile(const string& file, NetBuffer& buff);
 	void CheckCash(int64_t& nt);
+
 private:
 	MsgModule* m_msgModule;
 	EventModule* m_eventModule;
@@ -155,8 +191,9 @@ private:
 	vector<string> m_index;
 
 	map<int, SHARE<HttpMsg>> m_cliens;
-	map<regex, map<string, HttpCall>> m_httpCall;
+	map<regex_orderable, map<string, HttpCall>> m_httpCall;
 	map<string, HttpCall> m_defaultCall;
+	SHARE<HttpCheck> m_reqCheck;
 
 	int m_cashIndex;
 	int64_t m_lastCheck;

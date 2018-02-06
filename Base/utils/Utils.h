@@ -51,6 +51,8 @@ struct AnyFuncBind
 	}
 };
 
+#define ANY_BIND(t,f) AnyFuncBind::Bind(forward<F>(f), forward<T>(t))
+
 typedef function<void()> Call;
 class ExitCall
 {

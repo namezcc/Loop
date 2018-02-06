@@ -10,7 +10,7 @@
 class LOOP_EXPORT TcpNetLayer:public BaseLayer
 {
 public:
-	TcpNetLayer(const int& port) :m_port(port)
+	TcpNetLayer(const int& port) :BaseLayer(LY_NET),m_port(port)
 	{
 		m_uvloop = (uv_loop_t*)malloc(sizeof(uv_loop_t));
 		uv_loop_init(m_uvloop);
@@ -23,14 +23,10 @@ public:
 protected:
 	virtual void init() {
 		auto msgmd = CreateModule<MsgModule>();
+
 		CreateModule<TcpServer>()->start(m_port,m_uvloop);
 		CreateModule<TcpClientModule>()->Setuvloop(m_uvloop);
 		CreateModule<NetModule>()->Setuvloop(m_uvloop);
-
-		msgmd->SetGetLayerFunc([this]() {
-			auto it = GetPipes().begin();
-			return it->first;
-		});
 	};
 	void loop() {
 		//std::cout << "TcpNetLayer loop..." << endl;
@@ -39,6 +35,13 @@ protected:
 	void close() {
 		
 	};
+
+	virtual void GetDefaultTrans(int& ltype, int& lid)
+	{
+		auto it = m_pipes.begin();
+		ltype = it->first;
+		lid = 0;
+	}
 	
 protected:
 	int m_port;

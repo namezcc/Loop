@@ -25,8 +25,16 @@ enum SERVER_TYPE
 	LOOP_PROXY_G,
 	LOOP_MYSQL,
 	LOOP_PROXY_PP,
+	LOOP_MASTER,
+	LOOP_CONSOLE,
 };
 
+enum LAYER_TYPE
+{
+	LY_NET,
+	LY_LOGIC,
+	LY_HTTP_LOGIC,
+};
 
 struct NetBuffer
 {

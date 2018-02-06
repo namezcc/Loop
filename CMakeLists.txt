@@ -18,7 +18,8 @@ ${PROJECT_SOURCE_DIR}/librarys/libuv/include/
 ${PROJECT_SOURCE_DIR}/librarys/protobuf/include/ 
 ${PROJECT_SOURCE_DIR}/librarys/jsoncpp/include/ 
 ${PROJECT_SOURCE_DIR}/librarys/mysql/include/
-${PROJECT_SOURCE_DIR}/librarys/redis/
+${PROJECT_SOURCE_DIR}/librarys/redis/ 
+${PROJECT_SOURCE_DIR}/depend/ 
 )
 
 set(LPBaseOut ${PROJECT_SOURCE_DIR}/librarys/libs/win)
@@ -79,6 +80,4 @@ add_definitions(
 -DPROTOBUF_USE_DLLS
 )
 
-add_subdirectory(Test)
-add_subdirectory(proxy)
-add_subdirectory(HttpTest)
+add_subdirectory(Servers)

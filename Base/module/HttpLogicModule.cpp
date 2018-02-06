@@ -26,12 +26,6 @@ void HttpMsg::Clear()
 	response.Clear();
 }
 
-void HttpBase::Recycle()
-{
-	Clear();
-	buff.Clear();
-}
-
 void HttpRequest::Init()
 {
 	buff.buf = nullptr;
@@ -152,11 +146,6 @@ int HttpRequest::TryDecode()
 	return HTTP_STATE::HERROR;
 }
 
-string HttpBase::GetHead(const string& head)
-{
-	return heads[head];
-}
-
 void HttpResponse::Init()
 {
 
@@ -204,12 +193,6 @@ void HttpResponse::EncodePHP(NetBuffer& nbuff)
 
 	nbuff.append("Content-Length: ").append(loop_cast<string>(len)).append("\r\n");
 	nbuff.append(buff.buf, buff.use);
-}
-
-void HttpResponse::SetStatus(int code, const string& info)
-{
-	state = code;
-	statusInfo = move(info);
 }
 
 void HttpLogicModule::Init()
@@ -289,8 +272,10 @@ void HttpLogicModule::OnRecvHttpMsg(NetMsg * msg)
 
 void HttpLogicModule::OnRequest(HttpMsg* msg)
 {
+	if (m_reqCheck && !m_reqCheck->operator()(msg))
+		return DoResPonse(msg);
+
 	msg->opration = HttpMsg::SEND;
-	bool defcall = true;
 	for (auto& reg:m_httpCall)
 	{
 		auto it = reg.second.find(msg->request.math);
@@ -300,20 +285,21 @@ void HttpLogicModule::OnRequest(HttpMsg* msg)
 			if (regex_match(msg->request.url, res, reg.first))
 			{
 				it->second(msg);
-				defcall = false;
-				break;
+				return DoResPonse(msg);
 			}
 		}
 	}
-	if (defcall)
-	{
-		auto it = m_defaultCall.find(msg->request.math);
-		if (it != m_defaultCall.end())
-			it->second(msg);
-		else
-			msg->opration = HttpMsg::CLOSE;
-	}
-	
+
+	auto it = m_defaultCall.find(msg->request.math);
+	if (it != m_defaultCall.end())
+		it->second(msg);
+	else
+		msg->opration = HttpMsg::CLOSE;
+	DoResPonse(msg);
+}
+
+void HttpLogicModule::DoResPonse(HttpMsg * msg)
+{
 	switch (msg->opration)
 	{
 	case HttpMsg::SEND_AND_CLOSE:
@@ -325,7 +311,7 @@ void HttpLogicModule::OnRequest(HttpMsg* msg)
 
 		CloseClient(msg->socket);
 	}
-		break;
+	break;
 	case HttpMsg::SEND:
 	{
 		NetBuffer buff;
@@ -333,12 +319,12 @@ void HttpLogicModule::OnRequest(HttpMsg* msg)
 		m_netObjModule->SendHttpMsg(msg->socket, buff);
 		msg->Clear();
 	}
-		break;
+	break;
 	case HttpMsg::NONE:
 	{
 		msg->Clear();
 	}
-		break;
+	break;
 	default:
 		CloseClient(msg->socket);
 		break;
@@ -417,16 +403,9 @@ void HttpLogicModule::OnGetPHPContent(const int& sock, NetBuffer& content)
 
 void HttpLogicModule::InitPath()
 {
-	char curpath[_MAX_PATH];
-	getcwd(curpath, _MAX_PATH);
-	string path(curpath);
-	auto pos = path.find_first_of("Loop");
-	if (pos == string::npos)
-		assert(0);
-
 	auto tmp = m_webRoot;
-	m_webRoot.assign(path.data(), path.data() + pos);
-	m_webRoot.append("Loop/HttpTest/").append(tmp);
+	LoopFile::GetRootPath(m_webRoot);
+	m_webRoot.append(tmp);
 }
 
 bool HttpLogicModule::GetFromCash(const string& file, NetBuffer& buff)

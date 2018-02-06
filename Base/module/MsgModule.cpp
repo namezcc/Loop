@@ -1,5 +1,4 @@
 #include "MsgModule.h"
-#include "BaseLayer.h"
 
 MsgModule::MsgModule(BaseLayer* l):BaseModule(l)
 {
@@ -19,18 +18,25 @@ void MsgModule::Execute()
 
 }
 
-void MsgModule::SendMsg(const int& msgid, BaseData* data)
+void MsgModule::SendMsg(const int & msgid, BaseData * data)
 {
 	auto msg = new BaseMsg();
 	msg->msgId = msgid;
 	msg->data = data;
-	auto layerid = m_getLayerId();
-	GetLayer()->writePipe(layerid, msg);
+	GetLayer()->writePipe(msg);
+}
+
+void MsgModule::SendMsg(const int& ltype, const int& lid, const int& msgid, BaseData* data)
+{
+	auto msg = new BaseMsg();
+	msg->msgId = msgid;
+	msg->data = data;
+	GetLayer()->writePipe(ltype,lid, msg);
 }
 
 void MsgModule::MsgCallBack(void* msg)
 {
-	auto nmsg = static_cast<BaseMsg*>(msg);
+	auto nmsg = (BaseMsg*)msg;
 	auto it = m_callBack.find(nmsg->msgId);
 	if (it != m_callBack.end())
 		it->second(nmsg->data);

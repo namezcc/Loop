@@ -22,6 +22,8 @@ public:
 	virtual void Init() = 0;
 	virtual void AfterInit() 
 	{};
+	virtual void BeforExecute()
+	{};
 	virtual void Execute() = 0;
 private:
 	BaseLayer* m_layer;

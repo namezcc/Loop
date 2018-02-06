@@ -116,7 +116,7 @@ void HttpCgiModule::ConnectCgi(const string & ip, const int & port)
 	m_phpcgi.port = port;
 	m_phpcgi.state = CONN_STATE::CLOSE;
 }
-
+//´ýÓÅ»¯
 void HttpCgiModule::Request(const int & sock, HeadData & header, const string & content)
 {
 	if (m_phpcgi.state == CONN_STATE::CLOSE)

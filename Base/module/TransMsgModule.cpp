@@ -5,6 +5,7 @@
 #include "json/json.h"
 #include <fstream>
 #include <sstream>
+#include "LPFile.h"
 
 TransMsgModule::TransMsgModule(BaseLayer* l):BaseModule(l)
 {
@@ -40,7 +41,10 @@ void TransMsgModule::Execute()
 
 void TransMsgModule::InitServerNet()
 {
-	string file = "../../commonconf/serverPath.json";
+	string file;
+	LoopFile::GetRootPath(file);
+	file.append("commonconf/serverPath.json");
+
 	ifstream ifs;
 	ifs.open(file);
 	assert(ifs.is_open());
@@ -79,6 +83,11 @@ void TransMsgModule::InitServerNet()
 			}
 			path.push_back(move(vec));
 		}
+
+		path.sort([](vector<int>& v1, vector<int>& v2) {
+			return v1.size() < v2.size();
+		});
+
 		vector<string> key;
 		Loop::Split(it.key().asString(), "-", key);
 		auto s1 = m_serverType[key[0]];
@@ -87,6 +96,12 @@ void TransMsgModule::InitServerNet()
 		stringstream stream;
 		stream << s1 << "-" << s2;
 		m_serverPath[stream.str()] = move(path);
+		if (s1 != s2)
+		{
+			stringstream p2;
+			p2 << s2 << "-" << s1;
+			m_serverPath[p2.str()] = m_serverPath[stream.str()];
+		}
 	}
 }
 
@@ -108,7 +123,13 @@ void TransMsgModule::OnServerClose(SHARE<NetServer>& ser)
 
 void TransMsgModule::SendToServer(ServerNode& ser, const int& mid, const int& len, char* msg)
 {
-	auto myser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
+	auto toser = GetServer(ser.type, ser.serid);
+	if (toser)
+	{
+		m_netObjMod->SendNetMsg(toser->socket, msg, mid, len);
+		return;
+	}
+	auto myser = Single::GetInstence<ServerNode>();
 	vector<SHARE<ServerNode>> path;
 	GetTransPath(*myser, ser, path);
 	TransMsgToServer(path, mid, len, msg);
@@ -163,7 +184,7 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 	{
 		auto ser = first + head->index;
 		//÷’µ„
-		auto myser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
+		auto myser = Single::GetInstence<ServerNode>();
 		if (ser->type == myser->type && (ser->serid == myser->serid ||ser->serid==0))
 		{
 			int mlen = nmsg->len - sizeof(int) - sizeof(ServerNode)*head->size - sizeof(TransHead);
@@ -197,10 +218,10 @@ NetServer* TransMsgModule::GetServer(const int& type, const int& serid)
 		return nullptr;
 	
 	if (serid == 0)
-	{
+	{//hash “ª∏ˆ
 		auto fir = it->second.begin();
 		auto last = it->second.rbegin();
-		auto ser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
+		auto ser = Single::GetInstence<ServerNode>();
 		int slot = (ser->serid + last->first) % (last->first - fir->first + 1) + fir->first;
 		auto its = it->second.lower_bound(slot);
 		return its->second.get();
