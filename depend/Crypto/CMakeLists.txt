@@ -1,0 +1,12 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+PROJECT(libCrypto)
+
+file(GLOB_RECURSE source ${PROJECT_SOURCE_DIR}/*.h ${PROJECT_SOURCE_DIR}/*.c)
+
+add_library(libCrypto STATIC ${source})
+
+set_target_properties( libCrypto PROPERTIES 
+	ARCHIVE_OUTPUT_DIRECTORY ${OutPutDir}
+	RUNTIME_OUTPUT_DIRECTORY ${OutPutDir}
+	LIBRARY_OUTPUT_DIRECTORY ${OutPutDir} 
+)

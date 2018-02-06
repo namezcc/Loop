@@ -6,11 +6,7 @@ set_target_properties( anet_win64 PROPERTIES PREFIX "")
 
 #	ARCHIVE_OUTPUT_DIRECTORY ${NFOutPutDir}
 #	RUNTIME_OUTPUT_DIRECTORY ${NFOutPutDir}
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-set(OutPutDir ${PROJECT_SOURCE_DIR}/../Build/Debug)
-else()
-set(OutPutDir ${PROJECT_SOURCE_DIR}/../Build/Release)
-endif()
+
 set_target_properties( anet_win64 PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${OutPutDir}
 	RUNTIME_OUTPUT_DIRECTORY ${OutPutDir}
