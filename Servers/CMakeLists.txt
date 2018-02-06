@@ -1,0 +1,5 @@
+add_subdirectory(Test)
+add_subdirectory(proxy)
+add_subdirectory(HttpTest)
+add_subdirectory(Console)
+add_subdirectory(Master)
