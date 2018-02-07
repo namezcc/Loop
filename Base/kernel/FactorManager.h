@@ -80,7 +80,4 @@ private:
 	std::unordered_map<size_t, void*> m_factors;
 };
 
-#define GET_LOOP(T) Single::GetInstence<FactorManager>()->getLoopObj<T>();
-#define RCL_LOOP(t) Single::GetInstence<FactorManager>()->recycle(t);
-
 #endif

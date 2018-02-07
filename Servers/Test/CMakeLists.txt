@@ -1,11 +1,7 @@
 #cmake_minimum_required(VERSION 3.1)
 set(ProjectName "Test")
-
 project(Test)
 
-set(test_lib
-Loop.lib
-)
 
 include_directories(
 ${PROJECT_SOURCE_DIR}/layer 
@@ -15,8 +11,8 @@ ${PROJECT_SOURCE_DIR}/module
 file(GLOB_RECURSE TEST_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE TEST_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
-add_executable(${ProjectName} ${TEST_HEAD_FILES} ${TEST_SOUCE_FILES})
-target_link_libraries(${ProjectName} ${test_lib})
+add_library(${ProjectName} SHARED ${TEST_HEAD_FILES} ${TEST_SOUCE_FILES})
+target_link_libraries(${ProjectName} ${LoopLib})
 
 set_target_properties(${ProjectName} PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${LPOutDir}

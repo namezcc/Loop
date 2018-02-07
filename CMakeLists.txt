@@ -64,6 +64,8 @@ file(GLOB_RECURSE PROTO_FILES ${PROJECT_SOURCE_DIR}/protoPB/*.*)
 #message(STATUS "souce file" ${SOUCE_FILES})
 #message(STATUS "head file" ${HEAD_FILES})
 
+set(LoopLib Loop.lib)
+
 add_library(Loop SHARED ${HEAD_FILES} ${SOUCE_FILES} ${PROTO_FILES})
 target_link_libraries(Loop ${lib_link})
 set_target_properties(Loop PROPERTIES 

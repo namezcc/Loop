@@ -1,11 +1,6 @@
 #cmake_minimum_required(VERSION 3.1)
 set(ProjectName "HttpServer")
-
 project(HttpServer)
-
-set(test_lib
-Loop.lib
-)
 
 include_directories(
 ${PROJECT_SOURCE_DIR}/module 
@@ -14,8 +9,8 @@ ${PROJECT_SOURCE_DIR}/module
 file(GLOB_RECURSE HTTP_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE HTTP_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
-add_executable(${ProjectName} ${HTTP_HEAD_FILES} ${HTTP_SOUCE_FILES})
-target_link_libraries(${ProjectName} ${test_lib})
+add_library(${ProjectName} SHARED ${HTTP_HEAD_FILES} ${HTTP_SOUCE_FILES})
+target_link_libraries(${ProjectName} ${LoopLib})
 
 set_target_properties(${ProjectName} PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${LPOutDir}

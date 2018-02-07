@@ -1,15 +1,19 @@
 #cmake_minimum_required(VERSION 3.1)
-set(ProjectName "LoopProxy")
-project(LoopProxy)
+set(ProjectName "Server")
+project(Server)
 
 include_directories(
-${PROJECT_SOURCE_DIR}/module 
+${PROJECT_SOURCE_DIR}/ 
 )
-file(GLOB_RECURSE PROXY_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
-file(GLOB_RECURSE PROXY_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
-add_library(${ProjectName} SHARED ${PROXY_HEAD_FILES} ${PROXY_SOUCE_FILES})
-target_link_libraries(${ProjectName} ${LoopLib})
+file(GLOB_RECURSE source ${PROJECT_SOURCE_DIR}/*.cpp ${PROJECT_SOURCE_DIR}/*.h)
+
+set(Serverlib 
+jsoncpp.lib
+)
+
+add_executable(${ProjectName} ${source})
+target_link_libraries(${ProjectName} ${LoopLib} ${Serverlib})
 
 set_target_properties(${ProjectName} PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${LPOutDir}

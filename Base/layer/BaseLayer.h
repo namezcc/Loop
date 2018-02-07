@@ -98,6 +98,9 @@ public:
 	{
 		m_factor->recycle(t);
 	}
+
+	inline void SetServer(ServerNode* ser) { m_server = ser; };
+	inline ServerNode* GetServer() { return m_server; };
 protected:
 	void startRead(const RWPipe& pipe)
 	{
@@ -136,6 +139,7 @@ protected:
 	std::unordered_map<int,std::vector<RWPipe>> m_pipes;
 	std::unordered_map<size_t, SHARE<BaseModule>> m_modules;
 	SHARE<FactorManager> m_factor;
+	ServerNode* m_server;
 };
 
 #endif

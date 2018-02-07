@@ -22,8 +22,10 @@ public:
 
 	void BuildPipe(BaseLayer* l1, BaseLayer* l2)
 	{
-		auto p1 = GET_LOOP(PIPE);
-		auto p2 = GET_LOOP(PIPE);
+		m_factor.reset(Single::NewLocal<FactorManager>());
+
+		auto p1 = m_factor->getLoopObj<PIPE>();
+		auto p2 = m_factor->getLoopObj<PIPE>();
 
 		l1->regPipe(l2->GetType(), p1, p2);
 		l2->regPipe(l1->GetType(), p2, p1);
@@ -38,7 +40,8 @@ protected:
 private:
 	SHARE<ThreadPool> m_pool;
 	vector<SHARE<BaseLayer>> m_layers;
-	//ServerNode m_serverNode;
+	SHARE<FactorManager> m_factor;
+	ServerNode m_server;
 };
 
 #endif

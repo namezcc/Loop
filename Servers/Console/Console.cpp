@@ -3,7 +3,7 @@
 #include "LogicLayer.h"
 #include "ProcessModule.h"
 
-int main(int argc, char* args[])
+EXPORT void DLL_START_NAME(int argc, char* args[])
 {
 	LoopServer ser;
 	ser.InitServer(argc, args);
@@ -16,9 +16,8 @@ int main(int argc, char* args[])
 	ser.BuildPipe(nl, ll);
 	ser.Run();
 
-	while (1)
+	while (true)
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
-	return 0;
 }

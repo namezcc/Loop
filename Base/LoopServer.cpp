@@ -28,11 +28,8 @@ void LoopServer::InitServer(int argc, char** args)
 
 void LoopServer::Init(const int& stype, const int& serid)
 {
-	/*m_serverNode.type = stype;
-	m_serverNode.serid = serid;*/
-
-	Single::GetInstence<ServerNode>()->serid = serid;
-	Single::GetInstence<ServerNode>()->type = stype;
+	m_server.serid = serid;
+	m_server.type = stype;
 }
 
 void LoopServer::Run()
@@ -40,7 +37,7 @@ void LoopServer::Run()
 	m_pool = SHARE<ThreadPool>(new ThreadPool(m_layers.size()));
 	for (auto& l : m_layers)
 	{
-		//l->SetServer(&m_serverNode);
+		l->SetServer(&m_server);
 		m_pool->Add_Task([&l]() {
 			l->StartRun();
 		});

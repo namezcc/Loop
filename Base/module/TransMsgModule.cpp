@@ -129,7 +129,7 @@ void TransMsgModule::SendToServer(ServerNode& ser, const int& mid, const int& le
 		m_netObjMod->SendNetMsg(toser->socket, msg, mid, len);
 		return;
 	}
-	auto myser = Single::GetInstence<ServerNode>();
+	auto myser = GetLayer()->GetServer();
 	vector<SHARE<ServerNode>> path;
 	GetTransPath(*myser, ser, path);
 	TransMsgToServer(path, mid, len, msg);
@@ -184,7 +184,7 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 	{
 		auto ser = first + head->index;
 		//÷’µ„
-		auto myser = Single::GetInstence<ServerNode>();
+		auto myser = GetLayer()->GetServer();
 		if (ser->type == myser->type && (ser->serid == myser->serid ||ser->serid==0))
 		{
 			int mlen = nmsg->len - sizeof(int) - sizeof(ServerNode)*head->size - sizeof(TransHead);
@@ -221,7 +221,7 @@ NetServer* TransMsgModule::GetServer(const int& type, const int& serid)
 	{//hash “ª∏ˆ
 		auto fir = it->second.begin();
 		auto last = it->second.rbegin();
-		auto ser = Single::GetInstence<ServerNode>();
+		auto ser = GetLayer()->GetServer();
 		int slot = (ser->serid + last->first) % (last->first - fir->first + 1) + fir->first;
 		auto its = it->second.lower_bound(slot);
 		return its->second.get();

@@ -1,17 +1,20 @@
 #cmake_minimum_required(VERSION 3.1)
 set(ProjectName "Master")
-
 project(Master)
 
-set(test_lib
-Loop.lib
+include_directories(
+${PROJECT_SOURCE_DIR}/module 
 )
 
 file(GLOB_RECURSE Master_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE Master_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
-add_executable(${ProjectName} ${Master_HEAD_FILES} ${Master_SOUCE_FILES})
-target_link_libraries(${ProjectName} ${test_lib})
+set(Masterlib
+libCrypto.lib
+)
+
+add_library(${ProjectName} SHARED ${Master_HEAD_FILES} ${Master_SOUCE_FILES})
+target_link_libraries(${ProjectName} ${LoopLib} ${Masterlib})
 
 set_target_properties(${ProjectName} PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${LPOutDir}

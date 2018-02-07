@@ -25,7 +25,6 @@ int LoopFile::GetContent(const string& file, NetBuffer & context)
 		auto len = ifs.tellg();
 		ifs.seekg(0, ios::beg);
 		context.MakeRoome(len);
-		streamsize read;
 		ifs.read(context.buf, len);
 		context.use = len;
 		ifs.close();
@@ -37,7 +36,7 @@ int LoopFile::GetContent(const string& file, NetBuffer & context)
 void LoopFile::GetRootPath(string & res)
 {
 	char curpath[MAX_PATH];
-	getcwd(curpath, MAX_PATH);
+	_getcwd(curpath, MAX_PATH);
 	string path(curpath);
 	auto pos = path.find_first_of("Loop");
 

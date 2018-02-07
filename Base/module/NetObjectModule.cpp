@@ -151,7 +151,7 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 	m_serverTmp.erase(it);
 
 	//·¢ËÍ×¢²áÏûÏ¢
-	auto myser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
+	auto myser = GetLayer()->GetServer();
 	LPMsg::ServerInfo xMsg;
 	xMsg.set_id(myser->serid);
 	xMsg.set_type(myser->type);

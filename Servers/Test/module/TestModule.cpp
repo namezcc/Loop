@@ -45,7 +45,7 @@ void TestModule::Execute()
 
 void TestModule::RunPrint(int64_t nt)
 {
-	auto ser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
+	auto ser = GetLayer()->GetServer();
 
 	if(ser->type==SERVER_TYPE::LOOP_GAME)
 		m_netObject->AddServerConn(SERVER_TYPE::LOOP_PROXY_GS, 1, "127.0.0.1", 25001);
@@ -55,7 +55,7 @@ void TestModule::RunPrint(int64_t nt)
 
 void TestModule::TransTest(int64_t nt)
 {
-	auto ser = Single::GetInstence<ServerNode>();//GetLayer()->GetServer();
+	auto ser = GetLayer()->GetServer();
 	if (ser->type != SERVER_TYPE::LOOP_GAME)
 		return;
 

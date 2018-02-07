@@ -1,17 +1,12 @@
 #cmake_minimum_required(VERSION 3.1)
 set(ProjectName "Console")
-
 project(Console)
-
-set(test_lib
-Loop.lib
-)
 
 file(GLOB_RECURSE CON_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE CON_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
-add_executable(${ProjectName} ${CON_HEAD_FILES} ${CON_SOUCE_FILES})
-target_link_libraries(${ProjectName} ${test_lib})
+add_library(${ProjectName} SHARED ${CON_HEAD_FILES} ${CON_SOUCE_FILES})
+target_link_libraries(${ProjectName} ${LoopLib})
 
 set_target_properties(${ProjectName} PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${LPOutDir}
