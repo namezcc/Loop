@@ -5,6 +5,7 @@
 
 class HttpLogicModule;
 class MysqlModule;
+class MsgModule;
 class HttpMsg;
 class Admin;
 
@@ -41,6 +42,7 @@ private:
 private:
 	HttpLogicModule* m_httpModule;
 	MysqlModule* m_mysqlModule;
+	MsgModule* m_msgModule;
 
 	map<int64_t, SHARE<Session>> m_session;
 	map<string, SHARE<Admin>> m_admins;

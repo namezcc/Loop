@@ -6,6 +6,6 @@ void HttpNetLayer::init()
 {
 	auto msgmd = CreateModule<MsgModule>();
 
-	CreateModule<HttpServerModule>()->start(m_port, m_uvloop);
+	CreateModule<HttpServerModule>()->SetBind(m_port, m_uvloop);
 	CreateModule<HttpNetModule>()->Setuvloop(m_uvloop);
 }

@@ -1,8 +1,10 @@
 #include "LoopServer.h"
 #include "cmdline.h"
+#include "LogLayer.h"
 
 LoopServer::LoopServer()
 {
+	m_factor.reset(Single::NewLocal<FactorManager>());
 }
 
 
@@ -32,8 +34,27 @@ void LoopServer::Init(const int& stype, const int& serid)
 	m_server.type = stype;
 }
 
+void LoopServer::InitLogLayer()
+{
+	auto l = CreateLayer<LogLayer>();
+
+	for (size_t i = 0; i < m_layers.size()-1; i++)
+		BuildPipe(l, m_layers[i].get());
+}
+
+void LoopServer::BuildPipe(BaseLayer * l1, BaseLayer * l2)
+{
+	auto p1 = m_factor->getLoopObj<PIPE>();
+	auto p2 = m_factor->getLoopObj<PIPE>();
+	l1->regPipe(l2->GetType(), p1, p2);
+	l2->regPipe(l1->GetType(), p2, p1);
+}
+
 void LoopServer::Run()
 {
+	//´´½¨loglayer
+	InitLogLayer();
+
 	m_pool = SHARE<ThreadPool>(new ThreadPool(m_layers.size()));
 	for (auto& l : m_layers)
 	{

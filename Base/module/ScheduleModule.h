@@ -32,8 +32,9 @@ public:
 		return timer->index;
 	}
 
+	//@repeat -1 нчоч
 	template<typename T,typename F>
-	size_t AddTimePointTask(T&&t,F&&f,const int& repeat, const int& sec, const int& min=-1, const int& hour=-1, const int& week=-1, const int& mday=-1)
+	size_t AddTimePointTask(T&&t,F&&f,const int& repeat, const int& sec=0, const int& min=-1, const int& hour=-1, const int& week=-1, const int& mday=-1)
 	{
 		auto timer = GetLayer()->GetSharedLoop<Plate>();
 		timer->rep = repeat;

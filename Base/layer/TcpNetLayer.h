@@ -24,7 +24,7 @@ protected:
 	virtual void init() {
 		auto msgmd = CreateModule<MsgModule>();
 
-		CreateModule<TcpServer>()->start(m_port,m_uvloop);
+		CreateModule<TcpServer>()->SetBind(m_port,m_uvloop);
 		CreateModule<TcpClientModule>()->Setuvloop(m_uvloop);
 		CreateModule<NetModule>()->Setuvloop(m_uvloop);
 	};

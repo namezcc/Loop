@@ -197,7 +197,8 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 	server->state = CONN_STATE::CONNECT;
 	m_eventModule->SendEvent(E_SERVER_CONNECT, server);
 
-	cout << "Server registe type:" << server->type << " ID:" << server->serid << endl;
+	LP_WARN(m_msgModule) << "Server registe type:" << server->type << " ID:" << server->serid;
+	//cout << "Server registe type:" << server->type << " ID:" << server->serid << endl;
 }
 
 void NetObjectModule::OnPHPCgiConnect(NetServer* ser)

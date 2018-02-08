@@ -29,11 +29,14 @@ enum SERVER_TYPE
 	LOOP_CONSOLE,
 };
 
+static const char* server_name[] {"game","proxy-gs","proxy-g","mysql","proxy-pp","master","console"};
+
 enum LAYER_TYPE
 {
 	LY_NET,
 	LY_LOGIC,
 	LY_HTTP_LOGIC,
+	LY_LOG,
 };
 
 struct NetBuffer

@@ -1,6 +1,7 @@
 #include "SessionModule.h"
 #include "HttpLogicModule.h"
 #include "MysqlModule.h"
+#include "MsgModule.h"
 #include "ReflectData.h"
 #include "Crypto/md5.h"
 
@@ -18,6 +19,7 @@ void SessionModule::Init()
 {
 	m_httpModule = GetLayer()->GetModule<HttpLogicModule>();
 	m_mysqlModule = GetLayer()->GetModule<MysqlModule>();
+	m_msgModule = GET_MODULE(MsgModule);
 
 	m_httpModule->AddRequestCheck(this, &SessionModule::OnCheckSession);
 	m_httpModule->AddUrlCallBack("^/login.html$", POST, this, &SessionModule::OnHttpLogin);
@@ -38,7 +40,7 @@ void SessionModule::LoadAdmin()
 	m_mysqlModule->Select(res, "select * from Admin;");
 	if (res.size() == 0)
 	{
-		cout << "Error LoadAdmin" << endl;
+		LP_WARN(m_msgModule)<< "Error LoadAdmin";
 		return;
 	}
 	

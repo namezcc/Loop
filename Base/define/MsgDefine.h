@@ -1,6 +1,7 @@
 #ifndef MSG_DEFINE_H
 #define MSG_DEFINE_H
 #include <string>
+#include <sstream>
 #include "protoPB/LPBase.pb.h"
 #include "protoPB/LPDefine.pb.h"
 
@@ -17,6 +18,8 @@ enum MSG_FROM_LAYER
 
 	L_CONNECT_PHP_CGI,
 	L_PHP_CGI_CONNECTED,
+
+	L_LOG_INFO,
 
 	L_END,
 };
@@ -92,6 +95,12 @@ struct NetServer:public BaseData
 	int state;
 	std::string ip;
 	int port;
+};
+
+struct LogInfo:public BaseData
+{
+	int level;
+	std::stringstream log;
 };
 
 struct PB

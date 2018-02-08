@@ -11,6 +11,8 @@ namespace redis {
 	typedef base_client<default_hasher> client;
 }
 
+class MsgModule;
+
 class LOOP_EXPORT RedisModule:public BaseModule
 {
 public:
@@ -58,6 +60,8 @@ protected:
 	string m_pass;
 
 	bool m_enable;
+
+	MsgModule* m_msgModule;
 
 	SHARE<redis::client> m_redis;
 };

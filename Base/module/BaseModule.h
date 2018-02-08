@@ -24,9 +24,12 @@ public:
 	{};
 	virtual void BeforExecute()
 	{};
-	virtual void Execute() = 0;
+	virtual void Execute()
+	{};
 private:
 	BaseLayer* m_layer;
 };
+
+#define GET_MODULE(M) GetLayer()->GetModule<M>()
 
 #endif

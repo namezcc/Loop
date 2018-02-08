@@ -1,31 +1,32 @@
 #include "RedisModule.h"
 #include "redisclient.h"
+#include "MsgModule.h"
 
 #define  _REDIS_CATCH_(function, line)     catch(redis::connection_error er)\
 {\
     m_enable = false;\
-    std::cout<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line << std::endl;\
+    LP_ERROR(m_msgModule)<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line;\
     return false;\
 }\
 catch(redis::timeout_error er)\
 {\
     m_enable = false;\
-    std::cout<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line << std::endl;\
+    LP_ERROR(m_msgModule)<<"Redis Error:"<< er.what() << " Function:" << function << " Line:" << line;\
     return false;\
 }\
 catch(redis::protocol_error er)\
 {\
-    std::cout<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line << std::endl;\
+    LP_ERROR(m_msgModule)<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line;\
     return false;\
 }\
 catch(redis::key_error er)\
 {\
-    std::cout<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line << std::endl;\
+    LP_ERROR(m_msgModule)<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line;\
     return false;\
 }\
 catch(redis::value_error er)\
 {\
-    std::cout<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line << std::endl;\
+    LP_ERROR(m_msgModule)<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line;\
     return false;\
 }\
 catch (...)\
@@ -53,6 +54,7 @@ RedisModule::~RedisModule()
 
 void RedisModule::Init()
 {
+	m_msgModule = GetLayer()->GetModule<MsgModule>();
 }
 
 void RedisModule::AfterInit()

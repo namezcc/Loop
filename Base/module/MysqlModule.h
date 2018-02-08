@@ -3,38 +3,6 @@
 #include "BaseModule.h"
 #include "Reflection.h"
 
-#define MYSQL_TRY try{
-
-#define MYSQL_CATCH(msg) }\
-	catch (mysqlpp::BadQuery er) \
-    { \
-        std::cout << "BadQuery [" << msg << "] Error: " << er.what() << std::endl; \
-        return false; \
-    } \
-    catch (const mysqlpp::BadConversion& er)  \
-    { \
-        std::cout << "BadConversion [" << msg << "] Error:" << er.what() << " retrieved data size:" << er.retrieved << ", actual size:" << er.actual_size << std::endl; \
-        return false; \
-    } \
-	catch (const mysqlpp::ConnectionFailed& er) \
-	{ \
-		std::cerr << "Failed to connect to database server: " <<er.what()  << std::endl; \
-		return false; \
-	} \
-    catch (const mysqlpp::Exception& er) \
-    { \
-        std::cout << "mysqlpp::Exception [" << msg << "] Error:" << er.what() << std::endl; \
-        return false; \
-    }\
-    catch ( ... ) \
-    { \
-        std::cout << "std::exception [" <<msg << "] Error:Unknown " << std::endl; \
-        return false; \
-    }
-
-#define TABLE_FLAG
-#define FIELD_FLAG
-
 namespace mysqlpp {
 	class Connection;
 	class Query;
@@ -64,6 +32,8 @@ struct SqlParam:public LoopObject
 	virtual void init(FactorManager * fm) override;
 	virtual void recycle(FactorManager * fm) override;
 };
+
+class MsgModule;
 
 class LOOP_EXPORT MysqlModule:public BaseModule
 {
@@ -172,6 +142,8 @@ private:
 	string m_user;
 	string m_pass;
 	int m_port;
+
+	MsgModule* m_msgModule;
 
 	SHARE<mysqlpp::Connection> m_sqlConn;
 };

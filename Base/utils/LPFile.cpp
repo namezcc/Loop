@@ -43,3 +43,34 @@ void LoopFile::GetRootPath(string & res)
 	res.assign(path.data(), path.data() + pos);
 	res.append("Loop/");
 }
+
+string LoopFile::GetExecutePath()
+{
+	char curpath[MAX_PATH];
+#if PLATFORM == PLATFORM_WIN
+	GetModuleFileName(NULL, curpath, MAX_PATH);
+	string tmp(curpath);
+	auto pos = tmp.find_last_of("\\");
+
+	string path(tmp.data(), tmp.data() + pos);
+	path.append("\\");
+	return path;
+#else
+	return string();
+#endif
+}
+
+void LoopFile::MakeDir(const string & path)
+{
+#if PLATFORM == PLATFORM_WIN
+	string sys("if not exist ");
+	sys.append(path).append(" mkdir ").append(path);
+	system(sys.data());
+#else
+	string sys("mkdir -p ");
+	sys.append(path);
+	auto rv = system(sys.data());
+	//rv = system("rm -f logs/*");
+	(void)rv;
+#endif
+}

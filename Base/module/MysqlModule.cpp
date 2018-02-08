@@ -1,6 +1,44 @@
 #include "MysqlModule.h"
 #include <mysqlpp/include/mysql++.h>
+#include "MsgModule.h"
 
+#define MYSQL_TRY try{
+
+/*
+std::cout << "BadQuery [" << msg << "] Error: " << er.what() << std::endl; \
+std::cout << "BadConversion [" << msg << "] Error:" << er.what() << " retrieved data size:" << 
+er.retrieved << ", actual size:" << er.actual_size << std::endl; \
+std::cerr << "Failed to connect to database server: " <<er.what()  << std::endl; \
+std::cout << "mysqlpp::Exception [" << msg << "] Error:" << er.what() << std::endl; \
+std::cout << "std::exception [" <<msg << "] Error:Unknown " << std::endl; \
+*/
+
+#define MYSQL_CATCH(msg) }\
+	catch (mysqlpp::BadQuery er) \
+    { \
+        LP_ERROR(m_msgModule)<<"BadQuery ["<<msg<<"] Error: "<<er.what(); \
+        return false; \
+    } \
+    catch (const mysqlpp::BadConversion& er)  \
+    { \
+		LP_ERROR(m_msgModule)<<"BadConversion ["<<msg<<"] Error:"<<er.what()<<" retrieved data size:"<<er.retrieved<<", actual size:"<<er.actual_size;	\
+        return false; \
+    } \
+	catch (const mysqlpp::ConnectionFailed& er) \
+	{ \
+		LP_ERROR(m_msgModule)<<"Failed to connect to database server: "<<er.what();	\
+		return false; \
+	} \
+    catch (const mysqlpp::Exception& er) \
+    { \
+		LP_ERROR(m_msgModule)<<"mysqlpp::Exception ["<<msg<<"] Error:"<<er.what();	\
+        return false; \
+    }\
+    catch ( ... ) \
+    { \
+		LP_ERROR(m_msgModule)<<"std::exception ["<<msg<<"] Error:Unknown ";	\
+        return false; \
+    }
 
 void SqlParam::init(FactorManager * fm)
 {
@@ -26,6 +64,7 @@ MysqlModule::~MysqlModule()
 
 void MysqlModule::Init()
 {
+	m_msgModule = GetLayer()->GetModule<MsgModule>();
 }
 
 void MysqlModule::AfterInit()
@@ -75,9 +114,10 @@ bool MysqlModule::Query(const string & str)
 	bool ret = false;
 	auto query = m_sqlConn->query(str);
 
-	ExitCall _call([&ret,&str]() {
+	ExitCall _call([this,&ret,&str]() {
 		if (!ret)
-			cout << "Query Error:" << str <<endl;
+			LP_ERROR(m_msgModule)<< "Query Error:"<< str;
+		//cout << "Query Error:" << str <<endl;
 	});
 	MYSQL_TRY
 		query.execute();
@@ -90,9 +130,10 @@ bool MysqlModule::Select(const string & str, MultRow & res, SqlRow & files)
 	bool ret = false;
 	auto query = m_sqlConn->query(str);
 
-	ExitCall _call([&ret, &str]() {
+	ExitCall _call([this,&ret, &str]() {
 		if (!ret)
-			cout << "Select Error:" << str << endl;
+			LP_ERROR(m_msgModule)<< "Select Error:"<< str;
+		//cout << "Select Error:" << str << endl;
 	});
 	MYSQL_TRY
 		auto result = query.store();
@@ -120,9 +161,10 @@ bool MysqlModule::Inster(SqlParam & p)
 	bool ret = false;
 	auto q = m_sqlConn->query();
 	Qinsert(q, p.tab, p.field, p.value);
-	ExitCall _call([&ret,&q]() {
+	ExitCall _call([this,&ret,&q]() {
 		if (!ret)
-			cout<<"Inster Error:" << q.str() << endl;
+			LP_ERROR(m_msgModule)<<"Inster Error:"<<q.str();
+		//cout<<"Inster Error:" << q.str() << endl;
 	});
 	MYSQL_TRY
 		q.execute();
@@ -136,9 +178,10 @@ bool MysqlModule::Delete(SqlParam & p)
 	auto q = m_sqlConn->query();
 	q<<"DELETE FROM "<<p.tab;
 	Qwhere(q, p.kname, p.kval);
-	ExitCall _call([&ret, &q]() {
+	ExitCall _call([this,&ret, &q]() {
 		if (!ret)
-			cout << "Delete Error:" << q.str() << endl;
+			LP_ERROR(m_msgModule)<< "Delete Error:"<< q.str();
+		//cout << "Delete Error:" << q.str() << endl;
 	});
 	MYSQL_TRY
 		q.execute();
@@ -152,9 +195,10 @@ bool MysqlModule::Update(SqlParam & p)
 	auto q = m_sqlConn->query();
 	Qupdate(q, p.tab, p.field, p.value);
 	Qwhere(q, p.kname, p.kval);
-	ExitCall _call([&ret, &q]() {
+	ExitCall _call([this,&ret, &q]() {
 		if (!ret)
-			cout << "Update Error:" << q.str() << endl;
+			LP_ERROR(m_msgModule)<< "Update Error:"<<q.str();
+		//cout << "Update Error:" << q.str() << endl;
 	});
 	MYSQL_TRY
 		q.execute();
@@ -168,9 +212,10 @@ bool MysqlModule::Select(SqlParam & p)
 	auto q = m_sqlConn->query();
 	Qselect(q, p.tab, p.field);
 	Qwhere(q, p.kname, p.kval);
-	ExitCall _call([&ret, &q]() {
+	ExitCall _call([this,&ret, &q]() {
 		if (!ret)
-			cout << "Select Error:" << q.str() << endl;
+			LP_ERROR(m_msgModule)<<"Select Error:"<< q.str();
+		//cout << "Select Error:" << q.str() << endl;
 	});
 	MYSQL_TRY
 		auto res = q.store();

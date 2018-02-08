@@ -20,23 +20,14 @@ public:
 		return l.get();
 	}
 
-	void BuildPipe(BaseLayer* l1, BaseLayer* l2)
-	{
-		m_factor.reset(Single::NewLocal<FactorManager>());
-
-		auto p1 = m_factor->getLoopObj<PIPE>();
-		auto p2 = m_factor->getLoopObj<PIPE>();
-
-		l1->regPipe(l2->GetType(), p1, p2);
-		l2->regPipe(l1->GetType(), p2, p1);
-	}
+	void BuildPipe(BaseLayer* l1, BaseLayer* l2);
 
 	void Run();
 
 	int m_port;
 protected:
 	void Init(const int& stype, const int& serid);
-
+	void InitLogLayer();//loglayer默认创建 与所有layer链接
 private:
 	SHARE<ThreadPool> m_pool;
 	vector<SHARE<BaseLayer>> m_layers;
