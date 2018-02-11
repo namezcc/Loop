@@ -79,14 +79,14 @@ struct NetBuffer
 	void Clear()
 	{
 		if (buf)
-			delete buf;
+			delete[] buf;
 		buf = nullptr;
 		len = use = scan = 0;
 	}
 
 	void MakeRoome(const int& size)
 	{
-		if (len>size)
+		if (len>=size)
 			return;
 		auto room = new char[size];
 		if (use > 0)

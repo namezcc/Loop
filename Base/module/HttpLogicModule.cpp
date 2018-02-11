@@ -195,6 +195,16 @@ void HttpResponse::EncodePHP(NetBuffer& nbuff)
 	nbuff.append(buff.buf, buff.use);
 }
 
+void FileCash::init(FactorManager * fm)
+{
+	cashTime = GetMilliSecend();
+}
+
+void FileCash::recycle(FactorManager * fm)
+{
+	buff.Clear();
+}
+
 void HttpLogicModule::Init()
 {
 	m_msgModule = GetLayer()->GetModule<MsgModule>();
@@ -221,10 +231,12 @@ void HttpLogicModule::Init()
 	m_fileType["jpg"] = "image/jpeg";
 	m_fileType["jpeg"] = "image/jpeg";
 	m_fileType["png"] = "image/png";
+	m_fileType["js"] = "application/x-javascript";
 
 	m_index = {"/index.html","/index.htm","/index.php"};
 
 	m_cashIndex = m_lastCheck = 0;
+	m_useCash = false;
 }
 
 void HttpLogicModule::Execute()
@@ -360,15 +372,16 @@ bool HttpLogicModule::SendFile(HttpMsg* msg, const string& file)
 		HeadData header;
 		header["REQUEST_METHOD"] = GET;
 		header["SCRIPT_FILENAME"] = m_webRoot + file;
+		header["DOCUMENT_ROOT"] = m_webRoot;
 		m_httpCgiModule->Request(msg->socket, header);
 		msg->opration = HttpMsg::NONE;
 		return true;
 	}
 
-	if (GetFromCash(file, msg->response.buff))
+	if (m_useCash && GetFromCash(file, msg->response.buff))
 	{
 		msg->response.SetStatus(200, "OK");
-		msg->response.heads["Content-Type"] = m_fileType[ftype];
+		msg->response.heads["Content-Type"] = GetContentType(ftype);
 		return true;
 	}
 	auto path = m_webRoot + file;
@@ -376,14 +389,23 @@ bool HttpLogicModule::SendFile(HttpMsg* msg, const string& file)
 	{
 		if (LoopFile::GetContent(path, msg->response.buff) == 0)
 		{
-			AddCashFile(file, msg->response.buff);
+			if (m_useCash)
+				AddCashFile(file, msg->response.buff);
 			msg->response.SetStatus(200, "OK");
-			msg->response.heads["Content-Type"] = m_fileType[ftype];
+			msg->response.heads["Content-Type"] = GetContentType(ftype);
 			return true;
 		}
 	}
 	msg->response.SetStatus(404, "Not Find");
 	return false;
+}
+
+string HttpLogicModule::GetContentType(const string& ext)
+{
+	auto it = m_fileType.find(ext);
+	if (it == m_fileType.end())
+		return "text/html";
+	return it->second;
 }
 
 void HttpLogicModule::OnGetPHPContent(const int& sock, NetBuffer& content)
@@ -457,12 +479,11 @@ void HttpLogicModule::CheckCash(int64_t& nt)
 	}
 }
 
-void FileCash::init(FactorManager * fm)
+void HttpLogicModule::SendHttpMsg(const int& sock, HttpCall && call)
 {
-	cashTime = GetMilliSecend();
-}
-
-void FileCash::recycle(FactorManager * fm)
-{
-	buff.Clear();
+	auto it = m_cliens.find(sock);
+	if (it == m_cliens.end())
+		return;
+	call(it->second.get());
+	DoResPonse(it->second.get());
 }

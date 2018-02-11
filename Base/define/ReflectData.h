@@ -7,8 +7,18 @@ struct Admin
 	string pass;
 	int level;
 };
-
 REFLECT(Admin,name,pass,level)
 PARAMKEY(Admin,name)
+
+struct ServerInfo
+{
+	int id;
+	string ip;
+	int post;
+	string name;
+	int status;
+};
+REFLECT(ServerInfo, id, ip, post, name);
+PARAMKEY(ServerInfo, id);
 
 #endif

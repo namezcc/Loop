@@ -3,6 +3,7 @@
 #include <array>
 #include <map>
 #include <string>
+#include <sstream>
 #include <stdint.h>
 using namespace std;
 
@@ -373,7 +374,7 @@ void Set_##f(const ClassMember<decltype(&T::f)>::type& v)\
 #define MAKE_REFLECT(T,N,...) \
 template<> struct Reflect<T>{ \
 	static constexpr int Size(){return N;} \
-	static constexpr char const* Name(){return #T;};	\
+	static constexpr char const* Name(){return CONCATSTR(TABLE_FLAG,T);};	\
 	static constexpr array<const char*,N> arr_fields = {MAKE_STR_LIST(__VA_ARGS__)}; \
 	static constexpr array<int, N> arr_offset = { MAKE_ARG_LISTS(N,offsetof,T,__VA_ARGS__) }; \
 	static constexpr array<int, N> arr_type = { MAKE_ARG_LISTS(N,TYPEID,T,__VA_ARGS__) }; \
@@ -381,30 +382,31 @@ template<> struct Reflect<T>{ \
 	int64_t changeFlag;T* mptr; \
 	Reflect(T* p):changeFlag(0),mptr(p) \
 	{};	\
-	static map<string,int> fieldMap; \
 	static int GetFieldIndex(const string& f) \
 	{ \
-		if (Reflect::fieldMap.size() == 0) \
-			for (size_t i = 0; i < Reflect::arr_fields.size(); i++) \
-				Reflect::fieldMap[string(Reflect::arr_fields[i])] = i; \
-		return Reflect::fieldMap[f];} \
+		for (size_t i = 0; i < Reflect::arr_fields.size(); i++) \
+			if(Reflect::arr_fields[i]==f) return i; \
+		return -1; \
+	}	\
 	static void SetFieldValue(T& t,const string& f,const string& v) \
 	{\
 		int idx = Reflect::GetFieldIndex(f);	\
 		char* p = (char*)(&t);	\
 		ReflectField::SetVal(p+Reflect::arr_offset[idx],Reflect::arr_type[idx],v); \
 	} \
-}; \
-map<string,int> Reflect<T>::fieldMap;
+}; 
 
 #define MAKE_PARAMKEY(T,N,...) \
 template<> struct ParamKey<T>{ \
 	static constexpr array<const char*,N> paramkey{MAKE_STR_LIST(__VA_ARGS__)}; \
 };
 
-//最大64个字段
+//最大64个字段 之后还要在cpp文件中 REFLECT_CPP 定义静态变量
 #define REFLECT(T,...) \
 	MAKE_REFLECT(T,GET_ARG_N(__VA_ARGS__),__VA_ARGS__)
+//
+#define REFLECT_CPP(T) \
+	template<typename T> map<string,int> Reflect<T>::fieldMap;
 
 #define PARAMKEY(T,...) \
 	MAKE_PARAMKEY(T,GET_ARG_N(__VA_ARGS__),__VA_ARGS__)

@@ -67,7 +67,6 @@ struct HttpRequest :public HttpBase
 
 struct HttpResponse :public HttpBase
 {
-	NetBuffer encode;
 	string statusInfo;
 
 	virtual void Init();
@@ -156,6 +155,8 @@ public:
 	{
 		m_reqCheck = SHARE<HttpCheck>(new HttpCheck(ANY_BIND(t,f)));
 	}
+
+	void SendHttpMsg(const int& sock,HttpCall&& call);
 protected:
 	virtual void Init() override;
 	virtual void Execute() override;
@@ -171,6 +172,7 @@ protected:
 
 	void OnGetFileResouce(HttpMsg* msg);
 	bool SendFile(HttpMsg* msg,const string& file);
+	string GetContentType(const string& ext);
 
 	void InitPath();
 
@@ -195,6 +197,7 @@ private:
 	map<string, HttpCall> m_defaultCall;
 	SHARE<HttpCheck> m_reqCheck;
 
+	bool m_useCash;
 	int m_cashIndex;
 	int64_t m_lastCheck;
 	map<string, SHARE<FileCash>> m_fileCash;

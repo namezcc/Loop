@@ -21,6 +21,9 @@ enum MSG_FROM_LAYER
 
 	L_LOG_INFO,
 
+	//http
+	L_HL_GET_MACHINE_LIST,	//»ñÈ¡console·þ
+
 	L_END,
 };
 
@@ -101,6 +104,12 @@ struct LogInfo:public BaseData
 {
 	int level;
 	std::stringstream log;
+};
+
+struct HttpJsonMsg:public BaseData
+{
+	int sock;
+	std::string json;
 };
 
 struct PB

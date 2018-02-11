@@ -35,7 +35,7 @@ private:
 	bool OnCheckSession(HttpMsg* msg);
 	void OnHttpLogin(HttpMsg* msg);
 
-	bool CheckLogin(HttpMsg* msg);
+	bool CheckLogin(HttpMsg* msg,string& user);
 
 	Session* GetSession(int64_t& sid);
 
@@ -45,6 +45,7 @@ private:
 	MsgModule* m_msgModule;
 
 	map<int64_t, SHARE<Session>> m_session;
+	map<string, SHARE<Session>> m_user;
 	map<string, SHARE<Admin>> m_admins;
 };
 

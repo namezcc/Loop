@@ -1,0 +1,15 @@
+body{
+    background: #333;
+}
+
+#app{
+    width: 300px;
+    margin-top: 100px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+.mgbtom{
+    margin-bottom: 10px;
+}
