@@ -404,7 +404,7 @@ template<> struct ParamKey<T>{ \
 //最大64个字段 之后还要在cpp文件中 REFLECT_CPP 定义静态变量
 #define REFLECT(T,...) \
 	MAKE_REFLECT(T,GET_ARG_N(__VA_ARGS__),__VA_ARGS__)
-//
+
 #define REFLECT_CPP(T) \
 	template<typename T> map<string,int> Reflect<T>::fieldMap;
 

@@ -45,7 +45,7 @@ void SessionModule::LoadAdmin()
 	}
 	
 	for (auto& m:res)
-		m_admins[m->name] = m;
+		m_admins[m->user] = m;
 }
 
 bool SessionModule::OnCheckSession(HttpMsg * msg)

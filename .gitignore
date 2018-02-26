@@ -1,2 +1,6 @@
 build/
 _out/
+HttpTest/web/
+*.exp
+*.pdb
+*.ilk

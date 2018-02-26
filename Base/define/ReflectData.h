@@ -3,12 +3,12 @@
 #include "Reflection.h"
 struct Admin
 {
-	string name;
+	string user;
 	string pass;
 	int level;
 };
-REFLECT(Admin,name,pass,level)
-PARAMKEY(Admin,name)
+REFLECT(Admin,user,pass,level)
+PARAMKEY(Admin, user)
 
 struct ServerInfo
 {
@@ -18,7 +18,7 @@ struct ServerInfo
 	string name;
 	int status;
 };
-REFLECT(ServerInfo, id, ip, post, name);
-PARAMKEY(ServerInfo, id);
+REFLECT(ServerInfo, id, ip, post, name)
+PARAMKEY(ServerInfo, id)
 
 #endif
