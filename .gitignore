@@ -1,5 +1,5 @@
 build/
-_out/
+_out/Debug/
 HttpTest/web/
 *.exp
 *.pdb
