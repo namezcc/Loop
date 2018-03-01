@@ -11,6 +11,7 @@ file(GLOB_RECURSE Master_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
 set(Masterlib
 libCrypto.lib
+jsoncpp.lib
 )
 
 add_library(${ProjectName} SHARED ${Master_HEAD_FILES} ${Master_SOUCE_FILES})

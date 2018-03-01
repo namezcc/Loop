@@ -106,7 +106,10 @@ bool MysqlModule::Reconnect()
 {
 	if (m_sqlConn->connected())
 		return true;
-	return m_sqlConn->connect(m_dbname.data(), m_ip.data(), m_user.data(), m_pass.data(), m_port);
+	bool res = m_sqlConn->connect(m_dbname.data(), m_ip.data(), m_user.data(), m_pass.data(), m_port);
+	if (!res)
+		LP_WARN(m_msgModule) << "Mysql Connect Error "<<"db:"<<m_dbname<<" ip:"<<m_ip<<" user:"<<m_user<<" pass:"<<m_pass<<" port:"<<m_port;
+	return res;
 }
 
 bool MysqlModule::Query(const string & str)

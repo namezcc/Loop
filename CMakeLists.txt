@@ -29,6 +29,7 @@ if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	${PROJECT_SOURCE_DIR}/librarys/libs/win/Debug/
 	)
 	
+	add_definitions(-DDEBUG)
 else()
 	link_directories(
 	${PROJECT_SOURCE_DIR}/librarys/libs/win/Release/

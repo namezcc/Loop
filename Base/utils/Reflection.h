@@ -295,8 +295,22 @@ struct ClassMember<R T::*>
 
 #define TYPEID(t,m) TypeID<ClassMember<decltype(&t::m)>::type>::id
 
+template<typename T>
 struct ReflectField
 {
+	T* ptr;
+	int64_t flag;
+	typedef map<string, int> FieldMap;
+
+	ReflectField(T* p) :ptr(p),flag(0)
+	{};
+
+	static FieldMap& GetFieldMap()
+	{
+		static FieldMap m;
+		return m;
+	}
+
 	static void SetVal(char* p, const int& tp, const string& val)
 	{
 		switch (tp)
@@ -369,30 +383,31 @@ struct ParamKey;
 #define MAKE_FIELD_FUNC(T,f,N,i)	\
 \
 void Set_##f(const ClassMember<decltype(&T::f)>::type& v)\
-{mptr->f=v;changeFlag|=(((int64_t)1)<<(N-i));}
+{ptr->f=v;flag|=(((int64_t)1)<<(N-i));}
 
 #define MAKE_REFLECT(T,N,...) \
-template<> struct Reflect<T>{ \
+template<> struct Reflect<T>:public ReflectField<T>{ \
 	static constexpr int Size(){return N;} \
 	static constexpr char const* Name(){return CONCATSTR(TABLE_FLAG,T);};	\
 	static constexpr array<const char*,N> arr_fields = {MAKE_STR_LIST(__VA_ARGS__)}; \
 	static constexpr array<int, N> arr_offset = { MAKE_ARG_LISTS(N,offsetof,T,__VA_ARGS__) }; \
 	static constexpr array<int, N> arr_type = { MAKE_ARG_LISTS(N,TYPEID,T,__VA_ARGS__) }; \
 	MAKE_FUNC_LISTS(N,MAKE_FIELD_FUNC,T,__VA_ARGS__) \
-	int64_t changeFlag;T* mptr; \
-	Reflect(T* p):changeFlag(0),mptr(p) \
+	Reflect(T* p):ReflectField(p) \
 	{};	\
 	static int GetFieldIndex(const string& f) \
 	{ \
-		for (size_t i = 0; i < Reflect::arr_fields.size(); i++) \
-			if(Reflect::arr_fields[i]==f) return i; \
-		return -1; \
+		auto& m = GetFieldMap();\
+		if (m.size() == 0) \
+			for (size_t i = 0; i < Reflect<T>::arr_fields.size(); i++) \
+				m[string(Reflect<T>::arr_fields[i])] = i; \
+		return m[f]; \
 	}	\
 	static void SetFieldValue(T& t,const string& f,const string& v) \
 	{\
 		int idx = Reflect::GetFieldIndex(f);	\
 		char* p = (char*)(&t);	\
-		ReflectField::SetVal(p+Reflect::arr_offset[idx],Reflect::arr_type[idx],v); \
+		SetVal(p+Reflect::arr_offset[idx],Reflect::arr_type[idx],v); \
 	} \
 }; 
 
@@ -401,7 +416,7 @@ template<> struct ParamKey<T>{ \
 	static constexpr array<const char*,N> paramkey{MAKE_STR_LIST(__VA_ARGS__)}; \
 };
 
-//最大64个字段 之后还要在cpp文件中 REFLECT_CPP 定义静态变量
+//最大64个字段
 #define REFLECT(T,...) \
 	MAKE_REFLECT(T,GET_ARG_N(__VA_ARGS__),__VA_ARGS__)
 

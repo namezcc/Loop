@@ -62,7 +62,7 @@ public:
 		auto p = (char*)&t;
 		for (size_t i = 0; i < Reflect<T>::Size(); i++)
 		{
-			param->value.push_back(move(ReflectField::GetVal(p+ Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i])));
+			param->value.push_back(move(Reflect<T>::GetVal(p+ Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i])));
 		}
 		return Inster(*param.get());
 	}
@@ -77,14 +77,14 @@ public:
 		for (auto& k: ParamKey<T>::paramkey)
 		{
 			int idx = Reflect<T>::GetFieldIndex(k);
-			param->kval.push_back(ReflectField::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
+			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
 		}
 		for (size_t i = 0; i < Reflect<T>::Size(); i++)
 		{
 			if (rf.changeFlag & (((int64_t)1) << i))
 			{
 				param->field.push_back(Reflect<T>::arr_fields[i]);
-				param->value.push_back(ReflectField::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]))
+				param->value.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]))
 			}
 		}
 		return Update(*param.get());
@@ -100,7 +100,7 @@ public:
 		for (auto& k : ParamKey<T>::paramkey)
 		{
 			int idx = Reflect<T>::GetFieldIndex(k);
-			param->kval.push_back(ReflectField::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
+			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
 		}
 		return Delete(*param.get());
 	}

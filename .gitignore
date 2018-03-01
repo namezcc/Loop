@@ -4,3 +4,4 @@ HttpTest/web/
 *.exp
 *.pdb
 *.ilk
+.vs/
