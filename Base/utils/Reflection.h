@@ -377,8 +377,6 @@ struct ReflectField
 
 template<typename T>
 struct Reflect;
-template<typename T>
-struct ParamKey;
 
 #define MAKE_FIELD_FUNC(T,f,N,i)	\
 \
@@ -411,19 +409,132 @@ template<> struct Reflect<T>:public ReflectField<T>{ \
 	} \
 }; 
 
-#define MAKE_PARAMKEY(T,N,...) \
-template<> struct ParamKey<T>{ \
-	static constexpr array<const char*,N> paramkey{MAKE_STR_LIST(__VA_ARGS__)}; \
-};
-
 //×î´ó64¸ö×Ö¶Î
 #define REFLECT(T,...) \
 	MAKE_REFLECT(T,GET_ARG_N(__VA_ARGS__),__VA_ARGS__)
 
-#define REFLECT_CPP(T) \
-	template<typename T> map<string,int> Reflect<T>::fieldMap;
+enum SQL_FIELD_TYPE
+{
+	SQL_INT,
+	SQL_BITINT,
+	SQL_VARCHAR,
+};
 
-#define PARAMKEY(T,...) \
-	MAKE_PARAMKEY(T,GET_ARG_N(__VA_ARGS__),__VA_ARGS__)
+struct FieldDesc
+{
+	char* name;
+	char type;
+	short len;
+	bool nullable;
+	char* defval;
+	bool index;
+	char* comment;
+};
+
+
+template<typename T>
+struct TableDesc;
+
+template<typename T>
+struct TableQuery
+{
+	static void InitTable(string& newName,function<void(string& query)> call)
+	{
+		string tableName = Reflect<T>::Name();
+		if (!newName.empty())
+			tableName = newName;
+		string tablesql;
+		tablesql.append("create table if not exists ").append(tableName);
+		tablesql.append("(");
+		vector<string> alters;
+		vector<string> indexs;
+		for (auto& f : TableDesc<T>::fields)
+		{
+			bool prim = false;
+			for (auto& p : TableDesc<T>::paramkey)
+			{
+				if (strcmp(f.name,p)==0)
+				{
+					tablesql.append(GetFieldSql(f)).append(",");
+					prim = true;
+					break;
+				}
+			}
+			if (prim)
+				continue;
+			if (f.index)
+				indexs.push_back(f.name);
+			else
+				alters.push_back(GetFieldSql(f).append(";"));
+		}
+		tablesql.append("primary key(");
+		for (auto& p : TableDesc<T>::paramkey)
+		{
+			tablesql.append(p).append(",");
+		}
+		tablesql.pop_back();
+		tablesql.append("));");
+		call(tablesql);
+
+		for (auto& s : alters)
+		{
+			string alter("alter table ");
+			alter.append(tableName);
+			alter.append(" add ").append(s);
+			call(alter);
+		}
+		for (auto& s : indexs)
+		{
+			string alter("alter table ");
+			alter.append(tableName);
+			alter.append(" add index ").append(s).append("(").append(s).append(");");
+			call(alter);
+		}
+	}
+private:
+	static string GetFieldSql(const FieldDesc& f)
+	{
+		string sql;
+		sql.append(f.name);
+		switch (f.type)
+		{
+		case SQL_INT:
+			sql.append(" int");
+			break;
+		case SQL_BITINT:
+			sql.append(" bigint");
+			break;
+		case SQL_VARCHAR:
+			sql.append(" varchar");
+			break;
+		default:
+			throw exception("error SQL_TYPE");
+		}
+		sql.append("(").append(std::to_string(f.len)).append(")");
+		if (!f.nullable)
+			sql.append(" NOT NULL");
+		if (string(f.defval).size()>0)
+			sql.append(" default '").append(f.defval).append("'");
+		sql.append(" comment '").append(f.comment).append("'");
+		return sql;
+	}
+};
+
+
+#define MAKE_PRIMKEY(N,...) \
+	static constexpr array<const char*,N> paramkey{MAKE_STR_LIST(__VA_ARGS__)};
+
+#define PRIMKEY(...) \
+	MAKE_PRIMKEY(GET_ARG_N(__VA_ARGS__),__VA_ARGS__)
+
+#define TABLE_DESC_BEGAN(T,...) \
+template<> struct TableDesc<T>{ \
+	PRIMKEY(__VA_ARGS__)	\
+	static constexpr array<FieldDesc, Reflect<T>::Size()> fields = {
+
+#define FIELD_DESC(field,type,len,nullable,defval,index,comment)	\
+	FieldDesc{CONCATSTR(FIELD_FLAG,field),type,len,nullable,defval,index,comment},
+
+#define TABLE_DESC_END };};
 
 #endif

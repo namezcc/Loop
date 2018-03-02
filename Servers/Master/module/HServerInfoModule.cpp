@@ -30,7 +30,7 @@ void HServerInfoModule::OnGetMachineList(NetMsg * msg)
 	m_httpModule->SendHttpMsg(msg->socket, [&msg](HttpMsg* hmsg) {
 		std::swap(hmsg->response.buff.buf, msg->msg);
 		std::swap(hmsg->response.buff.len, msg->len);
-		hmsg->response.buff.use = msg->len;
+		hmsg->response.buff.use = hmsg->response.buff.len;
 		hmsg->opration = HttpMsg::SEND;
 	});
 }

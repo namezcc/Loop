@@ -25,7 +25,7 @@ EXPORT void DLL_START_NAME(int argc, char* args[])
 
 	auto llogic = ser.CreateLayer<LogicLayer>(LY_LOGIC);
 	llogic->CreateModule<MysqlModule>()->SetConnect("master", "127.0.0.1", "root", "123456");
-	//llogic->CreateModule<ServerInfoModule>();
+	llogic->CreateModule<ServerInfoModule>();
 
 	ser.BuildPipe(nl, ll);
 	ser.BuildPipe(ll, llogic);

@@ -18,7 +18,7 @@
                     </div>
                     <div id="machines" class="list">
                         <button type="button" class="list-group-item" v-for="item in getMachine">
-                            {{item.info}}
+                            {{item.name}}
                         </button>
                     </div>
                </div>
@@ -54,15 +54,16 @@
             },
             methods:{
                 GetMachineList:function () {
-                    alert("GetMachineList");
+                    var vme = this;
                     axios.get('/getMachineList')
                     .then(function(response) {
-                        vm.items = response.data;
+                        vme.items = response.data;
                     });
                 }
             }
         })
-
+        
+        vm.GetMachineList();
         
     </script>
 <?php

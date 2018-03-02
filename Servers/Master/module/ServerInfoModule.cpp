@@ -23,6 +23,7 @@ void ServerInfoModule::Init()
 
 void ServerInfoModule::BeforExecute()
 {
+	m_mysqlModule->InitTable<ServerInfo>("console");
 	InitServers();
 }
 
@@ -43,14 +44,17 @@ void ServerInfoModule::OnGetMachineList(NetSocket * sock)
 		Json::Value item;
 		item["id"] = ser->id;
 		item["ip"] = ser->ip;
-		item["port"] = ser->post;
+		item["port"] = ser->port;
 		item["name"] = ser->name;
 		item["inline"] = ser->status == CONN_STATE::CONNECT;
 		res.append(item);
 	}
+	auto s = res.toStyledString();
 
-	auto msg = new HttpJsonMsg();
-	msg->sock = sock->socket;
-	msg->json = move(res.toStyledString());
+	auto msg = new NetMsg();
+	msg->socket = sock->socket;
+	msg->len = s.size()+1;
+	msg->msg = new char[msg->len];
+	strcpy(msg->msg, s.c_str());
 	m_msgModule->SendMsg(LY_HTTP_LOGIC, 0, L_HL_GET_MACHINE_LIST, msg);
 }

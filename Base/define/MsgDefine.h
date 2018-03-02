@@ -106,12 +106,6 @@ struct LogInfo:public BaseData
 	std::stringstream log;
 };
 
-struct HttpJsonMsg:public BaseData
-{
-	int sock;
-	std::string json;
-};
-
 struct PB
 {
 	static char* PBToChar(google::protobuf::Message& msg,int& msize)

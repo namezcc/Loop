@@ -27,6 +27,7 @@ void SessionModule::Init()
 
 void SessionModule::BeforExecute()
 {
+	m_mysqlModule->InitTable<Admin>();
 	LoadAdmin();
 }
 

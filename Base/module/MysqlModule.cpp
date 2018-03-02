@@ -65,12 +65,13 @@ MysqlModule::~MysqlModule()
 void MysqlModule::Init()
 {
 	m_msgModule = GetLayer()->GetModule<MsgModule>();
+	if (!m_sqlConn->connected())
+		Reconnect();
 }
 
 void MysqlModule::AfterInit()
 {
-	if (!m_sqlConn->connected())
-		Reconnect();
+	
 }
 
 void MysqlModule::Execute()

@@ -45,6 +45,14 @@ public:
 	bool Connect(const string& dbname,const string& ip, const string& user, const string& pass, const int& port=3306);
 	bool Reconnect();
 
+	template<typename T>
+	void InitTable(string newName="")
+	{
+		TableQuery<T>::InitTable(newName,[this](string& sql) {
+			Query(sql);
+		});
+	}
+
 	bool Query(const string& str);
 	bool Select(const string& str,MultRow& res,SqlRow& files);
 
@@ -72,9 +80,9 @@ public:
 	{
 		auto param = GetLayer()->GetSharedLoop<SqlParam>();
 		param->tab = Reflect<T>::Name();
-		param->kname.assign(ParamKey<T>::paramkey.begin(), ParamKey<T>::paramkey.end());
+		param->kname.assign(TableDesc<T>::paramkey.begin(), TableDesc<T>::paramkey.end());
 		auto p = (char*)rf.mptr;
-		for (auto& k: ParamKey<T>::paramkey)
+		for (auto& k: TableDesc<T>::paramkey)
 		{
 			int idx = Reflect<T>::GetFieldIndex(k);
 			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
@@ -95,9 +103,9 @@ public:
 	{
 		auto param = GetLayer()->GetSharedLoop<SqlParam>();
 		param->tab = Reflect<T>::Name();
-		param->kname.assign(ParamKey<T>::paramkey.begin(), ParamKey<T>::paramkey.end());
+		param->kname.assign(TableDesc<T>::paramkey.begin(), TableDesc<T>::paramkey.end());
 		auto p = (char*)&t;
-		for (auto& k : ParamKey<T>::paramkey)
+		for (auto& k : TableDesc<T>::paramkey)
 		{
 			int idx = Reflect<T>::GetFieldIndex(k);
 			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
