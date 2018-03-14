@@ -8,6 +8,104 @@ using namespace std;
 
 namespace Loop{
 
+	template<typename>
+	struct cvto;
+	template<>
+	struct cvto<string>
+	{
+		template<typename T>
+		static std::enable_if_t<!std::is_same_v<T, string>,string> To(T t)
+		{
+			return std::to_string(t);
+		}
+		template<typename T>
+		static std::enable_if_t<std::is_same_v<T, string>, string> To(T t)
+		{
+			return t;
+		}
+	};
+
+	template<>
+	struct cvto<int>
+	{
+		static int To(string s)
+		{
+			return std::stoi(s);
+		}
+	};
+
+	template<>
+	struct cvto<long>
+	{
+		static long To(string s)
+		{
+			return std::stol(s);
+		}
+	};
+
+	template<>
+	struct cvto<float>
+	{
+		static float To(string s)
+		{
+			return std::stof(s);
+		}
+	};
+
+	template<>
+	struct cvto<double>
+	{
+		static double To(string s)
+		{
+			return std::stod(s);
+		}
+	};
+
+	template<typename R,typename T>
+	static R Cvto(T t)
+	{
+		return cvto<R>::To(t);
+	}
+
+	template<typename T>
+	static vector<T> SplitVec(string& str, const std::string& delimiter = ",")
+	{
+		vector<T> res;
+		string::size_type pos1, pos2;
+		pos2 = str.find(delimiter);
+		pos1 = 0;
+		while (string::npos != pos2)
+		{
+			if (pos2>pos1)
+				res.push_back(Cvto<T>(str.substr(pos1, pos2 - pos1)));
+
+			pos1 = pos2 + delimiter.size();
+			pos2 = str.find(delimiter, pos1);
+		}
+		if (pos1 != str.length())
+			res.push_back(Cvto<T>(str.substr(pos1)));
+
+		return res;
+	}
+
+	template<typename T>
+	static SplitVec(string& str, vector<T> res, const std::string& delimiter = ",")
+	{
+		string::size_type pos1, pos2;
+		pos2 = str.find(delimiter);
+		pos1 = 0;
+		while (string::npos != pos2)
+		{
+			if (pos2>pos1)
+				res.push_back(Cvto<T>(str.substr(pos1, pos2 - pos1)));
+
+			pos1 = pos2 + delimiter.size();
+			pos2 = str.find(delimiter, pos1);
+		}
+		if (pos1 != str.length())
+			res.push_back(Cvto<T>(str.substr(pos1)));
+	}
+
 	static void Spliteach(const string& str, const char* delimiter, std::vector<std::string>& res)
 	{
 		auto p = str.c_str();
