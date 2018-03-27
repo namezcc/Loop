@@ -1,0 +1,11 @@
+{
+	"addr":{"ip":"127.0.0.1","port":25001},
+	"sql":{
+		"ip":"127.0.0.1",
+		"port":3306,
+		"database":"master",
+		"user":"root",
+		"pass":"123456",
+		"group":1
+	}
+}

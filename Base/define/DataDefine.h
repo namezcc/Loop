@@ -20,16 +20,15 @@ enum CONN_STATE
 
 enum SERVER_TYPE
 {
-	LOOP_GAME,
-	LOOP_PROXY_GS,
-	LOOP_PROXY_G,
-	LOOP_MYSQL,
-	LOOP_PROXY_PP,
-	LOOP_MASTER,
-	LOOP_CONSOLE,
+	LOOP_GAME = 0,
+	LOOP_PROXY_SQL = 1,
+	LOOP_LOGIN = 2,
+	LOOP_MYSQL = 3,
+	LOOP_PROXY_PP = 4,
+	LOOP_MASTER = 5,
+	LOOP_CONSOLE = 6,
+	LOOP_PROXY_DB = 7,
 };
-
-static const char* server_name[] {"game","proxy-gs","proxy-g","mysql","proxy-pp","master","console"};
 
 enum LAYER_TYPE
 {
@@ -37,6 +36,7 @@ enum LAYER_TYPE
 	LY_LOGIC,
 	LY_HTTP_LOGIC,
 	LY_LOG,
+	LY_MYSQL,
 };
 
 struct NetBuffer
@@ -173,12 +173,6 @@ struct TransHead
 {
 	int size;
 	int index;
-};
-
-struct ServerNode
-{
-	int type;
-	int serid;
 };
 
 

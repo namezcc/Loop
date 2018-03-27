@@ -12,8 +12,11 @@ public:
 
 	// Í¨¹ý BaseModule ¼Ì³Ð
 	virtual void Init() override;
+	virtual void BeforExecute() override;
 	virtual void Execute() override;
 
+	void AcceptConn(const int& socket);
+	void SendNetMsg(const int& socket,const int& mid,google::protobuf::Message& pbmsg);
 	void SendNetMsg(const int& socket, char* msg,const int& mid, const int& len);
 	void SendHttpMsg(const int& socket,NetBuffer& buf);
 	void AddServerConn(const int& sType,const int& sid, const std::string& ip, const int& port);

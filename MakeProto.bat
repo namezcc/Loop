@@ -1,10 +1,19 @@
-::@echo off
+@echo off
 ::setlocal enabledelayedexpansion
 cd tool
-::protoc.exe -I=../proto/ --cpp_out=dllexport_decl=LIBPROTOC_EXPORT:../protoPB/ ../proto/LPBase.proto
-::protoc.exe -I=../proto/ --cpp_out=dllexport_decl=LIBPROTOC_EXPORT:../protoPB/ ../proto/LPDefine.proto
 
-protoc.exe -I=../proto/ --cpp_out=dllexport_decl=LIBPROTOC_EXPORT:../protoPB/ ../proto/LPBase.proto
-protoc.exe -I=../proto/ --cpp_out=dllexport_decl=LIBPROTOC_EXPORT:../protoPB/ ../proto/LPDefine.proto
+set input_path=..\proto\server\
+for /r %input_path% %%i in (*.proto) do (
+::echo %%~ni
+protoc.exe -I=../proto/server/ --cpp_out=dllexport_decl=LIBPROTOC_EXPORT:../protoPB/server/ %%~ni.proto
+)
+
+set input_path=..\proto\client\
+for /r %input_path% %%i in (*.proto) do (
+::echo %%~ni
+protoc.exe -I=../proto/client/ --cpp_out=../protoPB/client/ %%~ni.proto
+)
+
 cd ..
+echo success
 pause

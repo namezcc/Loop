@@ -12,7 +12,13 @@ public:
 	TransMsgModule(BaseLayer* l);
 	~TransMsgModule();
 
-	void SendToServer(ServerNode& ser, const int& mid, const int& len, char* msg);
+	SHARE<NetServer> GetServerConn(const int& sock);
+	void SendToServer(ServerNode& ser, const int& mid, char* msg,const int& len);
+	void SendToServer(ServerNode& ser, const int& mid, google::protobuf::Message& msg);
+	void SendToAllServer(const int& stype, const int& mid, google::protobuf::Message& msg);
+	void SendToServer(vector<SHARE<ServerNode>>& path, const int& mid, google::protobuf::Message& msg,const int& toidx=1);
+	void SendToServer(vector<SHARE<ServerNode>>& path, const int& mid,const char* msg,const int& len, const int& toidx = 1);
+	void SendBackServer(vector<SHARE<ServerNode>>& path, const int& mid, google::protobuf::Message& msg);
 protected:
 	virtual void Init() override;
 	virtual void Execute() override;
@@ -22,7 +28,8 @@ protected:
 	void OnServerConnect(SHARE<NetServer>& ser);
 	void OnServerClose(SHARE<NetServer>& ser);
 
-	void TransMsgToServer(vector<SHARE<ServerNode>>& sers,const int& mid,const int& len, char* msg);
+	void TransMsgToServer(vector<SHARE<ServerNode>>& sers,const int& mid, google::protobuf::Message& pbmsg, const int& toidx = 1);
+	void TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int& mid,const char* msg,const int& len,const int& toidx=1);
 
 	void OnGetTransMsg(NetMsg* nmsg);
 
@@ -36,6 +43,7 @@ private:
 	MsgModule* m_msgModule;
 
 	map<int, map<int, SHARE<NetServer>>> m_serverList;
+	map<int, SHARE<NetServer>> m_allServer;//sock -> ser
 
 	map<string, int> m_serverType;
 	map<string, list<vector<int>>> m_serverPath;

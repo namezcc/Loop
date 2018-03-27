@@ -1,0 +1,25 @@
+syntax = "proto3";
+package LPMsg;
+
+message PBSqlParam
+{
+	int64 uid=1;				
+	int32 opt=2;				//操作
+	string table=3;
+	repeated string kname=4;
+	repeated string kval=5;
+	repeated string field=6;
+	repeated bytes value=7;		
+	int32 reply=8;				//回复mid 0否
+	bool ret=9;					//res
+}
+
+message UpdateTableGroup
+{
+	int32 groupCount = 1;
+}
+
+message EmptyPB
+{
+	
+}

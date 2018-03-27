@@ -1,0 +1,43 @@
+{
+	"comment1":"Login type 2",
+	"2":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":22001},
+			"connect":[
+				{"type":7,"id":1,"ip":"127.0.0.1","port":27001}
+			]
+		}
+	},
+	"comment2":"MysqlServer type 3",
+	"3":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":23001},
+			"connect":[
+				{"type":1,"id":1,"ip":"127.0.0.1","port":21001}
+			],
+			"sql":{
+				"ip":"127.0.0.1",
+				"port":3306,
+				"database":"game",
+				"user":"root",
+				"pass":"123456",
+				"group":1
+			}
+		}
+	},
+	"comment3":"ProxySql type 1",
+	"1":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":21001}
+		}
+	},
+	"comment4":"DBProxy type 7",
+	"7":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":27001},
+			"connect":[
+				{"type":1,"id":1,"ip":"127.0.0.1","port":21001}
+			]
+		}
+	}
+}

@@ -11,6 +11,7 @@ typedef LoopList<void*> PIPE;
 
 class BaseModule;
 struct ServerNode;
+class LoopServer;
 
 typedef struct RWPipe
 {
@@ -99,8 +100,11 @@ public:
 		m_factor->recycle(t);
 	}
 
-	inline void SetServer(ServerNode* ser) { m_server = ser; };
-	inline ServerNode* GetServer() { return m_server; };
+	inline void SetServer(ServerNode* ser) { m_serNode = ser; };
+	inline ServerNode* GetServer() { return m_serNode; };
+	inline void SetLoopServer(LoopServer* ser) { m_server = ser; };
+	inline LoopServer* GetLoopServer() { return m_server; };
+	inline std::unordered_map<int, std::vector<RWPipe>>& GetPipes() { return m_pipes; };
 protected:
 	void startRead(const RWPipe& pipe)
 	{
@@ -131,15 +135,14 @@ protected:
 	virtual void close()=0;
 
 	virtual void GetDefaultTrans(int& ltype,int& lid)=0;
-
-	std::unordered_map<int, std::vector<RWPipe>>& GetPipes() { return m_pipes; };
 protected:
 	int m_type;
 	SHARE<LayerMsg> m_msgCall;
 	std::unordered_map<int,std::vector<RWPipe>> m_pipes;
 	std::unordered_map<size_t, SHARE<BaseModule>> m_modules;
 	SHARE<FactorManager> m_factor;
-	ServerNode* m_server;
+	ServerNode* m_serNode;
+	LoopServer* m_server;
 };
 
 #endif

@@ -12,6 +12,17 @@ namespace spdlog
 	class logger;
 }
 
+static const char* server_name[]{ 
+	"Game",
+	"Proxy-sql",
+	"Login",
+	"Mysql",
+	"Proxy-pp",
+	"Master",
+	"Console",
+	"Proxy-DB"
+};
+
 class LogModule:public BaseModule
 {
 public:

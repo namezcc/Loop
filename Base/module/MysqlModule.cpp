@@ -1,6 +1,7 @@
 #include "MysqlModule.h"
 #include <mysqlpp/include/mysql++.h>
 #include "MsgModule.h"
+#include "LoopServer.h"
 
 #define MYSQL_TRY try{
 
@@ -14,7 +15,7 @@ std::cout << "std::exception [" <<msg << "] Error:Unknown " << std::endl; \
 */
 
 #define MYSQL_CATCH(msg) }\
-	catch (mysqlpp::BadQuery er) \
+	catch (mysqlpp::BadQuery& er) \
     { \
         LP_ERROR(m_msgModule)<<"BadQuery ["<<msg<<"] Error: "<<er.what(); \
         return false; \
@@ -40,22 +41,9 @@ std::cout << "std::exception [" <<msg << "] Error:Unknown " << std::endl; \
         return false; \
     }
 
-void SqlParam::init(FactorManager * fm)
-{
-}
-
-void SqlParam::recycle(FactorManager * fm)
-{
-	kname.clear();
-	kval.clear();
-	field.clear();
-	value.clear();
-}
-
-
 MysqlModule::MysqlModule(BaseLayer * l):BaseModule(l)
 {
-	m_sqlConn.reset(new mysqlpp::Connection(false));
+	m_sqlConn.reset(new mysqlpp::Connection(true));
 }
 
 MysqlModule::~MysqlModule()
@@ -65,6 +53,12 @@ MysqlModule::~MysqlModule()
 void MysqlModule::Init()
 {
 	m_msgModule = GetLayer()->GetModule<MsgModule>();
+
+	auto config = GetLayer()->GetLoopServer()->GetConfig();
+	auto& sql = config.sql;
+	m_dbgroup = sql.dbGroup;
+	SetConnect(sql.db,sql.ip,sql.user,sql.pass,sql.port);
+
 	if (!m_sqlConn->connected())
 		Reconnect();
 }
@@ -124,7 +118,7 @@ bool MysqlModule::Query(const string & str)
 		//cout << "Query Error:" << str <<endl;
 	});
 	MYSQL_TRY
-		query.execute();
+		auto r = query.execute();
 	MYSQL_CATCH("")
 	return ret = true;
 }
@@ -160,7 +154,7 @@ bool MysqlModule::Select(const string & str, MultRow & res, SqlRow & files)
 	return ret = true;
 }
 
-bool MysqlModule::Inster(SqlParam & p)
+bool MysqlModule::Insert(SqlParam & p)
 {
 	bool ret = false;
 	auto q = m_sqlConn->query();
@@ -225,8 +219,12 @@ bool MysqlModule::Select(SqlParam & p)
 		auto res = q.store();
 		if (res)
 		{
-			for (size_t i = 0; i < res.num_fields(); i++)
-				p.value.push_back(res[0][i].data());
+			if(p.field.size()==0)
+				for (size_t i = 0; i < res.num_fields(); i++)
+					p.field.push_back(res.field_name(i));
+			for (size_t i = 0; i < res.num_rows(); i++)
+				for (size_t j = 0; j < res.num_fields(); j++)
+					p.value.push_back(res[i][j].data());
 		}
 	MYSQL_CATCH("")
 	return ret = true;
@@ -255,37 +253,54 @@ void MysqlModule::Qinsert(mysqlpp::Query & q, const string & tab, SqlRow & field
 			q << ", " << fields[i];
 	}
 	q << ") VALUES(";
-	for (int i = 0; i < vals.size(); ++i)
+
+	int row = vals.size() / fields.size();
+
+	for (size_t r = 0; r < row; r++)
 	{
-		if (i == 0)
-			q << mysqlpp::quote << vals[i];
-		else
-			q << ", " << mysqlpp::quote << vals[i];
+		if (r > 0)
+			q << ",(";
+		for (int i = 0; i < vals.size(); ++i)
+		{
+			if (i == 0)
+				q << mysqlpp::quote << vals[i];
+			else
+				q << ", " << mysqlpp::quote << vals[i];
+		}
+		q << ")";
 	}
-	q << ");";
+	q << ";";
 }
 
 void MysqlModule::Qselect(mysqlpp::Query & q, const string & tab, SqlRow & fields)
 {
 	q << "SELECT ";
-	for (size_t i = 0; i < fields.size(); i++)
+	if (fields.size() == 0)
+		q << "*";
+	else
 	{
-		if (i > 0)
-			q << ",";
-		q << fields[i];
+		for (size_t i = 0; i < fields.size(); i++)
+		{
+			if (i > 0)
+				q << ",";
+			q << fields[i];
+		}
 	}
-	q << "FROM " << tab;
+	q << " FROM " << tab;
 }
 
 void MysqlModule::Qwhere(mysqlpp::Query & q, SqlRow & kname, SqlRow & kval)
 {
-	q << " WHERE ";
-	for (size_t i = 0; i < kname.size(); i++)
+	if (kname.size() > 0)
 	{
-		if (i == 0)
-			q  << kname[i] << " = " << mysqlpp::quote << kval[i];
-		else
-			q << " AND "  << kname[i] << " = " << mysqlpp::quote << kval[i];
+		q << " WHERE ";
+		for (size_t i = 0; i < kname.size(); i++)
+		{
+			if (i == 0)
+				q << kname[i] << " = " << mysqlpp::quote << kval[i];
+			else
+				q << " AND " << kname[i] << " = " << mysqlpp::quote << kval[i];
+		}
 	}
 	q << ";";
 }

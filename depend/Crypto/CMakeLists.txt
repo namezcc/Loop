@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 PROJECT(libCrypto)
 
-file(GLOB_RECURSE source ${PROJECT_SOURCE_DIR}/*.h ${PROJECT_SOURCE_DIR}/*.c)
+file(GLOB_RECURSE source ${PROJECT_SOURCE_DIR}/*.h ${PROJECT_SOURCE_DIR}/*.c ${PROJECT_SOURCE_DIR}/*.cpp)
 
 add_library(libCrypto STATIC ${source})
 

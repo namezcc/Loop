@@ -1,0 +1,10 @@
+syntax = "proto3";
+package LPMsg;
+
+enum LP_MSG_ID
+{
+	N_NONE = 0;
+	N_BEGAN = 10000;
+	N_REQ_LOGIN = 10001;
+	N_ACK_LOGIN_RES = 10002;
+}

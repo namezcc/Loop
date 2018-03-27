@@ -59,6 +59,10 @@ void RedisModule::Init()
 
 void RedisModule::AfterInit()
 {
+	if (Reconnect())
+		LP_WARN(m_msgModule) << "Connect redis " << m_host << " " << m_port << " success";
+	else
+		LP_ERROR(m_msgModule) << "Connect redis " << m_host << " " << m_port << " Fail";
 }
 
 void RedisModule::Execute()
@@ -68,6 +72,13 @@ void RedisModule::Execute()
 bool RedisModule::Reconnect()
 {
 	return Connect(m_host,m_pass,m_port);
+}
+
+void RedisModule::SetConnect(const string & host, const string & pass, const int & port)
+{
+	m_host = host;
+	m_pass = pass;
+	m_port = port;
 }
 
 bool RedisModule::Connect(const string & host, const string& pass, const int& port)

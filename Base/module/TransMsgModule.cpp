@@ -9,11 +9,12 @@
 
 TransMsgModule::TransMsgModule(BaseLayer* l):BaseModule(l)
 {
-	m_serverType["game"] = SERVER_TYPE::LOOP_GAME;
+	//need fix
+	/*m_serverType["game"] = SERVER_TYPE::LOOP_GAME;
 	m_serverType["pgs"] = SERVER_TYPE::LOOP_PROXY_GS;
 	m_serverType["pg"] = SERVER_TYPE::LOOP_PROXY_G;
 	m_serverType["pp"] = SERVER_TYPE::LOOP_PROXY_PP;
-	m_serverType["sql"] = SERVER_TYPE::LOOP_MYSQL;
+	m_serverType["sql"] = SERVER_TYPE::LOOP_MYSQL;*/
 }
 
 TransMsgModule::~TransMsgModule()
@@ -52,7 +53,7 @@ void TransMsgModule::InitServerNet()
 	Json::Reader reader;
 	Json::Value root;
 	assert(reader.parse(ifs, root, false));
-
+	
 	auto serstruct = root["struct"];
 	auto serpath = root["path"];
 
@@ -101,6 +102,7 @@ void TransMsgModule::InitServerNet()
 			stringstream p2;
 			p2 << s2 << "-" << s1;
 			m_serverPath[p2.str()] = m_serverPath[stream.str()];
+			std::reverse(m_serverPath[p2.str()].begin(), m_serverPath[p2.str()].end());
 		}
 	}
 }
@@ -114,14 +116,24 @@ void TransMsgModule::OnServerConnect(SHARE<NetServer>& ser)
 		m_netObjMod->CloseNetObject(its->second->socket);
 	}
 	m_serverList[ser->type][ser->serid] = ser;
+	m_allServer[ser->socket] = ser;
 }
 
 void TransMsgModule::OnServerClose(SHARE<NetServer>& ser)
 {
 	m_serverList[ser->type].erase(ser->serid);
+	m_allServer.erase(ser->socket);
 }
 
-void TransMsgModule::SendToServer(ServerNode& ser, const int& mid, const int& len, char* msg)
+SHARE<NetServer> TransMsgModule::GetServerConn(const int & sock)
+{
+	auto it = m_allServer.find(sock);
+	if (it == m_allServer.end())
+		return nullptr;
+	return it->second;
+}
+
+void TransMsgModule::SendToServer(ServerNode & ser, const int & mid, char * msg, const int & len)
 {
 	auto toser = GetServer(ser.type, ser.serid);
 	if (toser)
@@ -132,29 +144,88 @@ void TransMsgModule::SendToServer(ServerNode& ser, const int& mid, const int& le
 	auto myser = GetLayer()->GetServer();
 	vector<SHARE<ServerNode>> path;
 	GetTransPath(*myser, ser, path);
-	TransMsgToServer(path, mid, len, msg);
+	TransMsgToServer(path, mid, msg,len);
 }
 
-void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int& mid, const int& len, char* msg)
+void TransMsgModule::SendToServer(ServerNode & ser, const int & mid, google::protobuf::Message & msg)
 {
-	//because copy so delete here
-	ExitCall exitcall([msg](){
+	auto toser = GetServer(ser.type, ser.serid);
+	if (toser)
+	{
+		m_netObjMod->SendNetMsg(toser->socket, mid, msg);
+		return;
+	}
+	auto myser = GetLayer()->GetServer();
+	vector<SHARE<ServerNode>> path;
+	GetTransPath(*myser, ser, path);
+	TransMsgToServer(path, mid, msg);
+}
+
+void TransMsgModule::SendToAllServer(const int& stype, const int & mid, google::protobuf::Message & msg)
+{
+	auto it = m_serverList.find(stype);
+	if (it != m_serverList.end())
+	{
+		for (auto& s:it->second)
+			m_netObjMod->SendNetMsg(s.second->socket, mid, msg);
+		return;
+	}
+	
+	ServerNode ser{stype,0};
+	auto myser = GetLayer()->GetServer();
+	vector<SHARE<ServerNode>> path;
+	GetTransPath(*myser, ser, path);
+	path.back()->serid = -1;	//-1 表示全发送
+	TransMsgToServer(path, mid, msg);
+
+}
+
+void TransMsgModule::SendToServer(vector<SHARE<ServerNode>>& path, const int & mid, google::protobuf::Message & msg, const int& toidx)
+{
+	TransMsgToServer(path, mid, msg,toidx);
+}
+
+void TransMsgModule::SendToServer(vector<SHARE<ServerNode>>& path, const int & mid, const char * msg, const int & len, const int& toidx)
+{
+	TransMsgToServer(path, mid, msg, len,toidx);
+}
+
+void TransMsgModule::SendBackServer(vector<SHARE<ServerNode>>& path, const int & mid, google::protobuf::Message& msg)
+{
+	std::reverse(path.begin(), path.end());
+	/*vector<SHARE<ServerNode>> backpath(path.size());
+	for (auto it=path.rbegin();it!=path.rend();it++)
+		backpath.push_back(*it);*/
+
+	TransMsgToServer(path, mid, msg);
+}
+
+void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int& mid, google::protobuf::Message& pbmsg, const int& toidx)
+{
+	int len;
+	auto msg = PB::PBToChar(pbmsg, len);
+	TransMsgToServer(sers, mid, msg, len);
+}
+
+void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int & mid, const char * msg, const int & len,const int& toidx)
+{
+	ExitCall _call([&msg]() {
 		delete[] msg;
 	});
 
-	if (sers.size() < 2)
+	if (sers.size() < toidx)
 		return;
-	auto toser = sers[1];
+	auto toser = sers[toidx];
 	auto it = m_serverList.find(toser->type);
 	if (it == m_serverList.end())
 		return;
 	auto its = it->second.find(toser->serid);
 	if (its == it->second.end())
 		return;
-	
+
 	TransHead head;
 	head.size = sers.size();
-	head.index = 1;
+	head.index = toidx;
 
 	int nsize = sizeof(head) + head.size * sizeof(ServerNode) + sizeof(mid) + len;
 	char* newmsg = new char[nsize];
@@ -170,7 +241,6 @@ void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int
 	memcpy(tag, &mid, sizeof(mid));
 	tag += sizeof(mid);
 	memcpy(tag, msg, len);
-
 	m_netObjMod->SendNetMsg(its->second->socket, newmsg, N_TRANS_SERVER_MSG, nsize);
 }
 
@@ -187,6 +257,7 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 		auto myser = GetLayer()->GetServer();
 		if (ser->type == myser->type && (ser->serid == myser->serid ||ser->serid==0))
 		{
+			//sizeof(int) 转发的msg Id
 			int mlen = nmsg->len - sizeof(int) - sizeof(ServerNode)*head->size - sizeof(TransHead);
 			int* mid = (int*)(nmsg->msg + (nmsg->len - mlen - sizeof(int)));
 			NetMsg* xMsg = new NetMsg();
@@ -195,6 +266,14 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 			xMsg->msg = new char[mlen];
 			xMsg->mid = *mid;
 
+			for (size_t i = 0; i < head->size; i++)
+			{
+				auto node = first + i;
+				auto snode = GetLayer()->GetSharedLoop<ServerNode>();
+				*snode = *node;
+				xMsg->path.push_back(snode);
+			}
+
 			memcpy(xMsg->msg, nmsg->msg + (nmsg->len - mlen), mlen);
 			m_msgModule->TransMsgCall(xMsg);//由函数内delete 待定
 		}
@@ -202,9 +281,27 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 	else {
 		++head->index;
 		auto next = first + head->index;
+
+		if (next->serid == -1)
+		{//全转发
+			auto it = m_serverList.find(next->type);
+			if (it == m_serverList.end())
+				return;
+			auto nextFn = (char*)next - nmsg->msg;
+			for (auto& s:it->second)
+			{
+				auto tmsg = new char[nmsg->len];
+				memcpy(tmsg, nmsg->msg, nmsg->len);
+				auto tnext = (ServerNode*)(tmsg + nextFn);
+				tnext->serid = s.second->serid;
+				m_netObjMod->SendNetMsg(s.second->socket, tmsg, N_TRANS_SERVER_MSG, nmsg->len);
+			}
+			return;
+		}
 		auto server = GetServer(next->type, next->serid);
 		if (server)
 		{
+			next->serid = server->serid;
 			m_netObjMod->SendNetMsg(server->socket, nmsg->msg, N_TRANS_SERVER_MSG, nmsg->len);
 			nmsg->msg = nullptr;//注意
 		}

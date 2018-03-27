@@ -20,11 +20,11 @@ EXPORT void DLL_START_NAME(int argc, char* args[])
 	ll->CreateModule<HttpLogicModule>()->SetWebRoot("Servers/Master/web");
 	ll->CreateModule<HttpCgiModule>()->ConnectCgi("127.0.0.1", 9000);
 	ll->CreateModule<SessionModule>();
-	ll->CreateModule<MysqlModule>()->SetConnect("master","127.0.0.1","root","123456");
+	ll->CreateModule<MysqlModule>();
 	ll->CreateModule<HServerInfoModule>();
 
 	auto llogic = ser.CreateLayer<LogicLayer>(LY_LOGIC);
-	llogic->CreateModule<MysqlModule>()->SetConnect("master", "127.0.0.1", "root", "123456");
+	llogic->CreateModule<MysqlModule>();
 	llogic->CreateModule<ServerInfoModule>();
 
 	ser.BuildPipe(nl, ll);

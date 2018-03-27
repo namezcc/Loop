@@ -17,11 +17,13 @@ enum SQL_OPT
 	SQL_INSERT,
 	SQL_DELETE,
 	SQL_UPDATE,
+	SQL_INSERT_SELECT,
 };
 
 struct SqlParam:public LoopObject
 {
 	int opt;
+	bool ret;
 	string tab;
 	SqlRow kname;
 	SqlRow kval;
@@ -29,8 +31,31 @@ struct SqlParam:public LoopObject
 	SqlRow value;
 
 	// 通过 LoopObject 继承
-	virtual void init(FactorManager * fm) override;
-	virtual void recycle(FactorManager * fm) override;
+	virtual void init(FactorManager * fm) override
+	{
+	}
+	virtual void recycle(FactorManager * fm) override
+	{
+		kname.clear();
+		kval.clear();
+		field.clear();
+		value.clear();
+	}
+};
+
+struct LMsgSqlParam:public BaseData
+{
+	LMsgSqlParam():index(0),param(nullptr)
+	{}
+
+	~LMsgSqlParam()
+	{
+		if (param)
+			delete param;
+	}
+
+	uint32_t index;
+	SqlParam* param;
 };
 
 class MsgModule;
@@ -56,23 +81,47 @@ public:
 	bool Query(const string& str);
 	bool Select(const string& str,MultRow& res,SqlRow& files);
 
-	bool Inster(SqlParam& p);
+	bool Insert(SqlParam& p);
 	bool Delete(SqlParam& p);
 	bool Update(SqlParam& p);
 	bool Select(SqlParam& p);
 
 	template<typename T>
-	bool Insert(T&t)
+	bool Insert(T&t,const string& newName="")
 	{
 		auto param = GetLayer()->GetSharedLoop<SqlParam>();
-		param->tab = Reflect<T>::Name();
+		if (!newName.empty())
+			param->tab = newName;
+		else
+			param->tab = Reflect<T>::Name();
 		param->field.assign(Reflect<T>::arr_fields.begin(), Reflect<T>::arr_fields.end());
 		auto p = (char*)&t;
 		for (size_t i = 0; i < Reflect<T>::Size(); i++)
 		{
 			param->value.push_back(move(Reflect<T>::GetVal(p+ Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i])));
 		}
-		return Inster(*param.get());
+		return Insert(*param);
+	}
+
+	template<typename T>
+	bool Insert(Reflect<T>& rf, const string& newName = "")
+	{
+		auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		if (!newName.empty())
+			param->tab = newName;
+		else
+			param->tab = Reflect<T>::Name();
+
+		auto p = (char*)rf.ptr;
+		for (size_t i = 0; i < Reflect<T>::Size(); i++)
+		{
+			if (rf.flag & (((int64_t)1) << i))
+			{
+				param->field.push_back(Reflect<T>::arr_fields[i]);
+				param->value.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
+			}
+		}
+		return Insert(*param);
 	}
 
 	template<typename T>
@@ -81,7 +130,7 @@ public:
 		auto param = GetLayer()->GetSharedLoop<SqlParam>();
 		param->tab = Reflect<T>::Name();
 		param->kname.assign(TableDesc<T>::paramkey.begin(), TableDesc<T>::paramkey.end());
-		auto p = (char*)rf.mptr;
+		auto p = (char*)rf.ptr;
 		for (auto& k: TableDesc<T>::paramkey)
 		{
 			int idx = Reflect<T>::GetFieldIndex(k);
@@ -89,13 +138,13 @@ public:
 		}
 		for (size_t i = 0; i < Reflect<T>::Size(); i++)
 		{
-			if (rf.changeFlag & (((int64_t)1) << i))
+			if (rf.flag & (((int64_t)1) << i))
 			{
 				param->field.push_back(Reflect<T>::arr_fields[i]);
-				param->value.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]))
+				param->value.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
 			}
 		}
-		return Update(*param.get());
+		return Update(*param);
 	}
 
 	template<typename T>
@@ -110,7 +159,7 @@ public:
 			int idx = Reflect<T>::GetFieldIndex(k);
 			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
 		}
-		return Delete(*param.get());
+		return Delete(*param);
 	}
 
 	template<typename T>
@@ -125,13 +174,14 @@ public:
 			SHARE<T> t = GetLayer()->GetSharedLoop<T>();
 			for (size_t j = 0; j < files.size(); j++)
 			{
-				Reflect<T>::SetFieldValue(*t.get(), files[j], tmp[i][j]);
+				Reflect<T>::SetFieldValue(*t, files[j], tmp[i][j]);
 			}
 			res.push_back(t);
 		}
 		return true;
 	}
 
+	inline int GetDBGroup() { return m_dbgroup; }
 protected:
 	// 通过 BaseModule 继承
 	virtual void Init() override;
@@ -150,6 +200,7 @@ private:
 	string m_user;
 	string m_pass;
 	int m_port;
+	int m_dbgroup;
 
 	MsgModule* m_msgModule;
 

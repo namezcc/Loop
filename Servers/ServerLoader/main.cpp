@@ -22,11 +22,20 @@ void LoadServerConf(map<int,string>& conf)
 
 	ifstream ifs;
 	ifs.open(file);
-	assert(ifs.is_open());
+
+	try
+	{
+		ifs.is_open();
+	}
+	catch (const std::exception& e)
+	{
+		cout << e.what() <<endl;
+	}
 
 	Json::Reader reader;
 	Json::Value root;
-	assert(reader.parse(ifs, root, false));
+	if (!reader.parse(ifs, root, false))
+		cout << reader.getFormattedErrorMessages();
 
 	for (auto& v : root)
 		conf[v["type"].asInt()] = v["name"].asString();

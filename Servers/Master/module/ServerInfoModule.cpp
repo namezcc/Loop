@@ -53,8 +53,8 @@ void ServerInfoModule::OnGetMachineList(NetSocket * sock)
 
 	auto msg = new NetMsg();
 	msg->socket = sock->socket;
-	msg->len = s.size()+1;
-	msg->msg = new char[msg->len];
+	msg->len = s.size();
+	msg->msg = new char[msg->len+1];
 	strcpy(msg->msg, s.c_str());
 	m_msgModule->SendMsg(LY_HTTP_LOGIC, 0, L_HL_GET_MACHINE_LIST, msg);
 }

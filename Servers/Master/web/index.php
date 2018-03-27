@@ -38,10 +38,6 @@
    </div>
     <script>
         
-        new Vue({
-            el:'#child'
-        })
-        
         var vm = new Vue({
             el:'#father',
             data:{

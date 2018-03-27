@@ -65,7 +65,7 @@ bool SessionModule::OnCheckSession(HttpMsg * msg)
 		msg->request.url.find("depend/")!=string::npos || 
 		msg->request.url.find("assert/") != string::npos)
 		return ret = true;
-	else if(msg->request.heads["Referer"].size())
+	/*else if(msg->request.heads["Referer"].size())
 	{
 		auto ref = msg->request.heads["Referer"];
 		auto pos = ref.find_last_of('/');
@@ -75,7 +75,7 @@ bool SessionModule::OnCheckSession(HttpMsg * msg)
 			if (page.find("/login")!= string::npos)
 				return ret = true;
 		}
-	}
+	}*/
 
 	auto cookie = msg->request.GetHead("Cookie");
 	if (cookie.size() == 0)

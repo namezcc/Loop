@@ -351,26 +351,20 @@ struct ReflectField
 	}
 	static string GetVal(char* p, const int& tp)
 	{
-		stringstream ss;
 		switch (tp)
 		{
 		case T_INT:
-			ss << *(int*)p;
-			break;
+			return std::to_string(*(int*)p);
 		case T_FLOAT:
-			ss << *(float*)p;
-			break;
+			return std::to_string(*(float*)p);
 		case T_INT64:
-			ss << *(int64_t*)p;
-			break;
+			return std::to_string(*(int64_t*)p);
 		case T_DOUBLE:
-			ss << *(double*)p;
-			break;
+			return std::to_string(*(double*)p);
 		case T_STRING:
-			ss << *(string*)p;
-			break;
+			return std::to_string(*(string*)p);
 		}
-		return ss.str();
+		return "";
 	}
 };
 
@@ -416,8 +410,9 @@ template<> struct Reflect<T>:public ReflectField<T>{ \
 enum SQL_FIELD_TYPE
 {
 	SQL_INT,
-	SQL_BITINT,
+	SQL_BIGINT,
 	SQL_VARCHAR,
+	SQL_TIMESTAMP,
 };
 
 struct FieldDesc
@@ -464,8 +459,7 @@ struct TableQuery
 				continue;
 			if (f.index)
 				indexs.push_back(f.name);
-			else
-				alters.push_back(GetFieldSql(f).append(";"));
+			alters.push_back(GetFieldSql(f).append(";"));
 		}
 		tablesql.append("primary key(");
 		for (auto& p : TableDesc<T>::paramkey)
@@ -501,21 +495,26 @@ private:
 		case SQL_INT:
 			sql.append(" int");
 			break;
-		case SQL_BITINT:
+		case SQL_BIGINT:
 			sql.append(" bigint");
 			break;
 		case SQL_VARCHAR:
 			sql.append(" varchar");
 			break;
+		case SQL_TIMESTAMP:
+			sql.append(" timestamp");
+			break;
 		default:
 			throw exception("error SQL_TYPE");
 		}
-		sql.append("(").append(std::to_string(f.len)).append(")");
+		if(f.len>0)
+			sql.append("(").append(std::to_string(f.len)).append(")");
 		if (!f.nullable)
 			sql.append(" NOT NULL");
 		if (string(f.defval).size()>0)
-			sql.append(" default '").append(f.defval).append("'");
-		sql.append(" comment '").append(f.comment).append("'");
+			sql.append(" default ").append(f.defval);
+		if (string(f.comment).size()>0)
+			sql.append(" comment ").append(f.comment);
 		return sql;
 	}
 };

@@ -26,13 +26,15 @@ set(LPBaseOut ${PROJECT_SOURCE_DIR}/librarys/libs/win)
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	link_directories(
-	${PROJECT_SOURCE_DIR}/librarys/libs/win/Debug/
+	${PROJECT_SOURCE_DIR}/librarys/libs/win/Debug/ 
+	${PROJECT_SOURCE_DIR}/depend/Build/Debug/ 
 	)
 	
 	add_definitions(-DDEBUG)
 else()
 	link_directories(
 	${PROJECT_SOURCE_DIR}/librarys/libs/win/Release/
+	${PROJECT_SOURCE_DIR}/depend/Build/Release/ 
 	)
 endif()
 
@@ -58,7 +60,7 @@ endif()
 
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/Base/*.cpp)
 file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/Base/*.h)
-file(GLOB_RECURSE PROTO_FILES ${PROJECT_SOURCE_DIR}/protoPB/*.*)
+file(GLOB_RECURSE PROTO_FILES ${PROJECT_SOURCE_DIR}/protoPB/server/*.*)
 
 #aux_source_directory(${PROJECT_SOURCE_DIR}/Base/ SOUCE_FILES)
 

@@ -31,5 +31,6 @@ private:
 };
 
 #define GET_MODULE(M) GetLayer()->GetModule<M>()
+#define GET_SHARE(T) GetLayer()->GetSharedLoop<T>()
 
 #endif

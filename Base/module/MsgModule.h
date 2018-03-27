@@ -84,4 +84,10 @@ private:
 #define LP_WARN(M) MsgModule::LogHook(M,spdlog::level::warn)
 #define LP_ERROR(M) MsgModule::LogHook(M,spdlog::level::err)<<__FILE__<<__LINE__
 
+#define TRY_PARSEPB(T,msg,msgModule) \
+	T pbMsg; \
+	if(!pbMsg.ParseFromArray(msg->msg, msg->len)){	\
+		LP_ERROR(msgModule)<<"parse "<< #T << "error";	\
+	return;}
+
 #endif

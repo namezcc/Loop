@@ -1,6 +1,7 @@
 #include "NetObjectModule.h"
 #include "MsgModule.h"
 #include "EventModule.h"
+#include "LoopServer.h"
 
 NetObjectModule::NetObjectModule(BaseLayer* l):BaseModule(l)
 {
@@ -26,6 +27,16 @@ void NetObjectModule::Init()
 	m_eventModule->AddEventCallBack(E_CLIENT_HTTP_CONNECT, this, &NetObjectModule::OnHttpClientConnect);
 	
 	m_outTime = 5;
+}
+
+void NetObjectModule::BeforExecute()
+{
+	auto config = GetLayer()->GetLoopServer()->GetConfig();
+
+	for (auto& ser:config.connect)
+	{
+		AddServerConn(ser.type, ser.serid, ser.ip, ser.port);
+	}
 }
 
 void NetObjectModule::Execute()
@@ -76,6 +87,25 @@ void NetObjectModule::NoticeSocketClose(NetObject* obj)
 		m_eventModule->SendEvent(E_PHP_CGI_CLOSE, obj->socket);
 		break;
 	}
+}
+
+void NetObjectModule::AcceptConn(const int & socket)
+{
+	auto it = m_objects_tmp.find(socket);
+	if (it == m_objects_tmp.end())
+		return;
+
+	m_objects[socket] = it->second;
+	m_objects_tmp.erase(it);
+}
+
+void NetObjectModule::SendNetMsg(const int & socket, const int & mid, google::protobuf::Message & pbmsg)
+{
+	NetMsg* nMsg = new NetMsg();
+	nMsg->socket = socket;
+	nMsg->mid = mid;
+	nMsg->msg = PB::PBToChar(pbmsg, nMsg->len);
+	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
 }
 
 void NetObjectModule::SendNetMsg(const int& socket, char* msg, const int& mid, const int& len)
@@ -146,9 +176,6 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 	netobj->socket = ser->socket;
 	netobj->type = CONN_SERVER;
 	m_objects[netobj->socket] = netobj;
-	//通知连接成功
-	m_eventModule->SendEvent(E_SERVER_CONNECT, it->second);
-	m_serverTmp.erase(it);
 
 	//发送注册消息
 	auto myser = GetLayer()->GetServer();
@@ -158,6 +185,10 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 	int msize;
 	auto msg = PB::PBToChar(xMsg, msize);
 	SendNetMsg(ser->socket, msg, N_REGISTE_SERVER, msize);
+
+	//通知连接成功
+	m_eventModule->SendEvent(E_SERVER_CONNECT, it->second);
+	m_serverTmp.erase(it);
 }
 
 void NetObjectModule::ServerClose(const int& socket)
@@ -186,13 +217,14 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 	m_objects_tmp.erase(it);
 	
 	//待优化
-	LPMsg::ServerInfo xMsg;
-	xMsg.ParseFromArray(msg->msg, msg->len);
+	//LPMsg::ServerInfo xMsg;
+	//xMsg.ParseFromArray(msg->msg, msg->len);
+	TRY_PARSEPB(LPMsg::ServerInfo,msg,m_msgModule)
 	
 	auto server = GetLayer()->GetSharedLoop<NetServer>();
 
-	server->serid = xMsg.id();
-	server->type = xMsg.type();
+	server->serid = pbMsg.id();
+	server->type = pbMsg.type();
 	server->socket = msg->socket;
 	server->state = CONN_STATE::CONNECT;
 	m_eventModule->SendEvent(E_SERVER_CONNECT, server);
