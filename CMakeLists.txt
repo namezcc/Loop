@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
 project(Loop)
 
+add_compile_options(-std=c++11)
+
 set(CMAKE_BUILD_TYPE "Debug")
 
 set(LPOutDir ${PROJECT_SOURCE_DIR}/_out/)
@@ -15,27 +17,33 @@ ${PROJECT_SOURCE_DIR}/Base/module/
 ${PROJECT_SOURCE_DIR}/Base/utils/ 
 ${PROJECT_SOURCE_DIR}/librarys/
 ${PROJECT_SOURCE_DIR}/librarys/libuv/include/ 
-${PROJECT_SOURCE_DIR}/librarys/protobuf/include/ 
 ${PROJECT_SOURCE_DIR}/librarys/jsoncpp/include/ 
 ${PROJECT_SOURCE_DIR}/librarys/mysql/include/
 ${PROJECT_SOURCE_DIR}/librarys/redis/ 
 ${PROJECT_SOURCE_DIR}/depend/ 
 )
 
-set(LPBaseOut ${PROJECT_SOURCE_DIR}/librarys/libs/win)
+if(WIN32)
+include_directories(
+${PROJECT_SOURCE_DIR}/librarys/protobuf/include/ 
+)
+endif()
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	link_directories(
-	${PROJECT_SOURCE_DIR}/librarys/libs/win/Debug/ 
+	${PROJECT_SOURCE_DIR}/librarys/libs/Debug/ 
 	${PROJECT_SOURCE_DIR}/depend/Build/Debug/ 
 	)
 	
+	set(LPBaseOut ${PROJECT_SOURCE_DIR}/_out/Debug)
+
 	add_definitions(-DDEBUG)
 else()
 	link_directories(
-	${PROJECT_SOURCE_DIR}/librarys/libs/win/Release/
+	${PROJECT_SOURCE_DIR}/librarys/libs/Release/
 	${PROJECT_SOURCE_DIR}/depend/Build/Release/ 
 	)
+	set(LPBaseOut ${PROJECT_SOURCE_DIR}/_out/Release)
 endif()
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
@@ -56,18 +64,14 @@ endif()
 
 if(WIN32)
 set(lib_link ${lib_link} anet_win64.lib)
+set(LoopLib Loop.lib)
+else()
+set(lib_link anet_win64.a)
 endif()
 
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/Base/*.cpp)
 file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/Base/*.h)
 file(GLOB_RECURSE PROTO_FILES ${PROJECT_SOURCE_DIR}/protoPB/server/*.*)
-
-#aux_source_directory(${PROJECT_SOURCE_DIR}/Base/ SOUCE_FILES)
-
-#message(STATUS "souce file" ${SOUCE_FILES})
-#message(STATUS "head file" ${HEAD_FILES})
-
-set(LoopLib Loop.lib)
 
 add_library(Loop SHARED ${HEAD_FILES} ${SOUCE_FILES} ${PROTO_FILES})
 target_link_libraries(Loop ${lib_link})
@@ -85,4 +89,4 @@ add_definitions(
 -DPROTOBUF_USE_DLLS
 )
 
-add_subdirectory(Servers)
+#add_subdirectory(Servers)

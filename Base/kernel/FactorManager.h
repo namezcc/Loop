@@ -18,13 +18,13 @@ public:
 	friend class Single;
 
 	template<typename T>
-	std::enable_if_t<!std::is_base_of_v<LoopObject,T>,T*> getLoopObj() {
+	typename std::enable_if<!std::is_base_of<LoopObject,T>::value,T*>::type getLoopObj() {
 		auto lf = GetFactor<T>();
 		return lf->get();
 	}
 
 	template<typename T>
-	std::enable_if_t<std::is_base_of_v<LoopObject, T>, T*> getLoopObj() {
+	typename std::enable_if<std::is_base_of<LoopObject, T>::value, T*>::type getLoopObj() {
 		auto lf = GetFactor<T>();
 		auto t = lf->get();
 		t->init(this);
@@ -32,14 +32,14 @@ public:
 	}
 
 	template<typename T>
-	std::enable_if_t<!std::is_base_of_v<LoopObject,T>> recycle(T* t)
+	typename std::enable_if<!std::is_base_of<LoopObject,T>::value>::type recycle(T* t)
 	{
 		auto lf = GetFactor<T>();
 		lf->recycle(t);
 	}
 
 	template<typename T>
-	std::enable_if_t<std::is_base_of_v<LoopObject, T>> recycle(T* t)
+	typename std::enable_if<std::is_base_of<LoopObject, T>::value>::type recycle(T* t)
 	{
 		auto lf = GetFactor<T>();
 		t->recycle(this);

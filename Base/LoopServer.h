@@ -30,7 +30,7 @@ public:
 	void InitServer(int argc, char** args);
 
 	template<typename T,typename... Args>
-	enable_if_t<is_base_of_v<BaseLayer,T>,T*> CreateLayer(Args&&... args)
+	typename std::enable_if<std::is_base_of<BaseLayer,T>::value,T*>::type CreateLayer(Args&&... args)
 	{
 		auto l = SHARE<T>(new T(std::forward<Args>(args)...));
 		m_layers.push_back(l);
@@ -47,7 +47,7 @@ public:
 protected:
 	void Init(const int& stype, const int& serid);
 	void InitConfig();
-	void InitLogLayer();//loglayerÄ¬ÈÏ´´½¨ ÓëËùÓÐlayerÁ´½Ó
+	void InitLogLayer();//loglayerÄ¬ï¿½Ï´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½layerï¿½ï¿½ï¿½ï¿½
 private:
 	SHARE<ThreadPool> m_pool;
 	vector<SHARE<BaseLayer>> m_layers;

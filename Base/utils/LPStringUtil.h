@@ -14,12 +14,12 @@ namespace Loop{
 	struct cvto<string>
 	{
 		template<typename T>
-		static std::enable_if_t<!std::is_same_v<T, string>,string> To(T t)
+		static typename std::enable_if<!std::is_same<T, string>::value,string>::type To(T t)
 		{
 			return std::to_string(t);
 		}
 		template<typename T>
-		static std::enable_if_t<std::is_same_v<T, string>, string> To(T t)
+		static typename std::enable_if<std::is_same<T, string>::value, string>::type To(T t)
 		{
 			return t;
 		}
@@ -89,7 +89,7 @@ namespace Loop{
 	}
 
 	template<typename T>
-	static SplitVec(string& str, vector<T> res, const std::string& delimiter = ",")
+	static void SplitVec(string& str, vector<T> res, const std::string& delimiter = ",")
 	{
 		string::size_type pos1, pos2;
 		pos2 = str.find(delimiter);

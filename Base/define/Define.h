@@ -32,12 +32,16 @@
   }                                                       \
  } while (0)
 
-#ifdef LOOP_MAKE_DLL
-	#define LOOP_EXPORT __declspec(dllexport)
-#elif define LOOP_STATIC
-	#define LOOP_EXPORT
+#if PLATFORM == PLATFORM_WIN
+  #ifdef LOOP_MAKE_DLL
+    #define LOOP_EXPORT __declspec(dllexport)
+  #elif define LOOP_STATIC
+    #define LOOP_EXPORT
+  #else
+    #define LOOP_EXPORT __declspec(dllimport)
+  #endif
 #else
-	#define LOOP_EXPORT __declspec(dllimport)
+  #define LOOP_EXPORT
 #endif
 
 #define DLL_START_NAME DllStart

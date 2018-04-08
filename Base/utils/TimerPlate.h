@@ -10,6 +10,12 @@
 
 using namespace std;
 
+#if PLATFORM == PLATFORM_WIN
+#define localtime_s localtime_s
+#else
+#define localtime_s(tm,tt) localtime_r(tt,tm)
+#endif
+
 typedef std::function<void(int64_t&)> TimeTask;
 
 enum PLATE

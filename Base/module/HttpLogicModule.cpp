@@ -5,7 +5,11 @@
 #include "ScheduleModule.h"
 #include "HttpCgiModule.h"
 #include <fstream>
+#if PLATFORM == PLATFORM_WIN
 #include <direct.h>
+#else
+
+#endif
 #include "LPFile.h"
 
 void HttpMsg::init(FactorManager * fm)
@@ -246,7 +250,7 @@ void HttpLogicModule::Execute()
 void HttpLogicModule::SetWebRoot(const string & root)
 {
 	m_webRoot.append(root);
-	//¼ì²éÄ¿Â¼ÊÇ·ñ´æÔÚ
+	//ï¿½ï¿½ï¿½Ä¿Â¼ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
 
 }
 
@@ -368,7 +372,7 @@ bool HttpLogicModule::SendFile(HttpMsg* msg, const string& file)
 	auto pos = file.find_last_of('.');
 	auto ftype = file.substr(pos == string::npos ? pos : ++pos);
 	if (ftype == "php")
-	{//×ßphp
+	{//ï¿½ï¿½php
 		HeadData header;
 		header["REQUEST_METHOD"] = GET;
 		header["SCRIPT_FILENAME"] = m_webRoot + file;

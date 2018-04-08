@@ -6,7 +6,7 @@
 
 using namespace std;
 
-template<typename int>
+template<int N>
 struct ArgsBind;
 
 #define ARGS_BIND(N,...)\
@@ -47,7 +47,7 @@ struct AnyFuncBind
 	template<typename F,typename T,typename R=typename FuncTool<F>::FuncType>
 	static R Bind(F&&f, T&&t)
 	{
-		return FuncTool<F>::Bind<R>(forward<F>(f), forward<T>(t));
+		return FuncTool<F>::template Bind<R>(forward<F>(f), forward<T>(t));
 	}
 };
 

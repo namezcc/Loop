@@ -1,5 +1,5 @@
 #ifndef LOOP_FACTOR_H
-#define LOOP_FACTOR
+#define LOOP_FACTOR_H
 #include <list>
 #include "Block.h"
 #include "Single.h"

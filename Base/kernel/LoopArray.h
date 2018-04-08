@@ -1,8 +1,12 @@
 #ifndef LOOP_ARRAY_H
 #define LOOP_ARRAY_H
 
+#if defined( __WIN32__ ) || defined( _WIN32 ) || defined(_WINDOWS) || defined(WIN) || defined(_WIN64) || defined( __WIN64__ )
 #define l_sleep(s) Sleep(s)
-
+#else
+#include <unistd.h>
+#define l_sleep(s) usleep(s*1000)
+#endif
 template<typename T>
 class LoopArray
 {

@@ -56,7 +56,7 @@ public:
 	void RegLayerMsg(F&&f,T&&t)
 	{
 		if (!m_msgCall)
-			m_msgCall = SHARE<LayerMsg>(new LayerMsg(bind(forward<F>(f), forward<T>(t), placeholders::_1)));
+			m_msgCall = SHARE<LayerMsg>(new LayerMsg(std::bind(std::forward<F>(f), std::forward<T>(t), std::placeholders::_1)));
 	}
 
 	template<typename T>
