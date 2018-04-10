@@ -53,4 +53,11 @@
 
 #define SHARE std::shared_ptr
 
+#if PLATFORM == PLATFORM_WIN
+#define GET_UV_SOCKET(tcp) tcp->socket
+#else
+#define GET_UV_SOCKET(tcp) uv__stream_fd(tcp)
+#endif // PLAT
+
+
 #endif

@@ -19,19 +19,22 @@ void NetModule::Connected(uv_tcp_t* conn, bool client)
 {
 	//if (client)
 	conn->close_cb = &NetModule::on_close_client;
-
-	auto it = m_conns.find(conn->socket);
+	auto uvsocket = GET_UV_SOCKET(conn);
+	auto it = m_conns.find(uvsocket);
 	assert(it == m_conns.end());
 
 	auto ser = (NetModule*)conn->data;
 
 	auto cn = ser->GetLayer()->GetSharedLoop<Conn>();
 	cn->conn = conn;
-	m_conns[conn->socket] = cn;
-	
+	cn->netmodule = ser;
+	cn->socket = uvsocket;
+	m_conns[uvsocket] = cn;
+	conn->data = cn.get();
+
 	if (client)
 	{
-		auto sock = new NetSocket(conn->socket);
+		auto sock = new NetSocket(uvsocket);
 		m_mgsModule->SendMsg(L_SOCKET_CONNET, sock);
 	}
 
@@ -41,9 +44,10 @@ void NetModule::Connected(uv_tcp_t* conn, bool client)
 
 void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf)
 {
-	auto server = (NetModule*)client->data;
+	auto conn = (Conn*)client->data;
+	auto server = conn->netmodule;
 	auto sc = (uv_tcp_t*)client;
-	auto sock = sc->socket;
+	auto sock = conn->socket;
 	if (nread < 0) {
 		/* Error or EOF */
 		//ASSERT(nread == UV_EOF);
@@ -51,8 +55,6 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 
 		//uv_close 会把 socket 置空 所以先保存
 		uv_close((uv_handle_t*)client, client->close_cb);
-		//再置回
-		sc->socket = sock;
 		return;
 	}
 
@@ -62,22 +64,22 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 		return;
 	}
 	
-	if (!server->ReadPack(sc->socket,buf->base, nread))
+	if (!server->ReadPack(conn->socket,buf->base, nread))
 	{
 		uv_close((uv_handle_t*)client, client->close_cb);
-		sc->socket = sock;
 	}
 	delete[] buf->base;
 }
 
 void NetModule::on_close_client(uv_handle_t* client) {
 	auto tcpcli = (uv_tcp_t*)client;
-	auto server = (NetModule*)tcpcli->data;
+	auto conn = (Conn*)tcpcli->data;
+	auto server = conn->netmodule;
 
-	auto sock = new NetSocket(tcpcli->socket);
+	auto sock = new NetSocket(conn->socket);
 	server->m_mgsModule->SendMsg(L_SOCKET_CLOSE, sock);
 
-	server->RemoveConn(tcpcli->socket);
+	server->RemoveConn(conn->socket);
 }
 
 void NetModule::RemoveConn(const int& socket)

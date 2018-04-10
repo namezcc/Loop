@@ -3,6 +3,8 @@
 #include "BaseModule.h"
 #include <uv.h>
 
+class NetModule;
+
 struct Conn:public LoopObject
 {
 	void init(FactorManager* fm)
@@ -21,7 +23,9 @@ struct Conn:public LoopObject
 	}
 
 	uv_tcp_t* conn;
+	NetModule* netmodule;
 	NetBuffer buffer;
+	int socket;
 };
 
 struct Write_t:public LoopObject
