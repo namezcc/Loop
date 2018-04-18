@@ -1,7 +1,11 @@
 #include "LPFile.h"
 #include "DataDefine.h"
+#if PLATFORM == PLATFORM_WIN
 #include <io.h>
 #include <direct.h>
+#else
+#include <unistd.h>
+#endif // PLATFORM == PLATFORM_WIN
 
 LoopFile::LoopFile()
 {
@@ -13,7 +17,7 @@ LoopFile::~LoopFile()
 
 bool LoopFile::ExistFile(string file)
 {
-	return _access(file.c_str(), 0) == 0;
+	return access(file.c_str(), 0) == 0;
 }
 
 int LoopFile::GetContent(const string& file, NetBuffer & context)
@@ -36,7 +40,7 @@ int LoopFile::GetContent(const string& file, NetBuffer & context)
 void LoopFile::GetRootPath(string & res)
 {
 	char curpath[MAX_PATH];
-	_getcwd(curpath, MAX_PATH);
+	getcwd(curpath, MAX_PATH);
 	string path(curpath);
 	auto pos = path.find_first_of("Loop");
 
@@ -56,7 +60,12 @@ string LoopFile::GetExecutePath()
 	path.append("\\");
 	return path;
 #else
-	return string();
+	readlink("/proc/self/exe", curpath, MAX_PATH);
+	string tmp(curpath);
+	auto pos = tmp.find_last_of("/");
+	string path(tmp.data(), tmp.data() + pos);
+	path.append("/");
+	return path;
 #endif
 }
 
