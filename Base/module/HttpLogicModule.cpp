@@ -6,9 +6,9 @@
 #include "HttpCgiModule.h"
 #include <fstream>
 #if PLATFORM == PLATFORM_WIN
-#include <direct.h>
+//#include <direct.h>
 #else
-
+//#include <unistd.h>
 #endif
 #include "LPFile.h"
 
