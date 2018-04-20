@@ -60,4 +60,7 @@
 #endif // PLAT
 
 
+//pack head size
+#define PACK_HEAD_SIZE 12
+
 #endif

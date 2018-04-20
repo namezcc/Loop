@@ -143,16 +143,17 @@ void NetModule::OnSocketSendData(NetMsg* nMsg)
 	auto it = m_conns.find(nMsg->socket);
 	if (it != m_conns.end())
 	{
-		char* enbuf = new char[nMsg->len + MsgHead::HEAD_SIZE];
-		MsgHead::Encode(enbuf, nMsg->mid, nMsg->len);
-		memcpy(enbuf + MsgHead::HEAD_SIZE, nMsg->msg, nMsg->len);
+		MsgHead::Encode(nMsg->msg, nMsg->mid, nMsg->len);
 
 		uv_write_t* whand = GetLayer()->GetLoopObj<uv_write_t>();
 		Write_t* buf = GetLayer()->GetLoopObj<Write_t>();
 		buf->baseModule = this;
-		buf->buf.base = enbuf;
-		buf->buf.len = nMsg->len + MsgHead::HEAD_SIZE;
+		buf->buf.base = nMsg->msg;
+		buf->buf.len = nMsg->len;
 		whand->data = buf;
+
+		nMsg->msg = NULL;
+
 		uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
 	}
 }

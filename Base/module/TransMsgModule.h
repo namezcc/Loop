@@ -29,7 +29,9 @@ protected:
 	void OnServerClose(SHARE<NetServer>& ser);
 
 	void TransMsgToServer(vector<SHARE<ServerNode>>& sers,const int& mid, google::protobuf::Message& pbmsg, const int& toidx = 1);
-	void TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int& mid,const char* msg,const int& len,const int& toidx=1);
+	void TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int& mid,char* msg,const int& len,const int& toidx=1);
+
+	int GetPathSize(vector<SHARE<ServerNode>>& sers);
 
 	void OnGetTransMsg(NetMsg* nmsg);
 

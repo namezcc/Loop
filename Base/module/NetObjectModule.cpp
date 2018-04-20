@@ -104,7 +104,7 @@ void NetObjectModule::SendNetMsg(const int & socket, const int & mid, google::pr
 	NetMsg* nMsg = new NetMsg();
 	nMsg->socket = socket;
 	nMsg->mid = mid;
-	nMsg->msg = PB::PBToChar(pbmsg, nMsg->len);
+	nMsg->msg = PB::PBToChar(pbmsg, nMsg->len,PACK_HEAD_SIZE);
 	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
 }
 
@@ -182,9 +182,7 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 	LPMsg::ServerInfo xMsg;
 	xMsg.set_id(myser->serid);
 	xMsg.set_type(myser->type);
-	int msize;
-	auto msg = PB::PBToChar(xMsg, msize);
-	SendNetMsg(ser->socket, msg, N_REGISTE_SERVER, msize);
+	SendNetMsg(ser->socket, N_REGISTE_SERVER, xMsg);
 
 	//通知连接成功
 	m_eventModule->SendEvent(E_SERVER_CONNECT, it->second);
@@ -200,7 +198,7 @@ void NetObjectModule::ServerClose(const int& socket)
 	it->second->state = CONN_STATE::CLOSE;
 	m_serverTmp[it->second->serid] = it->second;
 	//从 m_object里删除
-	m_objects.erase(socket);
+	//m_objects.erase(socket); 已經刪了
 	//事件通知
 	m_eventModule->SendEvent(E_SERVER_CLOSE, it->second);
 	m_serverConn.erase(it);

@@ -57,21 +57,53 @@ typedef struct MsgHead:public Head
 {
 	enum
 	{
-		HEAD_SIZE = sizeof(Head),
+		HEAD_SIZE = PACK_HEAD_SIZE,
 	};
 
 	static void Encode(char* buf,const int& mid,int len)
 	{
-		MsgHead mh;
-		mh.size = len+sizeof(mh);
-		mh.mid = mid;
-		mh.flag = (mh.size & mh.mid)^ HEAD_FLAG;
-		memcpy(buf, &mh, sizeof(mh));
+		int flag = (len & mid) ^ HEAD_FLAG;
+
+		PB::WriteInt(buf, len);
+		PB::WriteInt(buf+4, mid);
+		PB::WriteInt(buf+8, flag);
+		/*buf[0] = (char)len;
+		buf[1] = (char)len>>8;
+		buf[2] = (char)len>>16;
+		buf[3] = (char)len>>24;
+
+		buf[4] = (char)mid;
+		buf[5] = (char)mid >> 8;
+		buf[6] = (char)mid >> 16;
+		buf[7] = (char)mid >> 24;
+
+		buf[8] = (char)flag;
+		buf[9] = (char)flag >> 8;
+		buf[10] = (char)flag >> 16;
+		buf[11] = (char)flag >> 24;*/
 	}
 
 	static bool Decode(MsgHead& mh,char* buf)
 	{
-		memcpy(&mh, buf, sizeof(mh));
+		mh.size = PB::GetInt(buf);
+		mh.mid = PB::GetInt(buf+4);
+		mh.flag = PB::GetInt(buf+8);
+
+		/*mh.size = buf[0];
+		mh.size |= buf[1] << 8;
+		mh.size |= buf[2] << 16;
+		mh.size |= buf[3] << 24;
+
+		mh.mid = buf[4];
+		mh.mid |= buf[5] << 8;
+		mh.mid |= buf[6] << 16;
+		mh.mid |= buf[7] << 24;
+
+		mh.flag = buf[8];
+		mh.flag |= buf[9] << 8;
+		mh.flag |= buf[10] << 16;
+		mh.flag |= buf[11] << 24;*/
+
 		return mh.flag == ((mh.size & mh.mid)^HEAD_FLAG);
 	}
 }MsgHead;

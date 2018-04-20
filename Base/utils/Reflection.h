@@ -362,7 +362,7 @@ struct ReflectField
 		case T_DOUBLE:
 			return std::to_string(*(double*)p);
 		case T_STRING:
-			return std::to_string(*(string*)p);
+			return *(string*)p;
 		}
 		return "";
 	}

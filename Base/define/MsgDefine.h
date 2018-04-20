@@ -70,8 +70,13 @@ enum BASE_EVENT
 
 struct ServerNode
 {
-	int type;
-	int serid;
+	int8_t type;
+	int16_t serid;
+
+	enum
+	{
+		SIZE = 3,
+	};
 };
 
 struct BaseData
@@ -138,10 +143,28 @@ struct PB
 
 	static char* PBToChar(google::protobuf::Message& msg, int& msize, const int& expand)
 	{
-		msize = msg.ByteSize()+expand;
+		int msgs = msg.ByteSize();
+		msize = msgs+expand;
 		char* buff = new char[msize];
-		msg.SerializeToArray(buff+expand, msize);
+		msg.SerializeToArray(buff+expand, msgs);
 		return buff;
+	}
+
+	static int GetInt(char* msg)
+	{
+		int res = msg[0]&0xff;
+		res |= (0xff & msg[1]) << 8;
+		res |= (0xff & msg[2]) << 16;
+		res |= (0xff & msg[3]) << 24;
+		return res;
+	}
+
+	static void WriteInt(char* res,int n)
+	{
+		res[0] = (unsigned char)n;
+		res[1] = (unsigned char)(n >> 8);
+		res[2] = (unsigned char)(n >> 16);
+		res[3] = (unsigned char)(n >> 24);
 	}
 };
 

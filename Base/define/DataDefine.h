@@ -171,8 +171,13 @@ struct NetObject:public LoopObject
 
 struct TransHead
 {
-	int size;
-	int index;
+	int8_t size;
+	int8_t index;
+
+	enum
+	{
+		SIZE = 2,
+	};
 };
 
 
