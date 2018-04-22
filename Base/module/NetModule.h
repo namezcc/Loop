@@ -111,7 +111,7 @@ typedef struct MsgHead:public Head
 class LOOP_EXPORT NetModule:public BaseModule
 {
 public:
-	NetModule(BaseLayer* l):BaseModule(l) 
+	NetModule(BaseLayer* l):BaseModule(l), m_socketindex(0)
 	{};
 	~NetModule() {};
 	static void read_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf)
@@ -125,6 +125,8 @@ public:
 	void RemoveConn(const int& socket);
 	inline MsgModule* GetMsgModule() { return m_mgsModule; };
 	inline void Setuvloop(uv_loop_t* loop) { m_uvloop = loop; };
+	int PopSocketid();
+	void PushSocketid(int id);
 protected:
 	virtual void Init();
 	virtual void Execute();
@@ -140,6 +142,8 @@ protected:
 	MsgModule* m_mgsModule;
 	std::unordered_map<int, SHARE<Conn>> m_conns;
 	uv_loop_t* m_uvloop;
+	std::list<int> m_sockid;
+	int m_socketindex;
 };
 
 #endif
