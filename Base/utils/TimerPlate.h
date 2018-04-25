@@ -51,6 +51,7 @@ public:
 	void RemoveTask(const size_t& mid);
 protected:
 	void AddTimer(SHARE<Plate>& t);
+	void AddNextTimer(SHARE<Plate>& t);
 
 	list<SHARE<Plate>>& GetPlate(int pt, int n);
 	void AddToPlate(int pt, SHARE<Plate>& tn);

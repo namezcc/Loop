@@ -12,13 +12,27 @@ void TimerPlate::AddPlate(SHARE<Plate>& t)
 
 void TimerPlate::AddTimer(SHARE<Plate>& t)
 {
-	if (t->plate[P_MDAY] >= 0 && m_date.tm_mday!= t->plate[P_MDAY])
+	if (t->plate[P_MDAY] >= 0 && (m_date.tm_mday != t->plate[P_MDAY] || t->plate[P_HOUR]<m_date.tm_hour))
 		AddToPlate(P_MDAY, t);
-	else if(t->plate[P_WEEK] >= 0 && m_date.tm_wday != t->plate[P_WEEK])
+	else if(t->plate[P_WEEK] >= 0 && (m_date.tm_wday != t->plate[P_WEEK] || t->plate[P_HOUR]<m_date.tm_hour))
 		AddToPlate(P_WEEK, t);
-	else if (t->plate[P_HOUR] >= 0 && m_date.tm_hour != t->plate[P_HOUR])
+	else if (t->plate[P_HOUR] >= 0 && (m_date.tm_hour != t->plate[P_HOUR] || t->plate[P_MIN]<m_date.tm_min))
 		AddToPlate(P_HOUR, t);
-	else if (t->plate[P_MIN] >= 0 && m_date.tm_min != t->plate[P_MIN])
+	else if (t->plate[P_MIN] >= 0 && (m_date.tm_min != t->plate[P_MIN] || t->plate[P_SEC]<m_date.tm_sec))
+		AddToPlate(P_MIN, t);
+	else if (t->plate[P_SEC] >= 0)
+		AddToPlate(P_SEC, t);
+}
+
+void TimerPlate::AddNextTimer(SHARE<Plate>& t)
+{
+	if (t->plate[P_MDAY] >= 0)
+		AddToPlate(P_MDAY, t);
+	else if (t->plate[P_WEEK] >= 0)
+		AddToPlate(P_WEEK, t);
+	else if (t->plate[P_HOUR] >= 0)
+		AddToPlate(P_HOUR, t);
+	else if (t->plate[P_MIN] >= 0)
 		AddToPlate(P_MIN, t);
 	else if (t->plate[P_SEC] >= 0)
 		AddToPlate(P_SEC, t);
@@ -99,13 +113,13 @@ void TimerPlate::RunTask(list<SHARE<Plate>>& tl, int64_t& nt)
 			t->task(nt);
 			--t->rep;
 		}
-		else if (t->rep == 0)
+		else if (t->rep < 0)
+			t->task(nt);
+
+		if(t->rep==0)
 			m_timers.erase(t->mid);
 		else
-		{
-			t->task(nt);
-			AddTimer(t);
-		}
+			AddNextTimer(t);
 	}
 }
 
@@ -114,23 +128,36 @@ void TimerPlate::Run(int64_t& nt)
 	auto t = nt/1000;
 	tm tmt;
 	localtime_s(&tmt,&t);
-	if (tmt.tm_sec != m_date.tm_sec)
+	auto tmp = m_date;
+	localtime_s(&m_date, &t);
+	if (tmt.tm_sec != tmp.tm_sec)
 	{
-		if (tmt.tm_min != m_date.tm_min)
+		if (tmt.tm_min != tmp.tm_min)
 		{
-			if (tmt.tm_hour != m_date.tm_hour)
+			if (tmt.tm_hour != tmp.tm_hour)
 			{
-				if (tmt.tm_wday != m_date.tm_wday)
+				if (tmt.tm_wday != tmp.tm_wday)
 					RunPlate(P_WEEK, tmt.tm_wday,nt);
-				if (tmt.tm_mday != m_date.tm_mday)
+				if (tmt.tm_mday != tmp.tm_mday)
 					RunPlate(P_MDAY, tmt.tm_mday,nt);
 				RunPlate(P_HOUR, tmt.tm_hour, nt);
 			}
 			RunPlate(P_MIN, tmt.tm_min, nt);
 		}
-		RunPlate(P_SEC, tmt.tm_sec, nt);
+		int sec = tmp.tm_sec;
+		for (size_t i = 1; i < 60; i++)
+		{
+			++sec;
+			if (sec >= 60)
+				sec = 0;
+			if (sec == tmt.tm_sec)
+			{
+				RunPlate(P_SEC, tmt.tm_sec, nt);
+				break;
+			}else
+				RunPlate(P_SEC, tmt.tm_sec, nt);
+		}
 	}
-	localtime_s(&m_date,&t);
 }
 
 void TimerPlate::RemoveTask(const size_t& mid)
