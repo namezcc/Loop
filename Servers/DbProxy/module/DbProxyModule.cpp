@@ -62,8 +62,6 @@ void DBProxyModule::OnServerConnect(SHARE<NetServer>& ser)
 		return;
 
 	m_tmpProxy[ser->socket] = ser;
-	/*LPMsg::EmptyPB msg;
-	m_netObjModule->SendNetMsg(ser->socket, N_GET_MYSQL_GROUP, msg);*/
 }
 
 void DBProxyModule::OnServerClose(SHARE<NetServer>& ser)
@@ -143,7 +141,7 @@ void DBProxyModule::OnCreateAccount(NetMsg * msg)
 	int group = m_groups[0];
 	if (m_groups.size() > 1)
 	{
-		int crc = *(int*)msg->msg;
+		int crc = PB::GetInt(msg->msg);
 		int idx = crc % (m_groups.size() * 2);
 		if (idx >= m_groups.size())
 			idx = m_groups.size() - 1;
@@ -156,7 +154,7 @@ void DBProxyModule::OnMysqlMsg(NetMsg * msg)
 {
 	if (msg->len < 4)
 		return;
-	int group = *(int*)msg->msg;
+	int group = PB::GetInt(msg->msg);
 	SendToProxy(group, N_MYSQL_MSG, msg);
 }
 

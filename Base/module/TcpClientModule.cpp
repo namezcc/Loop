@@ -54,12 +54,12 @@ void TcpClientModule::Connect_cb(uv_connect_t* req, int status)
 	auto ser = (NetServer*)cli->data;
 	if (status == 0)
 	{
-		ser->socket = cli->socket;
-		md->m_msgmodule->SendMsg(L_SERVER_CONNECTED, ser);
-
 		cli->data = md->m_netmodule;
 		cli->read_cb = NetModule::after_read;
 		md->m_netmodule->Connected(cli,false);
+		Conn* conn = (Conn*)cli->data;
+		ser->socket = conn->socket;
+		md->m_msgmodule->SendMsg(L_SERVER_CONNECTED, ser);
 	}
 	else {
 		delete ser;

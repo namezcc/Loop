@@ -36,7 +36,7 @@ void LoginModule::OnClientLogin(NetMsg * msg)
 	TRY_PARSEPB(LPMsg::ReqLogin, msg, m_msgModule);
 
 	string sid;
-	m_redisModule->HGet("Account:" + pbMsg.account(), "ID", sid);
+	m_redisModule->HGet("Account:" + pbMsg.account(), "id", sid);
 	if (sid.empty())
 	{
 		CreateAccount(pbMsg.account(), pbMsg.password());

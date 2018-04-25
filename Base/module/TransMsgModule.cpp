@@ -138,13 +138,16 @@ void TransMsgModule::SendToServer(ServerNode & ser, const int & mid, char * msg,
 	auto toser = GetServer(ser.type, ser.serid);
 	if (toser)
 	{
-		m_netObjMod->SendNetMsg(toser->socket, msg, mid, len);
+		char* newmsg = new char[len + PACK_HEAD_SIZE];
+		memcpy(newmsg + PACK_HEAD_SIZE, msg, len);
+		delete[] msg;
+		m_netObjMod->SendNetMsg(toser->socket, newmsg, mid, len+PACK_HEAD_SIZE);
 		return;
 	}
 	auto myser = GetLayer()->GetServer();
 	vector<SHARE<ServerNode>> path;
 	GetTransPath(*myser, ser, path);
-	TransMsgToServer(path, mid, msg,len);
+	SendToServer(path, mid, msg,len);
 }
 
 void TransMsgModule::SendToServer(ServerNode & ser, const int & mid, google::protobuf::Message & msg)
@@ -187,30 +190,34 @@ void TransMsgModule::SendToServer(vector<SHARE<ServerNode>>& path, const int & m
 
 void TransMsgModule::SendToServer(vector<SHARE<ServerNode>>& path, const int & mid, const char * msg, const int & len, const int& toidx)
 {
-	TransMsgToServer(path, mid, msg, len,toidx);
+	int expand = GetPathSize(path) + PACK_HEAD_SIZE;
+	int newlen = expand + len;
+	char* cpmsg = new char[newlen];
+	memcpy(cpmsg + expand, msg, len);
+	TransMsgToServer(path, mid, cpmsg, newlen,toidx);
+	delete[] msg;
 }
 
 void TransMsgModule::SendBackServer(vector<SHARE<ServerNode>>& path, const int & mid, google::protobuf::Message& msg)
 {
 	std::reverse(path.begin(), path.end());
-	/*vector<SHARE<ServerNode>> backpath(path.size());
-	for (auto it=path.rbegin();it!=path.rend();it++)
-		backpath.push_back(*it);*/
-
 	TransMsgToServer(path, mid, msg);
 }
 
 void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int& mid, google::protobuf::Message& pbmsg, const int& toidx)
 {
+	int expand = GetPathSize(sers) + PACK_HEAD_SIZE;
 	int len;
-	auto msg = PB::PBToChar(pbmsg, len);
+	auto msg = PB::PBToChar(pbmsg, len,expand);
 	TransMsgToServer(sers, mid, msg, len);
 }
 
-void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int & mid, const char * msg, const int & len,const int& toidx)
+void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int & mid,char * msg, const int & len,const int& toidx)
 {
-	ExitCall _call([&msg]() {
-		delete[] msg;
+	bool res = false;
+	ExitCall _call([&msg,&res]() {
+		if(!res)
+			delete[] msg;
 	});
 
 	if (sers.size() < toidx)
@@ -223,54 +230,70 @@ void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int
 	if (its == it->second.end())
 		return;
 
-	TransHead head;
-	head.size = sers.size();
-	head.index = toidx;
+	char* began = msg + PACK_HEAD_SIZE;
 
-	int nsize = sizeof(head) + head.size * sizeof(ServerNode) + sizeof(mid) + len;
-	char* newmsg = new char[nsize];
+	began[0] = (unsigned char)sers.size();
+	began[1] = (unsigned char)toidx;
 
-	memcpy(newmsg, &head, sizeof(head));
-	char* tag = newmsg + sizeof(head);
-	for (size_t i = 0; i < head.size; i++)
+	char* tag = began + TransHead::SIZE;
+	for (size_t i = 0; i < sers.size(); i++)
 	{
 		auto s = sers[i].get();
-		memcpy(tag, s, sizeof(ServerNode));
-		tag += sizeof(ServerNode);
+		tag[0] = (unsigned char)s->type;
+		tag[1] = (unsigned char)s->serid;
+		tag[2] = (unsigned char)(s->serid >> 8);
+		tag += ServerNode::SIZE;
 	}
-	memcpy(tag, &mid, sizeof(mid));
-	tag += sizeof(mid);
-	memcpy(tag, msg, len);
-	m_netObjMod->SendNetMsg(its->second->socket, newmsg, N_TRANS_SERVER_MSG, nsize);
+
+	PB::WriteInt(tag, mid);
+
+	m_netObjMod->SendNetMsg(its->second->socket, msg, N_TRANS_SERVER_MSG, len);
+	res = true;
+}
+
+int TransMsgModule::GetPathSize(vector<SHARE<ServerNode>>& sers)
+{
+	return TransHead::SIZE+sers.size()*ServerNode::SIZE+4;
 }
 
 void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 {
-	TransHead* head = (TransHead*)nmsg->msg;
-	ServerNode* first = (ServerNode*)(head+1);
-	if (head->size <= head->index)
+	char hsize = nmsg->msg[0];
+	char hindex = nmsg->msg[1];
+	char* first = nmsg->msg+TransHead::SIZE;
+
+	if (hsize <= hindex)
 		return;
-	if (head->size == head->index + 1)
+	if (hsize == hindex + 1)
 	{
-		auto ser = first + head->index;
+		char* ser = first + hindex*ServerNode::SIZE;
+		int8_t sertype = ser[0];
+		int16_t serid = ser[1]&0xff;
+		serid |= (ser[2] & 0xff) << 8;
 		//终点
 		auto myser = GetLayer()->GetServer();
-		if (ser->type == myser->type && (ser->serid == myser->serid ||ser->serid==0))
+		if (sertype == myser->type && (serid == myser->serid || serid ==0))
 		{
 			//sizeof(int) 转发的msg Id
-			int mlen = nmsg->len - sizeof(int) - sizeof(ServerNode)*head->size - sizeof(TransHead);
-			int* mid = (int*)(nmsg->msg + (nmsg->len - mlen - sizeof(int)));
+			int mlen = nmsg->len - 4 - ServerNode::SIZE*hsize - TransHead::SIZE;
+			char* midp = nmsg->msg + (nmsg->len - mlen - 4);
+
+			int mid = PB::GetInt(midp);
+
 			NetMsg* xMsg = new NetMsg();
 			xMsg->len = mlen;
 			xMsg->socket = nmsg->socket;
 			xMsg->msg = new char[mlen];
-			xMsg->mid = *mid;
+			xMsg->mid = mid;
 
-			for (size_t i = 0; i < head->size; i++)
+			for (size_t i = 0; i < hsize; i++)
 			{
-				auto node = first + i;
+				char* node = first + i*ServerNode::SIZE;
 				auto snode = GetLayer()->GetSharedLoop<ServerNode>();
-				*snode = *node;
+
+				snode->type = node[0];
+				snode->serid = node[1];
+				snode->serid |= (int)node[2]<<8;
 				xMsg->path.push_back(snode);
 			}
 
@@ -279,31 +302,40 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 		}
 	}
 	else {
-		++head->index;
-		auto next = first + head->index;
+		++hindex;
+		nmsg->msg[1] = hindex;
+		char* next = first + hindex*ServerNode::SIZE;
 
-		if (next->serid == -1)
+		int8_t nxtype = next[0];
+		int16_t nxid = next[1]&0xff;
+		nxid |= (next[2] &0xff)<<8;
+
+		if (nxid == -1)
 		{//全转发
-			auto it = m_serverList.find(next->type);
+			auto it = m_serverList.find(nxtype);
 			if (it == m_serverList.end())
 				return;
-			auto nextFn = (char*)next - nmsg->msg;
+			int nextFn = hindex*ServerNode::SIZE+TransHead::SIZE;
 			for (auto& s:it->second)
 			{
-				auto tmsg = new char[nmsg->len];
-				memcpy(tmsg, nmsg->msg, nmsg->len);
-				auto tnext = (ServerNode*)(tmsg + nextFn);
-				tnext->serid = s.second->serid;
-				m_netObjMod->SendNetMsg(s.second->socket, tmsg, N_TRANS_SERVER_MSG, nmsg->len);
+				auto tmsg = new char[nmsg->len+PACK_HEAD_SIZE];
+				memcpy(tmsg+ PACK_HEAD_SIZE, nmsg->msg, nmsg->len);
+				char* tnext = tmsg + nextFn+ PACK_HEAD_SIZE;
+				tnext[1] = (unsigned char)s.second->serid;
+				tnext[2] = (unsigned char)(s.second->serid >> 8);
+				m_netObjMod->SendNetMsg(s.second->socket, tmsg, N_TRANS_SERVER_MSG, nmsg->len+ PACK_HEAD_SIZE);
 			}
 			return;
 		}
-		auto server = GetServer(next->type, next->serid);
+		auto server = GetServer(nxtype, nxid);
 		if (server)
 		{
-			next->serid = server->serid;
-			m_netObjMod->SendNetMsg(server->socket, nmsg->msg, N_TRANS_SERVER_MSG, nmsg->len);
-			nmsg->msg = nullptr;//注意
+			next[1] = (unsigned char)server->serid;
+			next[2] = (unsigned char)(server->serid >> 8);
+
+			char* tmsg = new char[nmsg->len + PACK_HEAD_SIZE];
+			memcpy(tmsg + PACK_HEAD_SIZE, nmsg->msg, nmsg->len);
+			m_netObjMod->SendNetMsg(server->socket, tmsg, N_TRANS_SERVER_MSG, nmsg->len+PACK_HEAD_SIZE);
 		}
 	}
 }

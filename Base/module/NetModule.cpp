@@ -19,7 +19,7 @@ void NetModule::Connected(uv_tcp_t* conn, bool client)
 {
 	//if (client)
 	conn->close_cb = &NetModule::on_close_client;
-	auto uvsocket = GET_UV_SOCKET(conn);
+	auto uvsocket = PopSocketid();
 	auto it = m_conns.find(uvsocket);
 	assert(it == m_conns.end());
 
@@ -79,12 +79,31 @@ void NetModule::on_close_client(uv_handle_t* client) {
 	auto sock = new NetSocket(conn->socket);
 	server->m_mgsModule->SendMsg(L_SOCKET_CLOSE, sock);
 
+	server->PushSocketid(conn->socket);
 	server->RemoveConn(conn->socket);
 }
 
 void NetModule::RemoveConn(const int& socket)
 {
 	m_conns.erase(socket);
+}
+
+int NetModule::PopSocketid()
+{
+	int id = 0;
+	if (m_sockid.size() > 0)
+	{
+		id = m_sockid.front();
+		m_sockid.pop_front();
+	}
+	else
+		id = ++m_socketindex;
+	return id;
+}
+
+void NetModule::PushSocketid(int id)
+{
+	m_sockid.push_back(id);
 }
 
 bool NetModule::ReadPack(int socket, char* buf, int len)
@@ -143,16 +162,17 @@ void NetModule::OnSocketSendData(NetMsg* nMsg)
 	auto it = m_conns.find(nMsg->socket);
 	if (it != m_conns.end())
 	{
-		char* enbuf = new char[nMsg->len + MsgHead::HEAD_SIZE];
-		MsgHead::Encode(enbuf, nMsg->mid, nMsg->len);
-		memcpy(enbuf + MsgHead::HEAD_SIZE, nMsg->msg, nMsg->len);
+		MsgHead::Encode(nMsg->msg, nMsg->mid, nMsg->len);
 
 		uv_write_t* whand = GetLayer()->GetLoopObj<uv_write_t>();
 		Write_t* buf = GetLayer()->GetLoopObj<Write_t>();
 		buf->baseModule = this;
-		buf->buf.base = enbuf;
-		buf->buf.len = nMsg->len + MsgHead::HEAD_SIZE;
+		buf->buf.base = nMsg->msg;
+		buf->buf.len = nMsg->len;
 		whand->data = buf;
+
+		nMsg->msg = NULL;
+
 		uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
 	}
 }

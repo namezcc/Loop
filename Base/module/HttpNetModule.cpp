@@ -96,12 +96,12 @@ void HttpNetModule::Connect_cb(uv_connect_t* req, int status)
 	auto ser = (NetServer*)cli->data;
 	if (status == 0)
 	{
-		ser->socket = cli->socket;
-		md->m_mgsModule->SendMsg(L_PHP_CGI_CONNECTED, ser);
-
 		cli->data = md;
 		cli->read_cb = HttpNetModule::After_read_CGI;
 		md->Connected(cli, false);
+		Conn* conn = (Conn*)cli->data;
+		ser->socket = conn->socket;
+		md->m_mgsModule->SendMsg(L_PHP_CGI_CONNECTED, ser);
 	}
 	else {
 		//cout << "PHP CGI not run on host:" << ser->ip << " port:" << ser->port << endl;
@@ -114,17 +114,15 @@ void HttpNetModule::Connect_cb(uv_connect_t* req, int status)
 
 void HttpNetModule::After_read_CGI(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf)
 {
-	auto server = (HttpNetModule*)client->data;
-	auto sc = (uv_tcp_t*)client;
+	auto sc = (Conn*)client->data;;
 	auto sock = sc->socket;
+	auto server = (HttpNetModule*)sc->netmodule;
 	if (nread < 0) {
 		/* Error or EOF */
 		//ASSERT(nread == UV_EOF);
 		delete[] buf->base;
 		//uv_close 会把 socket 置空 所以先保存
 		uv_close((uv_handle_t*)client, client->close_cb);
-		//再置回
-		sc->socket = sock;
 		return;
 	}
 
@@ -137,7 +135,6 @@ void HttpNetModule::After_read_CGI(uv_stream_t* client, ssize_t nread, const uv_
 	if (!server->ReadPackMid(sc->socket, buf->base, nread, N_RECV_PHP_CGI_MSG))
 	{
 		uv_close((uv_handle_t*)client, client->close_cb);
-		sc->socket = sock;
 	}
 	delete[] buf->base;
 }
