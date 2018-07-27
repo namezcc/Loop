@@ -10,9 +10,7 @@
 
 using namespace std;
 
-#if PLATFORM == PLATFORM_WIN
-#define localtime_s localtime_s
-#else
+#if PLATFORM == PLATFORM_LINUX
 #define localtime_s(tm,tt) localtime_r(tt,tm)
 #endif
 

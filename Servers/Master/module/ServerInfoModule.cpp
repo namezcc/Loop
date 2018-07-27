@@ -17,7 +17,7 @@ void ServerInfoModule::Init()
 	m_msgModule = GET_MODULE(MsgModule);
 	m_mysqlModule = GET_MODULE(MysqlModule);
 
-	m_msgModule->AddMsgCallBack<NetSocket>(L_HL_GET_MACHINE_LIST, this, &ServerInfoModule::OnGetMachineList);
+	m_msgModule->AddMsgCallBack(L_HL_GET_MACHINE_LIST, this, &ServerInfoModule::OnGetMachineList);
 
 }
 
@@ -51,10 +51,11 @@ void ServerInfoModule::OnGetMachineList(NetSocket * sock)
 	}
 	auto s = res.toStyledString();
 
-	auto msg = new NetMsg();
+	auto msg = GET_LAYER_MSG(NetMsg);
 	msg->socket = sock->socket;
-	msg->len = s.size();
+	/*msg->len = s.size();
 	msg->msg = new char[msg->len+1];
-	strcpy(msg->msg, s.c_str());
+	strcpy(msg->msg, s.c_str());*/
+	msg->push_front(GetLayer(), s.c_str(), s.size());
 	m_msgModule->SendMsg(LY_HTTP_LOGIC, 0, L_HL_GET_MACHINE_LIST, msg);
 }

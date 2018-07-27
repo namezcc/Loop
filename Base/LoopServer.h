@@ -1,8 +1,11 @@
 #ifndef LOOP_SERVER_H
 #define LOOP_SERVER_H
-#include "BaseLayer.h"
+//#include "BaseLayer.h"
 #include "ThreadPool.h"
 #include "MsgDefine.h"
+#include "MsgPool.h"
+
+class BaseLayer;
 
 struct SqlInfo
 {
@@ -33,6 +36,7 @@ public:
 	typename std::enable_if<std::is_base_of<BaseLayer,T>::value,T*>::type CreateLayer(Args&&... args)
 	{
 		auto l = SHARE<T>(new T(std::forward<Args>(args)...));
+		l->SetlsIndex(m_layers.size());
 		m_layers.push_back(l);
 		return l.get();
 	}
@@ -40,20 +44,32 @@ public:
 	void BuildPipe(BaseLayer* l1, BaseLayer* l2);
 
 	void Run();
+	void Loop();
 
 	inline ServerConfig& GetConfig() { return m_config; };
+
+	template<typename T>
+	T* popMsg(int32_t index)
+	{
+		return m_msgPool[index].popMsg<T>();
+	}
+	void recycle(int32_t index, BaseData* msg);
 
 	int m_port;
 protected:
 	void Init(const int& stype, const int& serid);
 	void InitConfig();
 	void InitLogLayer();//loglayerĬ�ϴ��� ������layer����
+	void InitMsgPool();
 private:
 	SHARE<ThreadPool> m_pool;
 	vector<SHARE<BaseLayer>> m_layers;
-	SHARE<FactorManager> m_factor;
 	ServerNode m_server;
 	ServerConfig m_config;
+
+	MsgPool* m_msgPool;
+	RecyclePool* m_recycle;
+	bool m_over;
 };
 
 #endif

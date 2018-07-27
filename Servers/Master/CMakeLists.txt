@@ -9,12 +9,14 @@ ${PROJECT_SOURCE_DIR}/module
 file(GLOB_RECURSE Master_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE Master_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
+set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/ReflectData.cpp)
+
 set(Masterlib
-libCrypto.lib
+Crypto.lib
 jsoncpp.lib
 )
 
-add_library(${ProjectName} SHARED ${Master_HEAD_FILES} ${Master_SOUCE_FILES})
+add_library(${ProjectName} SHARED ${Master_HEAD_FILES} ${Master_SOUCE_FILES} ${SQL_DATA})
 target_link_libraries(${ProjectName} ${LoopLib} ${Masterlib})
 
 set_target_properties(${ProjectName} PROPERTIES 

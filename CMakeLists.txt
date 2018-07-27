@@ -6,6 +6,7 @@ add_compile_options(-std=c++11)
 set(CMAKE_BUILD_TYPE "Debug")
 
 set(LPOutDir ${PROJECT_SOURCE_DIR}/_out/)
+set(LPBaseOut ${PROJECT_SOURCE_DIR}/_out/)
 
 include_directories(
 ${PROJECT_SOURCE_DIR} 
@@ -15,35 +16,40 @@ ${PROJECT_SOURCE_DIR}/Base/kernel/
 ${PROJECT_SOURCE_DIR}/Base/layer/ 
 ${PROJECT_SOURCE_DIR}/Base/module/ 
 ${PROJECT_SOURCE_DIR}/Base/utils/ 
-${PROJECT_SOURCE_DIR}/librarys/
-${PROJECT_SOURCE_DIR}/librarys/libuv/include/ 
-${PROJECT_SOURCE_DIR}/librarys/jsoncpp/include/ 
-${PROJECT_SOURCE_DIR}/librarys/mysql/include/
-${PROJECT_SOURCE_DIR}/librarys/redis/ 
+${PROJECT_SOURCE_DIR}/librarys/include/ 
+${PROJECT_SOURCE_DIR}/librarys/include/redis/ 
 ${PROJECT_SOURCE_DIR}/depend/ 
 )
 
 if(WIN32)
 include_directories(
-${PROJECT_SOURCE_DIR}/librarys/protobuf/include/ 
+${PROJECT_SOURCE_DIR}/librarys/include/protobuf/ 
+${PROJECT_SOURCE_DIR}/librarys/include/libuv/ 
+${PROJECT_SOURCE_DIR}/librarys/include/jsoncpp/ 
+${PROJECT_SOURCE_DIR}/librarys/include/mysql/ 
+E:/git/boost_1_66_0/ 
 )
+
+link_directories(
+E:/git/boost_1_66_0/bin/vc14/lib
+)
+
 endif()
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	link_directories(
-	${PROJECT_SOURCE_DIR}/librarys/libs/Debug/ 
+	${PROJECT_SOURCE_DIR}/librarys/libs/win/Debug/ 
 	${PROJECT_SOURCE_DIR}/depend/Build/Debug/ 
+	${PROJECT_SOURCE_DIR}/_out/Debug/ 
 	)
-	
-	set(LPBaseOut ${PROJECT_SOURCE_DIR}/_out/Debug)
 
 	add_definitions(-DDEBUG)
 else()
 	link_directories(
-	${PROJECT_SOURCE_DIR}/librarys/libs/Release/
+	${PROJECT_SOURCE_DIR}/librarys/libs/win/Release/
 	${PROJECT_SOURCE_DIR}/depend/Build/Release/ 
+	${PROJECT_SOURCE_DIR}/_out/Release/ 
 	)
-	set(LPBaseOut ${PROJECT_SOURCE_DIR}/_out/Release)
 endif()
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
@@ -63,10 +69,10 @@ mysqlpp_d.lib
 endif()
 
 if(WIN32)
-set(lib_link ${lib_link} anet_win64.lib)
+set(lib_link ${lib_link} anet.lib libboost_filesystem-vc141-mt-gd-x64-1_66.lib)
 set(LoopLib Loop.lib)
 else()
-set(lib_link anet_win64.a)
+set(lib_link anet.a)
 endif()
 
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/Base/*.cpp)
@@ -87,6 +93,7 @@ target_compile_definitions(Loop
 
 add_definitions(
 -DPROTOBUF_USE_DLLS
+-DMYSQLPP_MYSQL_HEADERS_BURIED
 )
 
-#add_subdirectory(Servers)
+add_subdirectory(Servers)

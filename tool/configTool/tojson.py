@@ -6,7 +6,7 @@ import json
 from enum import IntEnum
 from classCreate import *
 
-exlpath = "./excel/"
+exlpath = "../../cfgdata/cfgexcl/"
 dataRow = 5     #数据开始行数 0开始
 dataTypeRow = 2 # 数据类型
 outTypeRow = 4  #输出类型控制行   0开始 
@@ -20,11 +20,11 @@ class OUT_TYPE(IntEnum):
     SERVER = 2
     BOTH = 3
 
-outServer = "./out/server"
+outServer = "../../cfgdata/cfgjson/"
 outClient = "./out/client"
 
 hppcreate = HppCreate()
-hppPath = "./hpp/"
+hppPath = "../../configHpp/"
 
 def ReadExl(name):
     if not name.find(".xlsx"):

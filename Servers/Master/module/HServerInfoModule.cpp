@@ -16,19 +16,22 @@ void HServerInfoModule::Init()
 	m_msgModule = GET_MODULE(MsgModule);
 
 	m_httpModule->AddUrlCallBack("^/getMachineList", GET, this, &HServerInfoModule::OnReqGetMachineList);
-	m_msgModule->AddMsgCallBack<NetMsg>(L_HL_GET_MACHINE_LIST, this, &HServerInfoModule::OnGetMachineList);
+	m_msgModule->AddMsgCallBack(L_HL_GET_MACHINE_LIST, this, &HServerInfoModule::OnGetMachineList);
 }
 
 void HServerInfoModule::OnReqGetMachineList(HttpMsg * msg)
 {
 	msg->opration = HttpMsg::NONE;
-	m_msgModule->SendMsg(LY_LOGIC,0, L_HL_GET_MACHINE_LIST, new NetSocket(msg->socket));
+	auto sock = GET_LAYER_MSG(NetSocket);
+	sock->socket = msg->socket;
+	m_msgModule->SendMsg(LY_LOGIC,0, L_HL_GET_MACHINE_LIST, sock);
 }
 
 void HServerInfoModule::OnGetMachineList(NetMsg * msg)
 {
-	m_httpModule->SendHttpMsg(msg->socket, [&msg](HttpMsg* hmsg) {
-		hmsg->response.buff.append(msg->msg, msg->len);
+	auto buff = msg->getCombinBuff(GetLayer());
+	m_httpModule->SendHttpMsg(msg->socket, [buff](HttpMsg* hmsg) {
+		hmsg->response.buff.append(buff->m_buff, buff->m_size);
 		hmsg->opration = HttpMsg::SEND;
 	});
 }

@@ -56,28 +56,29 @@ public:
 	}
 
 	~FactorManager() {
-		for (auto& it : m_factors)
-			delete it.second;
+		// for (auto& it : m_factors)
+		// 	delete it.second;
 	};
 private:
 	template<typename T>
 	LoopFactor<T>* GetFactor()
 	{
-		auto it = m_factors.find(typeid(T).hash_code());
-		if (it == m_factors.end())
-		{
-			auto lf = Single::NewLocal<LoopFactor<T>>();
-			m_factors[typeid(T).hash_code()] = lf;
-			return lf;
-		}
-		return static_cast<LoopFactor<T>*>(it->second);
+		// auto it = m_factors.find(typeid(T).hash_code());
+		// if (it == m_factors.end())
+		// {
+		// 	auto lf = Single::NewLocal<LoopFactor<T>>();
+		// 	m_factors[typeid(T).hash_code()] = lf;
+		// 	return lf;
+		// }
+		//return static_cast<LoopFactor<T>*>(it->second);
+		return Single::LocalInstance<LoopFactor<T>>();
 	}
 
 	FactorManager() {
 		//std::cout << "new FactorManager "<< std::endl;
 	};
 
-	std::unordered_map<size_t, void*> m_factors;
+	//std::unordered_map<size_t, void*> m_factors;
 };
 
 #endif

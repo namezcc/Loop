@@ -1,6 +1,7 @@
 build/
 _out/Debug/
-HttpTest/web/
+protoPB/
+proto/
 *.exp
 *.pdb
 *.ilk

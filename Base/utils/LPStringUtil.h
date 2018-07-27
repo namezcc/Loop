@@ -129,7 +129,7 @@ namespace Loop{
 			res.push_back(move(string(str.c_str() + last, str.c_str() + str.size())));
 	}
 
-	static void Split(std::string& str, const std::string& delimiter, std::vector<std::string>& res)
+	static void Split(const std::string& str, const std::string& delimiter, std::vector<std::string>& res)
 	{
 		string::size_type pos1, pos2;
 		pos2 = str.find(delimiter);

@@ -2,6 +2,7 @@
 #define BLOCK_H
 #include <vector>
 #include <assert.h>
+
 template<typename T>
 class Block
 {

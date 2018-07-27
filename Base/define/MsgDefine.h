@@ -3,11 +3,14 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include "protoPB/server/LPBase.pb.h"
 
 enum MSG_FROM_LAYER
 {
 	L_BEGAN = 1,
+	
+	L_REQUEST_CORO_MSG,
+	L_RESPONSE_CORO_MSG,
+
 	L_SOCKET_CONNET,
 	L_SOCKET_CLOSE,
 	L_SOCKET_SEND_DATA,
@@ -22,7 +25,7 @@ enum MSG_FROM_LAYER
 	L_LOG_INFO,
 
 	//http
-	L_HL_GET_MACHINE_LIST,	//»ñÈ¡console·þ
+	L_HL_GET_MACHINE_LIST,	//ï¿½ï¿½È¡consoleï¿½ï¿½
 
 	L_MYSQL_MSG,
 	L_UPDATE_TABLE_GROUP,
@@ -46,14 +49,14 @@ enum MSG_FROM_NET
 	N_ADD_TABLE_GROUP,
 	N_CREATE_ACCOUNT,
 
-	N_GET_MYSQL_GROUP,	//»ñÈ¡mysql Êý¾Ý¿â ×éid
+	N_GET_MYSQL_GROUP,	//ï¿½ï¿½È¡mysql ï¿½ï¿½ï¿½Ý¿ï¿½ ï¿½ï¿½id
 
 	N_ML_CREATE_ACCOUNT,	//mysql -> login
 	N_ML_GET_ACCOUNT,
 
 	N_END,
 };
-//¿Í»§¶ËÓë·þÎñÆ÷Ö®¼äÏûÏ¢id > 10000
+//ï¿½Í»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½Ï¢id > 10000
 enum BASE_EVENT
 {
 	E_SOCKEK_CONNECT,
@@ -66,106 +69,6 @@ enum BASE_EVENT
 
 	E_PHP_CGI_CONNECT,
 	E_PHP_CGI_CLOSE,
-};
-
-struct ServerNode
-{
-	int8_t type;
-	int16_t serid;
-
-	enum
-	{
-		SIZE = 3,
-	};
-};
-
-struct BaseData
-{
-	virtual ~BaseData()
-	{}
-};
-
-typedef struct _BaseMsg
-{
-	virtual ~_BaseMsg()
-	{
-		delete data;
-	}
-	int msgId;
-	BaseData* data;
-}BaseMsg;
-
-struct NetMsg:public BaseData
-{
-	~NetMsg()
-	{
-		if (msg)
-			delete[] msg;
-	};
-	int socket;
-	int mid;
-	int len;
-	char* msg;
-	std::vector<SHARE<ServerNode>> path;
-};
-
-struct NetSocket:public BaseData
-{
-	NetSocket(int sk) :socket(sk) {};
-	int socket;
-};
-
-struct NetServer:public BaseData
-{
-	int type;
-	int serid;
-	int socket;
-	int state;
-	std::string ip;
-	int port;
-};
-
-struct LogInfo:public BaseData
-{
-	int level;
-	std::stringstream log;
-};
-
-struct PB
-{
-	static char* PBToChar(google::protobuf::Message& msg,int& msize)
-	{
-		msize = msg.ByteSize();
-		char* buff = new char[msize];
-		msg.SerializeToArray(buff, msize);
-		return buff;
-	}
-
-	static char* PBToChar(google::protobuf::Message& msg, int& msize, const int& expand)
-	{
-		int msgs = msg.ByteSize();
-		msize = msgs+expand;
-		char* buff = new char[msize];
-		msg.SerializeToArray(buff+expand, msgs);
-		return buff;
-	}
-
-	static int GetInt(char* msg)
-	{
-		int res = msg[0]&0xff;
-		res |= (0xff & msg[1]) << 8;
-		res |= (0xff & msg[2]) << 16;
-		res |= (0xff & msg[3]) << 24;
-		return res;
-	}
-
-	static void WriteInt(char* res,int n)
-	{
-		res[0] = (unsigned char)n;
-		res[1] = (unsigned char)(n >> 8);
-		res[2] = (unsigned char)(n >> 16);
-		res[3] = (unsigned char)(n >> 24);
-	}
 };
 
 #endif

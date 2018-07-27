@@ -20,7 +20,7 @@ enum SQL_OPT
 	SQL_INSERT_SELECT,
 };
 
-struct SqlParam:public LoopObject
+struct SqlParam:public BaseData
 {
 	int opt;
 	bool ret;
@@ -30,29 +30,30 @@ struct SqlParam:public LoopObject
 	SqlRow field;
 	SqlRow value;
 
-	// Í¨¹ý LoopObject ¼Ì³Ð
-	virtual void init(FactorManager * fm) override
-	{
-	}
-	virtual void recycle(FactorManager * fm) override
+	virtual void initMsg()
+	{};
+	virtual void recycleMsg()
 	{
 		kname.clear();
 		kval.clear();
 		field.clear();
 		value.clear();
-	}
+	};
 };
 
 struct LMsgSqlParam:public BaseData
 {
-	LMsgSqlParam():index(0),param(nullptr)
+	LMsgSqlParam():index(0),param(NULL)
 	{}
 
-	~LMsgSqlParam()
+	virtual void initMsg()
+	{
+	};
+	virtual void recycleMsg()
 	{
 		if (param)
-			delete param;
-	}
+			param->recycleMsg();
+	};
 
 	uint32_t index;
 	SqlParam* param;
@@ -134,7 +135,7 @@ public:
 		for (auto& k: TableDesc<T>::paramkey)
 		{
 			int idx = Reflect<T>::GetFieldIndex(k);
-			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
+			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[idx], Reflect<T>::arr_type[idx]));
 		}
 		for (size_t i = 0; i < Reflect<T>::Size(); i++)
 		{
@@ -157,7 +158,7 @@ public:
 		for (auto& k : TableDesc<T>::paramkey)
 		{
 			int idx = Reflect<T>::GetFieldIndex(k);
-			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[i], Reflect<T>::arr_type[i]));
+			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[idx], Reflect<T>::arr_type[idx]));
 		}
 		return Delete(*param);
 	}
@@ -183,7 +184,7 @@ public:
 
 	inline int GetDBGroup() { return m_dbgroup; }
 protected:
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// Í¨ï¿½ï¿½ BaseModule ï¿½Ì³ï¿½
 	virtual void Init() override;
 	virtual void AfterInit()override;
 	virtual void Execute() override;

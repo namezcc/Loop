@@ -13,11 +13,11 @@ public:
 	~TransMsgModule();
 
 	SHARE<NetServer> GetServerConn(const int& sock);
-	void SendToServer(ServerNode& ser, const int& mid, char* msg,const int& len);
+	void SendToServer(ServerNode& ser, const int& mid, BuffBlock* buff);
 	void SendToServer(ServerNode& ser, const int& mid, google::protobuf::Message& msg);
 	void SendToAllServer(const int& stype, const int& mid, google::protobuf::Message& msg);
 	void SendToServer(vector<SHARE<ServerNode>>& path, const int& mid, google::protobuf::Message& msg,const int& toidx=1);
-	void SendToServer(vector<SHARE<ServerNode>>& path, const int& mid,const char* msg,const int& len, const int& toidx = 1);
+	void SendToServer(vector<SHARE<ServerNode>>& path, const int& mid,BuffBlock* buff, const int& toidx = 1);
 	void SendBackServer(vector<SHARE<ServerNode>>& path, const int& mid, google::protobuf::Message& msg);
 protected:
 	virtual void Init() override;
@@ -29,7 +29,7 @@ protected:
 	void OnServerClose(SHARE<NetServer>& ser);
 
 	void TransMsgToServer(vector<SHARE<ServerNode>>& sers,const int& mid, google::protobuf::Message& pbmsg, const int& toidx = 1);
-	void TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int& mid,char* msg,const int& len,const int& toidx=1);
+	void TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int& mid,BuffBlock* buffblock,const int& toidx=1);
 
 	int GetPathSize(vector<SHARE<ServerNode>>& sers);
 
@@ -39,6 +39,7 @@ protected:
 
 	void GetTransPath(ServerNode& beg, ServerNode& end, vector<SHARE<ServerNode>>& path);
 	bool GetToPath(vector<SHARE<ServerNode>>& path);
+	BuffBlock* PathToBuff(vector<SHARE<ServerNode>>& path,const int32_t& mid,const int32_t& toidx=1);
 private:
 	EventModule* m_eventModule;
 	NetObjectModule* m_netObjMod;

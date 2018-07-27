@@ -3,22 +3,26 @@
 
 #include "BaseModule.h"
 
+class MsgModule;
+
 class LOOP_EXPORT ProcessModule:public BaseModule
 {
 public:
 	ProcessModule(BaseLayer* l);
 	~ProcessModule();
 
-	bool CreateServer(const string& name, const string& line="");
-
+	void CreateServer(const SERVER_TYPE& sertype,const int32_t& nid,const int32_t& port);
+	void CreateLoopProcess(const std::string& proname, const std::string& logname,const std::vector<std::string>& args);
 private:
-
-
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// Í¨ï¿½ï¿½ BaseModule ï¿½Ì³ï¿½
 	virtual void Init() override;
-
 	virtual void Execute() override;
 
+private:
+	std::string m_error;
+	std::string m_logdir;
+
+	MsgModule* m_msgModule;
 };
 
 #endif

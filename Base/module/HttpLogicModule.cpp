@@ -5,11 +5,6 @@
 #include "ScheduleModule.h"
 #include "HttpCgiModule.h"
 #include <fstream>
-#if PLATFORM == PLATFORM_WIN
-//#include <direct.h>
-#else
-//#include <unistd.h>
-#endif
 #include "LPFile.h"
 
 void HttpMsg::init(FactorManager * fm)
@@ -217,7 +212,7 @@ void HttpLogicModule::Init()
 	m_scheduleModule = GetLayer()->GetModule<ScheduleModule>();
 	m_httpCgiModule = GetLayer()->GetModule<HttpCgiModule>();
 
-	m_msgModule->AddMsgCallBack<NetMsg>(N_RECV_HTTP_MSG, this, &HttpLogicModule::OnRecvHttpMsg);
+	m_msgModule->AddMsgCallBack(N_RECV_HTTP_MSG, this, &HttpLogicModule::OnRecvHttpMsg);
 	
 	m_eventModule->AddEventCallBack(E_SOCKEK_CONNECT, this, &HttpLogicModule::OnHttpClientConnect);
 	m_eventModule->AddEventCallBack(E_CLIENT_HTTP_CLOSE, this, &HttpLogicModule::OnHttpClientClose);
@@ -273,9 +268,13 @@ void HttpLogicModule::OnRecvHttpMsg(NetMsg * msg)
 	if (it == m_cliens.end())
 		return;
 
-	it->second->request.RecvBuff(msg->msg, msg->len);
+	auto buff = msg->m_buff;
+	while(buff){
+		it->second->request.RecvBuff(buff->m_buff, buff->m_size);
+		buff = buff->m_next;	
+	}
 	auto st = it->second->request.Decode();
-
+	
 	if (st == HTTP_STATE::FINISH)
 		OnRequest(it->second.get());
 	else if (st == HTTP_STATE::HERROR)

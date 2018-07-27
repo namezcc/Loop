@@ -32,7 +32,7 @@ public:
 private:
 
 
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// Í¨ï¿½ï¿½ BaseModule ï¿½Ì³ï¿½
 	virtual void Init() override;
 	virtual void AfterInit()override;
 	virtual void Execute() override;
@@ -46,6 +46,8 @@ private:
 
 	SHARE<spdlog::logger> m_console;
 	vector<SHARE<spdlog::logger>> m_daily;
+
+	bool m_showlog;
 };
 
 #endif

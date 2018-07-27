@@ -27,9 +27,9 @@ void DBProxyModule::Init()
 	m_eventModule->AddEventCallBack(E_SERVER_CONNECT, this, &DBProxyModule::OnServerConnect);
 	m_eventModule->AddEventCallBack(E_SERVER_CLOSE, this, &DBProxyModule::OnServerClose);
 
-	m_msgModule->AddMsgCallBack<NetMsg>(N_GET_MYSQL_GROUP, this, &DBProxyModule::OnGetMysqlGroup);
-	m_msgModule->AddMsgCallBack<NetMsg>(N_CREATE_ACCOUNT, this, &DBProxyModule::OnCreateAccount);
-	m_msgModule->AddMsgCallBack<NetMsg>(N_MYSQL_MSG, this, &DBProxyModule::OnMysqlMsg);
+	m_msgModule->AddMsgCallBack(N_GET_MYSQL_GROUP, this, &DBProxyModule::OnGetMysqlGroup);
+	m_msgModule->AddMsgCallBack(N_CREATE_ACCOUNT, this, &DBProxyModule::OnCreateAccount);
+	m_msgModule->AddMsgCallBack(N_MYSQL_MSG, this, &DBProxyModule::OnMysqlMsg);
 
 	m_hash = 0;
 
@@ -70,9 +70,10 @@ void DBProxyModule::OnServerClose(SHARE<NetServer>& ser)
 		return;
 	auto itg = m_groupMap.find(ser->socket);
 	if (itg == m_groupMap.end())
-		return;
-	else
+	{
 		m_tmpProxy.erase(ser->socket);
+		return;
+	}
 
 	auto vec = m_proxyGroup[itg->second];
 	for (auto it = vec.begin();it!=vec.end();it++)
@@ -131,7 +132,7 @@ void DBProxyModule::OnGetMysqlGroup(NetMsg * msg)
 
 void DBProxyModule::OnCreateAccount(NetMsg * msg)
 {
-	if (msg->len < 4)
+	if (msg->getLen() < 4)
 		return;
 	if (m_groups.size() == 0)
 	{
@@ -141,7 +142,8 @@ void DBProxyModule::OnCreateAccount(NetMsg * msg)
 	int group = m_groups[0];
 	if (m_groups.size() > 1)
 	{
-		int crc = PB::GetInt(msg->msg);
+		auto buff = msg->m_buff->m_buff;
+		int crc = PB::GetInt(buff);
 		int idx = crc % (m_groups.size() * 2);
 		if (idx >= m_groups.size())
 			idx = m_groups.size() - 1;
@@ -152,9 +154,9 @@ void DBProxyModule::OnCreateAccount(NetMsg * msg)
 
 void DBProxyModule::OnMysqlMsg(NetMsg * msg)
 {
-	if (msg->len < 4)
+	if (msg->getLen() < 4)
 		return;
-	int group = PB::GetInt(msg->msg);
+	int group = PB::GetInt(msg->m_buff->m_buff);
 	SendToProxy(group, N_MYSQL_MSG, msg);
 }
 
@@ -184,11 +186,10 @@ void DBProxyModule::SendToProxy(int group, const int& mid, NetMsg * msg)
 
 	m_path[0]->serid = head->serid;
 	m_path[0]->type = head->type;
-
 	*m_path[2] = *proxy;
 	
-	auto len = msg->len - sizeof(int);
-	char * nmsg = new char[len];
-	memcpy(nmsg, msg->msg + 4, len);
-	m_tranModule->SendToServer(m_path, mid, nmsg, len,2);
+	auto buff = msg->getCombinBuff(GetLayer());
+	auto sendbuff = GET_LAYER_MSG(BuffBlock);
+	sendbuff->write(buff->m_buff + 4, buff->m_size - 4);
+	m_tranModule->SendToServer(m_path, mid, sendbuff,2);
 }

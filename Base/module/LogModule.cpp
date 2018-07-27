@@ -4,7 +4,7 @@
 #include "LPFile.h"
 #include "spdlog/spdlog.h"
 
-LogModule::LogModule(BaseLayer * l):BaseModule(l)
+LogModule::LogModule(BaseLayer * l):BaseModule(l),m_showlog(true)
 {
 }
 
@@ -17,12 +17,16 @@ void LogModule::Init()
 	m_msgModule = GetLayer()->GetModule<MsgModule>();
 	m_schedule = GET_MODULE(ScheduleModule);
 
-	m_msgModule->AddMsgCallBack<LogInfo>(L_LOG_INFO, this, &LogModule::OnLog);
+	m_msgModule->AddMsgCallBack(L_LOG_INFO, this, &LogModule::OnLog);
 	m_schedule->AddTimePointTask(this, &LogModule::OnFlush, -1, 0);
 
 	string dir = LoopFile::GetExecutePath();
 	dir.append("logs");
 	LoopFile::MakeDir(dir);
+
+	Json::Value jroot;
+	LoopFile::ReadJsonInRoot(jroot,"commonconf/Common.json");
+	m_showlog = jroot["showlog"].asBool();
 }
 
 void LogModule::AfterInit()
@@ -65,9 +69,8 @@ void LogModule::OnLog(LogInfo * info)
 {
 	if (info->level < 0 || info->level >= spdlog::level::off)
 		return;
-#ifdef DEBUG
-	m_console->log((spdlog::level::level_enum)info->level, info->log.str());
-#endif // DEBUG
+	if (m_showlog)
+		m_console->log((spdlog::level::level_enum)info->level, info->log.str());
 	m_daily[info->level]->log((spdlog::level::level_enum)info->level, info->log.str());
 }
 

@@ -2,12 +2,14 @@
 #include "TcpServerModule.h"
 #include "MsgModule.h"
 
+thread_local int32_t Conn::SOCKET = 0;
+
 void NetModule::Init()
 {
 	m_mgsModule = GetLayer()->GetModule<MsgModule>();
 
-	m_mgsModule->AddMsgCallBack<NetSocket>(L_SOCKET_CLOSE, this, &NetModule::OnCloseSocket);
-	m_mgsModule->AddMsgCallBack<NetMsg>(L_SOCKET_SEND_DATA, this, &NetModule::OnSocketSendData);
+	m_mgsModule->AddMsgCallBack(L_SOCKET_CLOSE, this, &NetModule::OnCloseSocket);
+	m_mgsModule->AddMsgCallBack(L_SOCKET_SEND_DATA, this, &NetModule::OnSocketSendData);
 }
 
 void NetModule::Execute()
@@ -17,24 +19,20 @@ void NetModule::Execute()
 
 void NetModule::Connected(uv_tcp_t* conn, bool client)
 {
-	//if (client)
 	conn->close_cb = &NetModule::on_close_client;
-	auto uvsocket = PopSocketid();
-	auto it = m_conns.find(uvsocket);
-	assert(it == m_conns.end());
-
 	auto ser = (NetModule*)conn->data;
 
 	auto cn = ser->GetLayer()->GetSharedLoop<Conn>();
 	cn->conn = conn;
 	cn->netmodule = ser;
-	cn->socket = uvsocket;
+	auto uvsocket = cn->socket;
 	m_conns[uvsocket] = cn;
 	conn->data = cn.get();
 
 	if (client)
 	{
-		auto sock = new NetSocket(uvsocket);
+		auto sock = ser->GetLayer()->GetLayerMsg<NetSocket>();
+		sock->socket = uvsocket;
 		m_mgsModule->SendMsg(L_SOCKET_CONNET, sock);
 	}
 
@@ -46,14 +44,13 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 {
 	auto conn = (Conn*)client->data;
 	auto server = conn->netmodule;
-	auto sc = (uv_tcp_t*)client;
 	auto sock = conn->socket;
 	if (nread < 0) {
 		/* Error or EOF */
 		//ASSERT(nread == UV_EOF);
 		delete[] buf->base;
 
-		//uv_close »á°Ñ socket ÖÃ¿Õ ËùÒÔÏÈ±£´æ
+		//uv_close ï¿½ï¿½ï¿½ socket ï¿½Ã¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½È±ï¿½ï¿½ï¿½
 		uv_close((uv_handle_t*)client, client->close_cb);
 		return;
 	}
@@ -64,7 +61,7 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 		return;
 	}
 	
-	if (!server->ReadPack(conn->socket,buf->base, nread))
+	if (!server->ReadPack(conn,buf->base, nread))
 	{
 		uv_close((uv_handle_t*)client, client->close_cb);
 	}
@@ -76,10 +73,9 @@ void NetModule::on_close_client(uv_handle_t* client) {
 	auto conn = (Conn*)tcpcli->data;
 	auto server = conn->netmodule;
 
-	auto sock = new NetSocket(conn->socket);
+	auto sock = server->GetLayer()->GetLayerMsg<NetSocket>();
+	sock->socket = conn->socket;
 	server->m_mgsModule->SendMsg(L_SOCKET_CLOSE, sock);
-
-	server->PushSocketid(conn->socket);
 	server->RemoveConn(conn->socket);
 }
 
@@ -88,31 +84,11 @@ void NetModule::RemoveConn(const int& socket)
 	m_conns.erase(socket);
 }
 
-int NetModule::PopSocketid()
+bool NetModule::ReadPack(Conn* conn, char* buf, int len)
 {
-	int id = 0;
-	if (m_sockid.size() > 0)
-	{
-		id = m_sockid.front();
-		m_sockid.pop_front();
-	}
-	else
-		id = ++m_socketindex;
-	return id;
-}
+	auto socket = conn->socket;
 
-void NetModule::PushSocketid(int id)
-{
-	m_sockid.push_back(id);
-}
-
-bool NetModule::ReadPack(int socket, char* buf, int len)
-{
-	auto it = m_conns.find(socket);
-	if (it == m_conns.end())
-		return false;
-
-	NetBuffer& oldbuf = it->second->buffer;
+	NetBuffer& oldbuf = conn->buffer;
 	oldbuf.combin(buf, len);
 
 	bool res = true;
@@ -128,12 +104,11 @@ bool NetModule::ReadPack(int socket, char* buf, int len)
 
 		if (head.size <= oldbuf.use - read)
 		{//cpm pack
-			auto msg = new NetMsg();
-			msg->len = head.size - MsgHead::HEAD_SIZE;
-			msg->msg = new char[msg->len];
+			auto msg = GetLayer()->GetLayerMsg<NetMsg>();
+			auto len = head.size - MsgHead::HEAD_SIZE;
 			msg->mid = head.mid;
 			msg->socket = socket;
-			memcpy(msg->msg, oldbuf.buf + read + MsgHead::HEAD_SIZE, msg->len);
+			msg->push_front(GetLayer(),oldbuf.buf + read + MsgHead::HEAD_SIZE,len);
 			m_mgsModule->SendMsg(head.mid,msg);
 
 			read += head.size;
@@ -162,16 +137,20 @@ void NetModule::OnSocketSendData(NetMsg* nMsg)
 	auto it = m_conns.find(nMsg->socket);
 	if (it != m_conns.end())
 	{
-		MsgHead::Encode(nMsg->msg, nMsg->mid, nMsg->len);
+		char encode[MsgHead::HEAD_SIZE];
+		MsgHead::Encode(encode, nMsg->mid, nMsg->getLen());
+		nMsg->push_front(GetLayer(),encode,MsgHead::HEAD_SIZE);
+
+		auto buff = nMsg->getCombinBuff(GetLayer());
 
 		uv_write_t* whand = GetLayer()->GetLoopObj<uv_write_t>();
 		Write_t* buf = GetLayer()->GetLoopObj<Write_t>();
 		buf->baseModule = this;
-		buf->buf.base = nMsg->msg;
-		buf->buf.len = nMsg->len;
-		whand->data = buf;
+		buf->buf.base = buff->m_buff;
+		buff->m_buff = NULL;
 
-		nMsg->msg = NULL;
+		buf->buf.len = buff->m_size;
+		whand->data = buf;
 
 		uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
 	}

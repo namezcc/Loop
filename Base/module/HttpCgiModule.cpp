@@ -19,7 +19,7 @@ void HttpCgiModule::Init()
 	m_netObjModule = GetLayer()->GetModule<NetObjectModule>();
 	m_httpLogicModule = GetLayer()->GetModule<HttpLogicModule>();
 
-	m_msgModule->AddMsgCallBack<NetMsg>(N_RECV_PHP_CGI_MSG, this, &HttpCgiModule::OnRecvCgiMsg);
+	m_msgModule->AddMsgCallBack(N_RECV_PHP_CGI_MSG, this, &HttpCgiModule::OnRecvCgiMsg);
 	m_eventModule->AddEventCallBack(E_PHP_CGI_CONNECT, this, &HttpCgiModule::OnCgiConnect);
 	m_eventModule->AddEventCallBack(E_PHP_CGI_CLOSE, this, &HttpCgiModule::OnCgiClose);
 	
@@ -48,7 +48,11 @@ void HttpCgiModule::OnCgiClose(const int& sock)
 
 void HttpCgiModule::OnRecvCgiMsg(NetMsg* msg)
 {
-	m_recvPack.combin(msg->msg, msg->len);
+	auto buff = msg->m_buff;
+	while(buff){
+		m_recvPack.combin(buff->m_buff, buff->m_size);
+		buff = buff->m_next;
+	}
 
 	int reqId;
 	int state;
@@ -61,7 +65,7 @@ void HttpCgiModule::OnRecvCgiMsg(NetMsg* msg)
 		NetBuffer pack;
 		pack = move(m_content);
 		m_recvPack.moveHalf(m_recvPack.scan);
-		//通知回调
+		//通知锟截碉拷
 		m_httpLogicModule->OnGetPHPContent(reqId, pack);
 		return;
 	}
@@ -116,7 +120,7 @@ void HttpCgiModule::ConnectCgi(const string & ip, const int & port)
 	m_phpcgi.port = port;
 	m_phpcgi.state = CONN_STATE::CLOSE;
 }
-//待优化
+//锟斤拷锟脚伙拷
 void HttpCgiModule::Request(const int & sock, HeadData & header, const string & content)
 {
 	if (m_phpcgi.state == CONN_STATE::CLOSE)

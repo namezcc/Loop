@@ -5,9 +5,8 @@
 #include "LPFile.h"
 #include "DataDefine.h"
 
-LoopServer::LoopServer()
+LoopServer::LoopServer():m_over(false)
 {
-	m_factor.reset(Single::NewLocal<FactorManager>());
 }
 
 
@@ -50,9 +49,9 @@ void LoopServer::InitConfig()
 		file.append("commonconf/ServerConfig.json");
 
 	ifstream ifs;
-	ifs.open(file);
 	try
 	{
+		ifs.open(file);
 		ifs.is_open();
 	}
 	catch (const std::exception& e)
@@ -117,19 +116,25 @@ void LoopServer::InitLogLayer()
 		BuildPipe(l, m_layers[i].get());
 }
 
+void LoopServer::InitMsgPool()
+{
+	m_msgPool = new MsgPool[m_layers.size()];
+	m_recycle = new RecyclePool[m_layers.size()];
+}
+
 void LoopServer::BuildPipe(BaseLayer * l1, BaseLayer * l2)
 {
-	auto p1 = m_factor->getLoopObj<PIPE>();
-	auto p2 = m_factor->getLoopObj<PIPE>();
+	auto p1 = Single::LocalInstance<FactorManager>()->getLoopObj<PIPE>();
+	auto p2 = Single::LocalInstance<FactorManager>()->getLoopObj<PIPE>();
 	l1->regPipe(l2->GetType(), p1, p2);
 	l2->regPipe(l1->GetType(), p2, p1);
 }
 
 void LoopServer::Run()
 {
-	//´´½¨loglayer
+	//ï¿½ï¿½ï¿½ï¿½loglayer
 	InitLogLayer();
-
+	InitMsgPool();
 	m_pool = SHARE<ThreadPool>(new ThreadPool(m_layers.size()));
 	for (auto& l : m_layers)
 	{
@@ -139,4 +144,28 @@ void LoopServer::Run()
 			l->StartRun();
 		});
 	}
+
+	while (!m_over)
+	{
+		Loop();
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+}
+
+void LoopServer::Loop()
+{
+	for (size_t i = 0; i < m_layers.size(); i++)
+	{
+		BaseData* msg = NULL;
+		while (msg=m_recycle[i].pop())
+		{
+			msg->recycleMsg();
+		}
+	}
+}
+
+void LoopServer::recycle(int32_t index, BaseData* msg)
+{
+	assert(msg->m_looplist);
+	m_recycle[index].recycle(msg);
 }

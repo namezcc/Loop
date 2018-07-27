@@ -6,11 +6,31 @@ include_directories(
 ${PROJECT_SOURCE_DIR}/ 
 )
 
-file(GLOB_RECURSE source ${PROJECT_SOURCE_DIR}/*.cpp ${PROJECT_SOURCE_DIR}/*.h)
+if(WIN32)
+include_directories(
+E:/git/breakpad/src/ 
+)
+
+link_directories(
+E:/git/breakpad/src/client/windows/Debug/lib 
+)
 
 set(Serverlib 
 jsoncpp.lib
+exception_handler.lib
+crash_generation_client.lib
+common.lib
 )
+else()
+set(Serverlib 
+jsoncpp.a
+exception_handler.a
+crash_generation_client.a
+common.a
+)
+endif()
+
+file(GLOB_RECURSE source ${PROJECT_SOURCE_DIR}/*.cpp ${PROJECT_SOURCE_DIR}/*.h)
 
 add_executable(${ProjectName} ${source})
 target_link_libraries(${ProjectName} ${LoopLib} ${Serverlib})

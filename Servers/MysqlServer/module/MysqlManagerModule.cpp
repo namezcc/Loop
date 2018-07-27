@@ -21,12 +21,12 @@ void MysqlManagerModule::Init()
 	m_transModule = GET_MODULE(TransMsgModule);
 
 	
-	m_msgmodule->AddMsgCallBack<NetMsg>(N_GET_MYSQL_GROUP, this, &MysqlManagerModule::OnGetGroupId);
-	m_msgmodule->AddMsgCallBack<NetMsg>(N_MYSQL_MSG, this, &MysqlManagerModule::OnGetMysqlMsg);
-	m_msgmodule->AddMsgCallBack<LMsgSqlParam>(L_MYSQL_MSG, this, &MysqlManagerModule::OnGetMysqlRes);
-	m_msgmodule->AddMsgCallBack<NetMsg>(N_UPDATE_TABLE_GROUP, this, &MysqlManagerModule::OnUpdateTableGroup);
-	m_msgmodule->AddMsgCallBack<NetMsg>(N_ADD_TABLE_GROUP, this, &MysqlManagerModule::OnAddTableGroup);
-	m_msgmodule->AddMsgCallBack<NetMsg>(N_CREATE_ACCOUNT, this, &MysqlManagerModule::OnCreateAccount);
+	m_msgmodule->AddMsgCallBack(N_GET_MYSQL_GROUP, this, &MysqlManagerModule::OnGetGroupId);
+	m_msgmodule->AddMsgCallBack(N_MYSQL_MSG, this, &MysqlManagerModule::OnGetMysqlMsg);
+	m_msgmodule->AddMsgCallBack(L_MYSQL_MSG, this, &MysqlManagerModule::OnGetMysqlRes);
+	m_msgmodule->AddMsgCallBack(N_UPDATE_TABLE_GROUP, this, &MysqlManagerModule::OnUpdateTableGroup);
+	m_msgmodule->AddMsgCallBack(N_ADD_TABLE_GROUP, this, &MysqlManagerModule::OnAddTableGroup);
+	m_msgmodule->AddMsgCallBack(N_CREATE_ACCOUNT, this, &MysqlManagerModule::OnCreateAccount);
 	
 
 	m_index = 0;
@@ -57,7 +57,8 @@ void MysqlManagerModule::InitTableGroupNum()
 
 	for (size_t i = 0; i < m_sqlLayerNum; i++)
 	{//拿 NetSocket 结构代用一下
-		auto num = new NetSocket(m_tableGroup);
+		auto num = GET_LAYER_MSG(NetSocket);
+		num->socket = m_tableGroup;
 		m_msgmodule->SendMsg(LY_MYSQL, i, L_UPDATE_TABLE_GROUP, num);
 	}
 
@@ -83,7 +84,7 @@ void MysqlManagerModule::CreateMysqlTable(int group)
 	m_mysqlmodule->Insert(rf, tname);
 }
 
-void MysqlManagerModule::OnGetGroupId(NetMsg * msg)
+void MysqlManagerModule::OnGetGroupId(NetServerMsg * msg)
 {
 	TRY_PARSEPB(LPMsg::EmptyPB,msg,m_msgmodule);
 	if (msg->path.size() <= 0)
@@ -97,7 +98,7 @@ void MysqlManagerModule::OnGetGroupId(NetMsg * msg)
 	m_transModule->SendBackServer(msg->path, N_GET_MYSQL_GROUP, xmsg);
 }
 
-void MysqlManagerModule::OnCreateAccount(NetMsg * msg)
+void MysqlManagerModule::OnCreateAccount(NetServerMsg * msg)
 {
 	if (msg->path.size() == 0)
 	{
@@ -106,7 +107,7 @@ void MysqlManagerModule::OnCreateAccount(NetMsg * msg)
 	}
 
 	auto reply = GetLayer()->GetSharedLoop<SqlReply>();
-	if (!reply->pbMsg.ParseFromArray(msg->msg, msg->len))
+	if (!reply->pbMsg.ParseFromArray(msg->getCombinBuff(GetLayer())->m_buff, msg->getLen()))
 	{
 		LP_ERROR(m_msgmodule) << "parse PBSqlParam error";
 		return;
@@ -124,7 +125,7 @@ void MysqlManagerModule::OnCreateAccount(NetMsg * msg)
 	SendSqlReply(reply, gid);
 }
 
-void MysqlManagerModule::OnGetMysqlMsg(NetMsg * msg)
+void MysqlManagerModule::OnGetMysqlMsg(NetServerMsg * msg)
 {
 	if (msg->path.size() == 0)
 	{
@@ -133,7 +134,7 @@ void MysqlManagerModule::OnGetMysqlMsg(NetMsg * msg)
 	}
 
 	auto reply = GetLayer()->GetSharedLoop<SqlReply>();
-	if (!reply->pbMsg.ParseFromArray(msg->msg, msg->len))
+	if (!reply->pbMsg.ParseFromArray(msg->getCombinBuff(GetLayer())->m_buff, msg->getLen()))
 	{
 		LP_ERROR(m_msgmodule) << "parse PBSqlParam error";
 		return;
@@ -183,7 +184,8 @@ void MysqlManagerModule::OnUpdateTableGroup(NetMsg * msg)
 
 	for (size_t i = 0; i < m_sqlLayerNum; i++)
 	{//拿 NetSocket 结构代用一下
-		auto num = new NetSocket(m_tableGroup);
+		auto num = GET_LAYER_MSG(NetSocket);
+		num->socket = m_tableGroup;
 		m_msgmodule->SendMsg(LY_MYSQL, i, L_UPDATE_TABLE_GROUP, num);
 	}
 }
@@ -201,8 +203,8 @@ void MysqlManagerModule::OnAddTableGroup(NetMsg * msg)
 
 void MysqlManagerModule::SendSqlReply(SHARE<SqlReply>& reply,const int& gid)
 {
-	auto lmsg = new LMsgSqlParam();
-	lmsg->param = new SqlParam();
+	auto lmsg = GET_LAYER_MSG(LMsgSqlParam);
+	lmsg->param = GET_LAYER_MSG(SqlParam);
 
 	lmsg->param->opt = reply->pbMsg.opt();
 	lmsg->param->tab = reply->pbMsg.table() + std::to_string(gid);

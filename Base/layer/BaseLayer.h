@@ -2,8 +2,8 @@
 #define BASE_LAYER_H
 #include <functional>
 #include "LoopArray.h"
-#include "FactorManager.h"
 #include "Define.h"
+#include "LoopServer.h"
 #include <memory>
 
 typedef std::function<void(void*)> LayerMsg;
@@ -11,7 +11,7 @@ typedef LoopList<void*> PIPE;
 
 class BaseModule;
 struct ServerNode;
-class LoopServer;
+//class LoopServer;
 
 typedef struct RWPipe
 {
@@ -24,28 +24,29 @@ typedef struct RWPipe
 class LOOP_EXPORT BaseLayer
 {
 public:
-	BaseLayer(const int& ltype):m_msgCall(NULL),m_type(ltype)
+	BaseLayer(const int32_t& ltype):m_msgCall(NULL),m_type(ltype)
 	{
-		m_factor.reset(Single::NewLocal<FactorManager>());
 	};
 	virtual ~BaseLayer();
 
 	void StartRun();
-	inline int GetType() { return m_type; };
+	inline int32_t GetType() { return m_type; };
+	inline void SetlsIndex(const int32_t& idx){m_lsindex=idx;};
+	inline int32_t GetlsIndex(){return m_lsindex;};
 
-	void regPipe(int ltype, PIPE* rp, PIPE* wp)
+	void regPipe(int32_t ltype, PIPE* rp, PIPE* wp)
 	{
 		m_pipes[ltype].push_back(RWPipe(rp, wp));
 	}
 
 	void writePipe(void* msg)
 	{
-		int ltype, lid;
+		int32_t ltype, lid;
 		GetDefaultTrans(ltype, lid);
 		writePipe(ltype, lid, msg);
 	}
 
-	void writePipe(const int& ltype,const int& lid, void* msg)
+	void writePipe(const int32_t& ltype,const int32_t& lid, void* msg)
 	{
 		auto it = m_pipes.find(ltype);
 		assert(it != m_pipes.end());
@@ -85,26 +86,33 @@ public:
 	template<typename T>
 	T* GetLoopObj()
 	{
-		return m_factor->getLoopObj<T>();
+		return Single::LocalInstance<FactorManager>()->getLoopObj<T>();
 	}
 
 	template<typename T>
 	std::shared_ptr<T> GetSharedLoop()
 	{
-		return m_factor->GetSharedLoop<T>();
+		return Single::LocalInstance<FactorManager>()->GetSharedLoop<T>();
 	}
 
 	template<typename T>
 	void Recycle(T* t)
 	{
-		m_factor->recycle(t);
+		Single::LocalInstance<FactorManager>()->recycle(t);
 	}
+
+	template<typename T>
+	T* GetLayerMsg()
+	{
+		return m_server->popMsg<T>(m_lsindex);
+	}
+	void RecycleLayerMsg(BaseData* msg);
 
 	inline void SetServer(ServerNode* ser) { m_serNode = ser; };
 	inline ServerNode* GetServer() { return m_serNode; };
 	inline void SetLoopServer(LoopServer* ser) { m_server = ser; };
 	inline LoopServer* GetLoopServer() { return m_server; };
-	inline std::unordered_map<int, std::vector<RWPipe>>& GetPipes() { return m_pipes; };
+	inline std::unordered_map<int32_t, std::vector<RWPipe>>& GetPipes() { return m_pipes; };
 protected:
 	void startRead(const RWPipe& pipe)
 	{
@@ -115,18 +123,22 @@ protected:
 
 	void readMsg(const RWPipe& pipe)
 	{
-		while (true)
-		{
-			PIPE::LPList l;
-			if (!pipe.rpipe->read(l))
-				break;
-			auto head = l.getHead();
-			while (head)
-			{
-				auto n = head->next;
-				m_msgCall.get()->operator()(head->data);
-				head = n;
-			}
+		/*while (true)
+		{*/
+			// PIPE::LPList l;
+			// if (!pipe.rpipe->read(l))
+			// 	break;
+			// auto head = l.getHead();
+			// while (head)
+			// {
+			// 	auto n = head->next;
+			// 	m_msgCall.get()->operator()(head->data);
+			// 	head = n;
+			// }
+		//}
+		void* msg = NULL;
+		while (pipe.rpipe->pop(msg)) {
+			m_msgCall.get()->operator()(msg);
 		}
 	}
 
@@ -134,13 +146,13 @@ protected:
 	virtual void loop()=0;
 	virtual void close()=0;
 
-	virtual void GetDefaultTrans(int& ltype,int& lid)=0;
+	virtual void GetDefaultTrans(int32_t& ltype,int32_t& lid)=0;
 protected:
-	int m_type;
+	int32_t m_type;
+	int32_t m_lsindex;	//在server的下标
 	SHARE<LayerMsg> m_msgCall;
-	std::unordered_map<int,std::vector<RWPipe>> m_pipes;
+	std::unordered_map<int32_t,std::vector<RWPipe>> m_pipes;
 	std::unordered_map<size_t, SHARE<BaseModule>> m_modules;
-	SHARE<FactorManager> m_factor;
 	ServerNode* m_serNode;
 	LoopServer* m_server;
 };

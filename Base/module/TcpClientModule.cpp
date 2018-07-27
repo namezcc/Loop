@@ -16,7 +16,7 @@ void TcpClientModule::Init()
 	m_netmodule = GetLayer()->GetModule<NetModule>();
 	m_msgmodule = GetLayer()->GetModule<MsgModule>();
 
-	m_msgmodule->AddMsgCallBack<NetServer>(L_TO_CONNET_SERVER,this, &TcpClientModule::OnConnectServer);
+	m_msgmodule->AddMsgCallBack(L_TO_CONNET_SERVER,this, &TcpClientModule::OnConnectServer);
 }
 
 void TcpClientModule::Execute()
@@ -38,7 +38,10 @@ void TcpClientModule::OnConnectServer(NetServer* ser)
 	r = uv_tcp_init(m_uvloop, client);
 	ASSERT(r == 0);
 
-	client->data = new NetServer(*ser);
+	auto tmpser = GetLayer()->GetLayerMsg<NetServer>();
+	*tmpser = *ser;
+	client->data = tmpser;
+	//new NetServer(*ser);
 
 	r = uv_tcp_connect(connect_req,client,(const struct sockaddr*) &addr,Connect_cb);
 	ASSERT(r == 0);
@@ -62,7 +65,8 @@ void TcpClientModule::Connect_cb(uv_connect_t* req, int status)
 		md->m_msgmodule->SendMsg(L_SERVER_CONNECTED, ser);
 	}
 	else {
-		delete ser;
+		//delete ser;
+		md->GetLayer()->RecycleLayerMsg(ser);
 		md->GetLayer()->Recycle(cli);
 	}
 	md->GetLayer()->Recycle(req);

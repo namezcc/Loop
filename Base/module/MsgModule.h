@@ -15,7 +15,8 @@ public:
 	{
 		LogHook(MsgModule* nm,const int& lv):m(nm)
 		{
-			log = new LogInfo();
+			log = nm->GetLayer()->GetLayerMsg<LogInfo>();
+			//new LogInfo();
 			log->level = lv;
 		}
 
@@ -42,18 +43,22 @@ public:
 	void SendMsg(const int& msgid, BaseData* data);
 	void SendMsg(const int& ltype, const int& lid, const int& msgid, BaseData* data);
 
-	template<typename Arg,typename T, typename F>
+	template<typename T, typename F>
 	void AddMsgCallBack(const int mId, T&&t, F&&f)
 	{
-		auto call = std::move(bind(forward<F>(f), forward<T>(t), std::placeholders::_1));
-		m_callBack[mId] = move([call](void* msg) {
-			auto mdata = static_cast<Arg*>(msg);
-			call(mdata);
-			//delete mdata; …œº∂“—æ≠delete¡À
+		auto call = std::move(ANY_BIND(t,f));
+		//bind(forward<F>(f), forward<T>(t), std::placeholders::_1)
+		m_callBack[mId] = move([call](BaseData* msg) {
+			auto mdata = dynamic_cast<FuncArgsType<F>::arg1>(msg);
+			if(mdata)
+				call(mdata);
+			else
+				LogHook(this,spdlog::level::err)<<__FILE__<<__LINE__<<"Recv Msg cast Null";
+			//delete mdata; ÔøΩœºÔøΩÔøΩ—æÔøΩdeleteÔøΩÔøΩ
 		});
 	}
 
-	void TransMsgCall(NetMsg* msg);
+	void TransMsgCall(NetServerMsg* msg);
 
 	//void SendLogMsg(const int& level, stringstream& log)
 	//{
@@ -86,7 +91,7 @@ private:
 
 #define TRY_PARSEPB(T,msg,msgModule) \
 	T pbMsg; \
-	if(!pbMsg.ParseFromArray(msg->msg, msg->len)){	\
+	if(!pbMsg.ParseFromArray(msg->getCombinBuff(msgModule->GetLayer())->m_buff, msg->getLen())){	\
 		LP_ERROR(msgModule)<<"parse "<< #T << "error";	\
 	return;}
 

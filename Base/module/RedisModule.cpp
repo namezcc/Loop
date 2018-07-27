@@ -38,7 +38,7 @@ return false; \
 
 #define REDIS_CHECK if(!m_enable) Reconnect()
 
-#ifdef _WIN32
+#if PLATFORM == PLATFORM_WIN
 #pragma comment( lib, "ws2_32" )
 #endif // _WIN32
 
@@ -88,7 +88,7 @@ bool RedisModule::Connect(const string & host, const string& pass, const int& po
 		m_host = host;
 		m_pass = pass;
 		m_port = port;
-		m_redis.reset(new redis::client(host, port, pass));
+		m_redis = SHARE<redis::client>(new redis::client(host, port, pass));
 		m_enable = true;
 	}
 	catch (...)

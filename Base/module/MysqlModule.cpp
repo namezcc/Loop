@@ -1,5 +1,5 @@
 #include "MysqlModule.h"
-#include <mysqlpp/include/mysql++.h>
+#include <mysql++/mysql++.h>
 #include "MsgModule.h"
 #include "LoopServer.h"
 
@@ -54,7 +54,7 @@ void MysqlModule::Init()
 {
 	m_msgModule = GetLayer()->GetModule<MsgModule>();
 
-	auto config = GetLayer()->GetLoopServer()->GetConfig();
+	auto& config = GetLayer()->GetLoopServer()->GetConfig();
 	auto& sql = config.sql;
 	m_dbgroup = sql.dbGroup;
 	SetConnect(sql.db,sql.ip,sql.user,sql.pass,sql.port);

@@ -26,9 +26,9 @@ void LoginModule::Init()
 	m_sendProxyDb = GET_MODULE(SendProxyDbModule);
 	m_redisModule = GET_MODULE(RedisModule);
 
-	m_msgModule->AddMsgCallBack<NetMsg>(LPMsg::N_REQ_LOGIN, this, &LoginModule::OnClientLogin);
-	m_msgModule->AddMsgCallBack<NetMsg>(N_ML_GET_ACCOUNT, this, &LoginModule::OnGetAccountInfo);
-	m_msgModule->AddMsgCallBack<NetMsg>(N_ML_CREATE_ACCOUNT, this, &LoginModule::OnCreateAccount);
+	m_msgModule->AddMsgCallBack(LPMsg::N_REQ_LOGIN, this, &LoginModule::OnClientLogin);
+	m_msgModule->AddMsgCallBack(N_ML_GET_ACCOUNT, this, &LoginModule::OnGetAccountInfo);
+	m_msgModule->AddMsgCallBack(N_ML_CREATE_ACCOUNT, this, &LoginModule::OnCreateAccount);
 }
 
 void LoginModule::OnClientLogin(NetMsg * msg)

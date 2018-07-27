@@ -30,3 +30,8 @@ void BaseLayer::StartRun()
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
+
+void BaseLayer::RecycleLayerMsg(BaseData* msg)
+{
+	m_server->recycle(m_lsindex,msg);
+}

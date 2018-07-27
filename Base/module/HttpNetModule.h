@@ -14,9 +14,9 @@ public:
 protected:
 	virtual void Init();
 	virtual void Execute();
-	virtual bool ReadPack(int socket, char* buf, int len);
+	virtual bool ReadPack(Conn* conn, char* buf, int len);
 
-	bool ReadPackMid(int socket, char* buf, int len, int mid);
+	bool ReadPackMid(Conn* conn, char* buf, int len, int mid);
 
 	void OnSendHttpMsg(NetMsg* msg);
 	void OnConnectPHPCgi(NetServer* ser);

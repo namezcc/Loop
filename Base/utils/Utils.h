@@ -16,7 +16,7 @@ struct ArgsBind<N>		\
 	template<typename R,typename F,typename T>	\
 	static R Bind(F&&f,T&&t)					\
 	{											\
-		return bind(forward<F>(f), forward<T>(t),__VA_ARGS__);\
+		return std::bind(std::forward<F>(f), std::forward<T>(t),__VA_ARGS__);\
 	}					\
 };
 
@@ -66,6 +66,38 @@ public:
 	};
 private:
 	Call m_call;
+};
+
+template<typename int, typename T>
+struct ArgType;
+#define ARG_TYPE_N(n) template<typename T>\
+struct ArgType<n,T>{ using arg##n = T; };
+ARG_TYPE_N(1)
+ARG_TYPE_N(2)
+ARG_TYPE_N(3)
+ARG_TYPE_N(4)
+ARG_TYPE_N(5)
+ARG_TYPE_N(6)
+template<int N, typename T, typename ...Args>
+struct ArgsTypeN :ArgsTypeN<N, Args...>, ArgType<N - sizeof...(Args), T>
+{
+};
+template<int N, typename T>
+struct ArgsTypeN<N, T> :ArgType<N, T>
+{
+};
+template<typename F>
+struct FuncArgsType;
+template<typename R, typename T, typename ...Args>
+struct FuncArgsType<R(T::*)(Args...)> :ArgsTypeN<sizeof...(Args), Args...>
+{
+	using typeR = R;
+	using typeT = T;
+};
+template<typename R,typename ...Args>
+struct FuncArgsType<R(*)(Args...)> :ArgsTypeN<sizeof...(Args), Args...>
+{
+	using typeR = R;
 };
 
 #endif

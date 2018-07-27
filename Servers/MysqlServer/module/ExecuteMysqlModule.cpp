@@ -15,8 +15,8 @@ void ExecuteMysqlModule::Init()
 	m_msgModule = GET_MODULE(MsgModule);
 	m_mysqlModule = GET_MODULE(MysqlModule);
 
-	m_msgModule->AddMsgCallBack<LMsgSqlParam>(L_MYSQL_MSG, this, &ExecuteMysqlModule::OnGetMysqlMsg);
-	m_msgModule->AddMsgCallBack<NetSocket>(L_UPDATE_TABLE_GROUP, this, &ExecuteMysqlModule::OnUpdateTableGroup);
+	m_msgModule->AddMsgCallBack(L_MYSQL_MSG, this, &ExecuteMysqlModule::OnGetMysqlMsg);
+	m_msgModule->AddMsgCallBack(L_UPDATE_TABLE_GROUP, this, &ExecuteMysqlModule::OnUpdateTableGroup);
 
 }
 
@@ -53,7 +53,7 @@ void ExecuteMysqlModule::OnGetMysqlMsg(LMsgSqlParam * msg)
 
 	if (msg->index > 0)
 	{
-		auto lmsg = new LMsgSqlParam();
+		auto lmsg = GET_LAYER_MSG(LMsgSqlParam);
 		lmsg->index = msg->index;
 		std::swap(lmsg->param, msg->param);
 		m_msgModule->SendMsg(LY_LOGIC, 0, L_MYSQL_MSG, lmsg);

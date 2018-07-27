@@ -5,44 +5,33 @@ void HttpNetModule::Init()
 {
 	m_mgsModule = GetLayer()->GetModule<MsgModule>();
 
-	m_mgsModule->AddMsgCallBack<NetSocket>(L_SOCKET_CLOSE, this, &HttpNetModule::OnCloseSocket);
-	m_mgsModule->AddMsgCallBack<NetMsg>(L_SOCKET_SEND_HTTP_DATA, this, &HttpNetModule::OnSendHttpMsg);
+	m_mgsModule->AddMsgCallBack(L_SOCKET_CLOSE, this, &HttpNetModule::OnCloseSocket);
+	m_mgsModule->AddMsgCallBack(L_SOCKET_SEND_HTTP_DATA, this, &HttpNetModule::OnSendHttpMsg);
 
-	m_mgsModule->AddMsgCallBack<NetServer>(L_CONNECT_PHP_CGI, this, &HttpNetModule::OnConnectPHPCgi);
+	m_mgsModule->AddMsgCallBack(L_CONNECT_PHP_CGI, this, &HttpNetModule::OnConnectPHPCgi);
 }
 
 void HttpNetModule::Execute()
 {
 }
 
-bool HttpNetModule::ReadPack(int socket, char * buf, int len)
+bool HttpNetModule::ReadPack(Conn* conn, char * buf, int len)
 {
-	auto it = m_conns.find(socket);
-	if (it == m_conns.end())
-		return false;
-
-	auto msg = new NetMsg();
-	msg->len = len;
-	msg->msg = new char[msg->len];
+	auto msg = GetLayer()->GetLayerMsg<NetMsg>();
 	msg->mid = N_RECV_HTTP_MSG;
-	msg->socket = socket;
-	memcpy(msg->msg, buf, msg->len);
+	msg->socket = conn->socket;
+	msg->push_front(GetLayer(),buf,len);
 	m_mgsModule->SendMsg(N_RECV_HTTP_MSG, msg);
 	return true;
 }
 
-bool HttpNetModule::ReadPackMid(int socket, char* buf, int len, int mid)
+bool HttpNetModule::ReadPackMid(Conn* conn, char* buf, int len, int mid)
 {
-	auto it = m_conns.find(socket);
-	if (it == m_conns.end())
-		return false;
-
-	auto msg = new NetMsg();
-	msg->len = len;
-	msg->msg = new char[msg->len];
+	auto socket = conn->socket;
+	auto msg = GetLayer()->GetLayerMsg<NetMsg>();
 	msg->mid = mid;
 	msg->socket = socket;
-	memcpy(msg->msg, buf, msg->len);
+	msg->push_front(GetLayer(),buf,len);
 	m_mgsModule->SendMsg(mid, msg);
 	return true;
 }
@@ -52,14 +41,14 @@ void HttpNetModule::OnSendHttpMsg(NetMsg * msg)
 	auto it = m_conns.find(msg->socket);
 	if (it != m_conns.end())
 	{
-		char* enbuf = msg->msg;
-		msg->msg = nullptr;
+		auto buff = msg->getCombinBuff(GetLayer());
 
 		uv_write_t* whand = GetLayer()->GetLoopObj<uv_write_t>();
 		Write_t* buf = GetLayer()->GetLoopObj<Write_t>();
 		buf->baseModule = this;
-		buf->buf.base = enbuf;
-		buf->buf.len = msg->len;
+		buf->buf.base = buff->m_buff;
+		buff->m_buff = NULL;	//è½¬ç§»buff ç½®ä¸º NULL
+		buf->buf.len = buff->m_size;
 		whand->data = buf;
 		uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
 	}
@@ -80,7 +69,9 @@ void HttpNetModule::OnConnectPHPCgi(NetServer * ser)
 	r = uv_tcp_init(m_uvloop, client);
 	ASSERT(r == 0);
 
-	client->data = new NetServer(*ser);
+	auto tmpser = GetLayer()->GetLayerMsg<NetServer>();
+	*tmpser = *ser;
+	client->data = tmpser;
 
 	r = uv_tcp_connect(connect_req, client, (const struct sockaddr*) &addr, Connect_cb);
 	ASSERT(r == 0);
@@ -88,7 +79,6 @@ void HttpNetModule::OnConnectPHPCgi(NetServer * ser)
 
 void HttpNetModule::Connect_cb(uv_connect_t* req, int status)
 {
-	int r;
 	ASSERT(req != NULL);
 
 	auto md = (HttpNetModule*)req->data;
@@ -106,7 +96,8 @@ void HttpNetModule::Connect_cb(uv_connect_t* req, int status)
 	else {
 		//cout << "PHP CGI not run on host:" << ser->ip << " port:" << ser->port << endl;
 		LP_ERROR(md->m_mgsModule)<<"PHP CGI not run on host:"<<ser->ip<<" port:"<<ser->port;
-		delete ser;
+		//delete ser;
+		md->GetLayer()->RecycleLayerMsg(ser);
 		md->GetLayer()->Recycle(cli);
 	}
 	md->GetLayer()->Recycle(req);
@@ -114,14 +105,13 @@ void HttpNetModule::Connect_cb(uv_connect_t* req, int status)
 
 void HttpNetModule::After_read_CGI(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf)
 {
-	auto sc = (Conn*)client->data;;
-	auto sock = sc->socket;
+	auto sc = (Conn*)client->data;
 	auto server = (HttpNetModule*)sc->netmodule;
 	if (nread < 0) {
 		/* Error or EOF */
 		//ASSERT(nread == UV_EOF);
 		delete[] buf->base;
-		//uv_close »á°Ñ socket ÖÃ¿Õ ËùÒÔÏÈ±£´æ
+		//uv_close ï¿½ï¿½ï¿½ socket ï¿½Ã¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½È±ï¿½ï¿½ï¿½
 		uv_close((uv_handle_t*)client, client->close_cb);
 		return;
 	}
@@ -132,7 +122,7 @@ void HttpNetModule::After_read_CGI(uv_stream_t* client, ssize_t nread, const uv_
 		return;
 	}
 
-	if (!server->ReadPackMid(sc->socket, buf->base, nread, N_RECV_PHP_CGI_MSG))
+	if (!server->ReadPackMid(sc, buf->base, nread, N_RECV_PHP_CGI_MSG))
 	{
 		uv_close((uv_handle_t*)client, client->close_cb);
 	}

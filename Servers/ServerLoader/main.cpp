@@ -6,6 +6,7 @@
 #include <map>
 #include <thread>
 #include "cmdline.h"
+#include "dump.h"
 
 using namespace std;
 
@@ -41,16 +42,23 @@ void LoadServerConf(map<int,string>& conf)
 		conf[v["type"].asInt()] = v["name"].asString();
 }
 
+void StartInitCrash(const std::string& proname,const int32_t& nid)
+{
+	auto path = LoopFile::GetExecutePath();
+	path.append("dump/");
+	InitCrash(path, proname+"_"+std::to_string(nid));
+}
+
 int main(int argc, char* args[])
 {
-	map<int, string> serverConf;
-	LoadServerConf(serverConf);
-
 	if (argc <ARG_NUM || ((argc - 1) % ARG_USE_NUM) != 0)
 	{
 		cout << "argc num error" << endl;
 		assert(0);
 	}
+
+	map<int, string> serverConf;
+	LoadServerConf(serverConf);
 
 	vector<thread> thrs;
 	int num = argc / ARG_USE_NUM;
@@ -69,9 +77,13 @@ int main(int argc, char* args[])
 		param.add<int>("id", 'n', "server port", true, 0);
 		param.parse_check(ARG_NUM, nargs);
 		auto type = param.get<int>("type");
-		
+		auto nid = param.get<int>("id");
 		string dllname = serverConf[type];
 		assert(dllname.size() > 0);
+		if (i==0)
+		{
+			StartInitCrash(dllname,nid);
+		}
 
 		dllhelp dll(dllname);
 		if (dll.Load())

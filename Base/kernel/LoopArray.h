@@ -1,74 +1,8 @@
 #ifndef LOOP_ARRAY_H
 #define LOOP_ARRAY_H
 
-#if defined( __WIN32__ ) || defined( _WIN32 ) || defined(_WINDOWS) || defined(WIN) || defined(_WIN64) || defined( __WIN64__ )
-#define l_sleep(s) Sleep(s)
-#else
-#include <unistd.h>
-#define l_sleep(s) usleep(s*1000)
-#endif
-template<typename T>
-class LoopArray
-{
-public:
-
-	LoopArray(size_t size):m_ridx(0),m_widx(0)
-	{
-		m_data = new T[size];
-		m_size = size;
-	}
-
-	~LoopArray()
-	{
-		delete[] m_data;
-	}
-
-	T read() {
-		lockRead();
-		m_ridx = IncIndex(m_ridx);
-		return m_data[m_ridx];
-	}
-
-	void write(T t)
-	{
-		lockWrite();
-		m_data[IncIndex(m_widx)] = t;
-		m_widx = IncIndex(m_widx);
-	}
-
-protected:
-	size_t IncIndex(size_t idx)
-	{
-		return ++idx >= m_size ? 0:idx;
-	}
-
-	bool tryRead() {
-		return m_ridx != m_widx;
-	};
-	bool tryWrite() {
-		return IncIndex(m_widx) != m_ridx;
-	};
-
-	void lockRead()
-	{
-		while (!tryRead())
-			l_sleep(2);
-	}
-
-	void lockWrite()
-	{
-		while (!tryWrite())
-			l_sleep(2);
-	}
-
-private:
-	T* m_data;
-	size_t m_size;
-	size_t m_ridx;
-	size_t m_widx;
-};
-
 #define DEF_LOOP_SIZE 1000
+#include "FactorManager.h"
 
 template<typename T>
 class LoopList
@@ -77,11 +11,12 @@ public:
 	typedef struct LN
 	{
 		LN(T t):data(t),next(NULL)
-		{
-		}
+		{}
+		LN():next(NULL)
+		{}
+
 		~LN()
-		{
-		}
+		{}
 		T data;
 		LN* next;
 	}LPNode;
@@ -92,28 +27,52 @@ public:
 		LPNode* tail;
 
 		LP():head(NULL),tail(NULL)
-		{
-		}
+		{}
 
 		~LP()
+		{}
+
+		LPNode* pop()
 		{
-			while (head)
-			{
-				LPNode* n = head;
-				head = head->next;
-				delete n;
-			}
+			if (head == NULL)
+				return NULL;
+
+			auto tmp = head;
+			head = head->next;
+			if (head == NULL)
+				tail = NULL;
+			tmp->next = NULL;
+			return tmp;
 		}
-		
-		void push(T t)
+
+		void push(LPNode* n)
 		{
 			if (tail == NULL)
-				head = tail = new LPNode(t);
+				head = tail = n;
 			else
 			{
-				LPNode* n = new LPNode(t);
 				tail->next = n;
 				tail = n;
+			}
+		}
+
+		void combin(LP& lp)
+		{
+			if (!lp.tail)
+				return;
+			if (tail)
+			{
+				tail->next = lp.head;
+				tail = lp.tail;
+				lp.head = NULL;
+				lp.tail = NULL;
+			}
+			else
+			{
+				head = lp.head;
+				tail = lp.tail;
+				lp.head = NULL;
+				lp.tail = NULL;
 			}
 		}
 
@@ -123,39 +82,81 @@ public:
 		}
 	}LPList;
 
-	LoopList():m_size(DEF_LOOP_SIZE), m_widx(0), m_ridx(0)
+	LoopList():m_size(DEF_LOOP_SIZE), m_widx(0), m_ridx(0), m_lockindex(-1)
 	{
 		m_data = new LPList[DEF_LOOP_SIZE];
+		m_cash = new LPList[DEF_LOOP_SIZE];
 	}
 
-	LoopList(size_t size):m_size(size),m_widx(0),m_ridx(0)
+	LoopList(size_t size):m_size(size),m_widx(0),m_ridx(0), m_lockindex(-1)
 	{
 		m_data = new LPList[size];
+		m_cash = new LPList[size];
 	}
 
 	~LoopList()
 	{
 		delete[] m_data;
+		delete[] m_cash;
 	}
 
 	void write(T t)
 	{
-		if (tryWrite())
+		while (true)
 		{
-			LPList* lw = &m_data[IncIndex(m_widx)];
-			lw->push(t);
-			m_widx = IncIndex(m_widx);
-		}
-		else
-		{
-			LPList* lw = &m_data[m_widx];
-			lw->push(t);
+			if (tryWrite())
+			{
+				int32_t idx = IncIndex(m_widx);
+				recycleCash(idx);
+				LPList* lw = &m_data[idx];
+				auto n = getNode();
+				n->data = t;
+				lw->push(n);
+				m_widx = idx;
+				break;
+			}
+			else
+			{
+				m_lockindex = m_widx;
+				if (tryWrite())
+					m_lockindex = -1;
+				else
+				{
+					LPList* lw = &m_data[m_widx];
+					auto n = getNode();
+					n->data = t;
+					lw->push(n);
+					m_lockindex = -1;
+					break;
+				}
+			}
 		}
 	}
 
+	bool pop(T& t)
+	{
+		auto ln = m_cur.pop();
+		if (ln)
+		{
+			t = ln->data;
+			recycleNode(ln);
+			return true;
+		}
+		if(!read(m_cur))
+			return false;
+
+		ln = m_cur.pop();
+		t = ln->data;
+		recycleNode(ln);
+		return true;
+	}
+
+protected:
 	bool read(LPList& l)
 	{
 		if (!tryRead())
+			return false;
+		if (m_lockindex >= 0 && m_lockindex == IncIndex(m_ridx))
 			return false;
 		m_ridx = IncIndex(m_ridx);
 
@@ -167,19 +168,25 @@ public:
 		return true;
 	}
 
-	bool readTimeOut(LPList& l,size_t mt,size_t count=0)
+	void recycleCash(int32_t index)
 	{
-		while (!read(l))
-		{
-			l_sleep(mt);
-			--count;
-			if (count <= 0)
-				return false;
-		}
-		return true;
+		m_pool.combin(m_cash[index]);
 	}
 
-protected:
+	LPNode* getNode()
+	{
+		auto n = m_pool.pop();
+		if (n)
+			return n;
+		else
+			return Single::LocalInstance<FactorManager>()->getLoopObj<LPNode>();
+	}
+
+	void recycleNode(LPNode* n)
+	{
+		m_cash[m_ridx].push(n);
+	}
+
 	size_t IncIndex(size_t idx)
 	{
 		return ++idx == m_size ? 0 : idx;
@@ -190,13 +197,16 @@ protected:
 	};
 	bool tryWrite() {
 		return IncIndex(m_widx) != m_ridx;
-	};
-
+	}
 private:
 	LPList* m_data;
+	LPList m_cur;
 	size_t m_size;
-	size_t m_ridx;
-	size_t m_widx;
+	volatile size_t m_ridx;
+	volatile size_t m_widx;
+	volatile int32_t m_lockindex;
+	LPList* m_cash;
+	LPList m_pool;
 };
 
 #endif

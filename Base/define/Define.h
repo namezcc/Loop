@@ -1,6 +1,7 @@
 #ifndef DEFINE_H
 #define DEFINE_H
 #include <stdio.h>
+#include <stdint.h>
 
 #define PLATFORM_WIN 1
 #define PLATFORM_LINUX 2

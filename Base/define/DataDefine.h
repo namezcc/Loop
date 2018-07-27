@@ -2,6 +2,7 @@
 #define DATA_DEFINE_H
 #include "FactorManager.h"
 #include "LTime.h"
+#include <cstring>
 
 enum CONN_TYPE
 {
@@ -20,6 +21,7 @@ enum CONN_STATE
 
 enum SERVER_TYPE
 {
+	LOOP_SERVER_NONE = -1,
 	LOOP_GAME = 0,
 	LOOP_PROXY_SQL = 1,
 	LOOP_LOGIN = 2,
@@ -28,6 +30,7 @@ enum SERVER_TYPE
 	LOOP_MASTER = 5,
 	LOOP_CONSOLE = 6,
 	LOOP_PROXY_DB = 7,
+	LOOP_SERVER_END,
 };
 
 enum LAYER_TYPE
@@ -52,7 +55,7 @@ struct NetBuffer
 	~NetBuffer()
 	{
 		if (buf)
-			delete[] buf;
+			free(buf);
 	}
 
 	NetBuffer(NetBuffer&& b):buf(b.buf),len(b.len),use(b.use),scan(b.scan)
@@ -79,7 +82,7 @@ struct NetBuffer
 	void Clear()
 	{
 		if (buf)
-			delete[] buf;
+			free(buf);
 		buf = nullptr;
 		len = use = scan = 0;
 	}
@@ -88,10 +91,10 @@ struct NetBuffer
 	{
 		if (len>=size)
 			return;
-		auto room = new char[size];
+		auto room = (char*)malloc(size);
 		if (use > 0)
 			memcpy(room, buf, use);
-		delete[] buf;
+		free(buf);
 		buf = room;
 		len = size;
 	}
@@ -107,12 +110,12 @@ struct NetBuffer
 		}
 		else
 		{
-			char* room = new char[use + nlen];
+			char* room = (char*)malloc(use + nlen);
 			if (buf)
 			{
 				if (use>0)
 					memcpy(room, buf, use);
-				delete[] buf;
+				free(buf);
 			}
 			memcpy(room + use, newbuf, nlen);
 			buf = room;
@@ -156,7 +159,7 @@ struct NetObject:public LoopObject
 	int socket;
 	int64_t ctime;
 	int type;
-	// Í¨¹ý LoopObject ¼Ì³Ð
+	// Í¨ï¿½ï¿½ LoopObject ï¿½Ì³ï¿½
 	void init(FactorManager * fm)
 	{
 		ctime = GetSecend();

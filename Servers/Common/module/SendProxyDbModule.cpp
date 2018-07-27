@@ -19,8 +19,7 @@ void SendProxyDbModule::Init()
 
 void SendProxyDbModule::SendToProxyDb(google::protobuf::Message & msg, const int & hash, const int & mid)
 {
-	int len;
-	char* send = PB::PBToChar(msg, len, 4);
-	PB::WriteInt(send, hash);
-	m_tranModule->SendToServer(m_proxy, mid, send, len);
+	auto send = PB::PBToBuffBlock(GetLayer(),msg);
+	PB::WriteInt(send->m_buff, hash);
+	m_tranModule->SendToServer(m_proxy, mid, send);
 }

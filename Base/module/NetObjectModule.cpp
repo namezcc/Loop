@@ -17,12 +17,12 @@ void NetObjectModule::Init()
 	m_msgModule = GetLayer()->GetModule<MsgModule>();
 	m_eventModule = GetLayer()->GetModule<EventModule>();
 
-	m_msgModule->AddMsgCallBack<NetSocket>(L_SOCKET_CONNET,this,&NetObjectModule::OnSocketConnet);
-	m_msgModule->AddMsgCallBack<NetSocket>(L_SOCKET_CLOSE, this, &NetObjectModule::OnSocketClose);
-	m_msgModule->AddMsgCallBack<NetServer>(L_SERVER_CONNECTED, this, &NetObjectModule::OnServerConnet);
-	m_msgModule->AddMsgCallBack<NetMsg>(N_REGISTE_SERVER, this, &NetObjectModule::OnServerRegiste);
+	m_msgModule->AddMsgCallBack(L_SOCKET_CONNET,this,&NetObjectModule::OnSocketConnet);
+	m_msgModule->AddMsgCallBack(L_SOCKET_CLOSE, this, &NetObjectModule::OnSocketClose);
+	m_msgModule->AddMsgCallBack(L_SERVER_CONNECTED, this, &NetObjectModule::OnServerConnet);
+	m_msgModule->AddMsgCallBack(N_REGISTE_SERVER, this, &NetObjectModule::OnServerRegiste);
 	
-	m_msgModule->AddMsgCallBack<NetServer>(L_PHP_CGI_CONNECTED, this, &NetObjectModule::OnPHPCgiConnect);
+	m_msgModule->AddMsgCallBack(L_PHP_CGI_CONNECTED, this, &NetObjectModule::OnPHPCgiConnect);
 
 	m_eventModule->AddEventCallBack(E_CLIENT_HTTP_CONNECT, this, &NetObjectModule::OnHttpClientConnect);
 	
@@ -31,7 +31,7 @@ void NetObjectModule::Init()
 
 void NetObjectModule::BeforExecute()
 {
-	auto config = GetLayer()->GetLoopServer()->GetConfig();
+	auto& config = GetLayer()->GetLoopServer()->GetConfig();
 
 	for (auto& ser:config.connect)
 	{
@@ -101,33 +101,40 @@ void NetObjectModule::AcceptConn(const int & socket)
 
 void NetObjectModule::SendNetMsg(const int & socket, const int & mid, google::protobuf::Message & pbmsg)
 {
-	NetMsg* nMsg = new NetMsg();
+	NetMsg* nMsg = GetLayer()->GetLayerMsg<NetMsg>();
+	//new NetMsg();
 	nMsg->socket = socket;
 	nMsg->mid = mid;
-	nMsg->msg = PB::PBToChar(pbmsg, nMsg->len,PACK_HEAD_SIZE);
+	auto buff = PB::PBToBuffBlock(GetLayer(),pbmsg);
+	nMsg->push_front(buff);
 	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
 }
 
-void NetObjectModule::SendNetMsg(const int& socket, char* msg, const int& mid, const int& len)
+void NetObjectModule::SendNetMsg(const int& socket,const int32_t & mid, BuffBlock* buff)
 {
-	//m_object Ã»¼ÓÅÐ¶Ï ... ²»ÐèÒª
-	NetMsg* nMsg = new NetMsg();
+	//m_object Ã»ï¿½ï¿½ï¿½Ð¶ï¿½ ... ï¿½ï¿½ï¿½ï¿½Òª
+	NetMsg* nMsg = GetLayer()->GetLayerMsg<NetMsg>();
+	//new NetMsg();
 	nMsg->socket = socket;
 	nMsg->mid = mid;
-	nMsg->len = len;
-	nMsg->msg = msg;
-
+	//nMsg->len = len;
+	//nMsg->msg = msg;
+	nMsg->push_front(buff);
 	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
 }
 
 void NetObjectModule::SendHttpMsg(const int& socket, NetBuffer& buf)
 {
-	NetMsg* nMsg = new NetMsg();
+	NetMsg* nMsg = GetLayer()->GetLayerMsg<NetMsg>();
+	auto buffblk = GetLayer()->GetLayerMsg<BuffBlock>();
+	//new NetMsg();
 	nMsg->socket = socket;
-	nMsg->len = buf.use;
-	nMsg->msg = buf.buf;
-
+	//nMsg->len = buf.use;
+	//nMsg->msg = buf.buf;
+	buffblk->m_buff = buf.buf;
+	buffblk->m_size = buf.use;
 	buf.buf = nullptr;
+	nMsg->push_front(buffblk);
 	m_msgModule->SendMsg(L_SOCKET_SEND_HTTP_DATA, nMsg);
 }
 
@@ -137,7 +144,9 @@ void NetObjectModule::CloseNetObject(const int& socket)
 	if (it == m_objects.end())
 		return;
 
-	NetSocket* sock = new NetSocket(socket);
+	NetSocket* sock = GetLayer()->GetLayerMsg<NetSocket>();
+	sock->socket = socket;
+	//new NetSocket(socket);
 
 	m_msgModule->SendMsg(L_SOCKET_CLOSE, sock);
 	m_objects.erase(it);
@@ -157,7 +166,9 @@ void NetObjectModule::AddServerConn(const int& sType, const int& sid, const std:
 
 void NetObjectModule::ConnectPHPCgi(NetServer& cgi)
 {
-	auto msg = new NetServer(cgi);
+	auto msg = GetLayer()->GetLayerMsg<NetServer>();
+	*msg = cgi;
+	//new NetServer(cgi);
 	m_msgModule->SendMsg(L_CONNECT_PHP_CGI, msg);
 }
 
@@ -171,20 +182,20 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 	it->second->state = CONN_STATE::CONNECT;
 
 	m_serverConn[ser->socket] = it->second;
-	//Ìí¼Ó½ø m_object Àï
+	//ï¿½ï¿½Ó½ï¿½ m_object ï¿½ï¿½
 	auto netobj = GetLayer()->GetSharedLoop<NetObject>();
 	netobj->socket = ser->socket;
 	netobj->type = CONN_SERVER;
 	m_objects[netobj->socket] = netobj;
 
-	//·¢ËÍ×¢²áÏûÏ¢
+	//ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½ï¿½ï¿½Ï¢
 	auto myser = GetLayer()->GetServer();
 	LPMsg::ServerInfo xMsg;
 	xMsg.set_id(myser->serid);
 	xMsg.set_type(myser->type);
 	SendNetMsg(ser->socket, N_REGISTE_SERVER, xMsg);
 
-	//Í¨ÖªÁ¬½Ó³É¹¦
+	//Í¨Öªï¿½ï¿½ï¿½Ó³É¹ï¿½
 	m_eventModule->SendEvent(E_SERVER_CONNECT, it->second);
 	m_serverTmp.erase(it);
 }
@@ -197,9 +208,9 @@ void NetObjectModule::ServerClose(const int& socket)
 	it->second->socket = -1;
 	it->second->state = CONN_STATE::CLOSE;
 	m_serverTmp[it->second->serid] = it->second;
-	//´Ó m_objectÀïÉ¾³ý
-	//m_objects.erase(socket); ÒÑ½›„hÁË
-	//ÊÂ¼þÍ¨Öª
+	//ï¿½ï¿½ m_objectï¿½ï¿½É¾ï¿½ï¿½
+	//m_objects.erase(socket); ï¿½Ñ½ï¿½ï¿½hï¿½ï¿½
+	//ï¿½Â¼ï¿½Í¨Öª
 	m_eventModule->SendEvent(E_SERVER_CLOSE, it->second);
 	m_serverConn.erase(it);
 }
@@ -214,7 +225,7 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 	m_objects[msg->socket] = it->second;
 	m_objects_tmp.erase(it);
 	
-	//´ýÓÅ»¯
+	//ï¿½ï¿½ï¿½Å»ï¿½
 	//LPMsg::ServerInfo xMsg;
 	//xMsg.ParseFromArray(msg->msg, msg->len);
 	TRY_PARSEPB(LPMsg::ServerInfo,msg,m_msgModule)
@@ -233,12 +244,12 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 
 void NetObjectModule::OnPHPCgiConnect(NetServer* ser)
 {
-	//Ìí¼Ó½ø m_object Àï
+	//ï¿½ï¿½Ó½ï¿½ m_object ï¿½ï¿½
 	auto netobj = GetLayer()->GetSharedLoop<NetObject>();
 	netobj->socket = ser->socket;
 	netobj->type = CONN_PHP_CGI;
 	m_objects[netobj->socket] = netobj;
-	//Í¨ÖªÁ¬½Ó³É¹¦
+	//Í¨Öªï¿½ï¿½ï¿½Ó³É¹ï¿½
 	m_eventModule->SendEvent(E_PHP_CGI_CONNECT, ser);
 }
 
@@ -265,7 +276,9 @@ void NetObjectModule::CheckOutTime()
 	{
 		if (it->second->ctime < nt)
 		{
-			NetSocket* sock = new NetSocket(it->second->socket);
+			NetSocket* sock = GetLayer()->GetLayerMsg<NetSocket>();
+			sock->socket = it->second->socket;
+			//new NetSocket(it->second->socket);
 			m_msgModule->SendMsg(L_SOCKET_CLOSE, sock);
 			m_objects_tmp.erase(it++);
 		}
@@ -284,7 +297,9 @@ void NetObjectModule::CheckReconnect()
 	m_lastTime = nt+2;//2 secend check once
 	for (auto& it:m_serverTmp)
 	{
-		auto msg = new NetServer(*it.second);
+		auto msg = GetLayer()->GetLayerMsg<NetServer>();
+		*msg = *it.second;
+		//new NetServer(*it.second);
 		m_msgModule->SendMsg(L_TO_CONNET_SERVER, msg);
 	}
 }

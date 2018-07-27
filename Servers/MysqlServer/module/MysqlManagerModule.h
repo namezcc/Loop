@@ -43,10 +43,10 @@ private:
 	void InitTableGroupNum();
 	void CreateMysqlTable(int group = 1);
 
-	void OnGetGroupId(NetMsg* msg);
+	void OnGetGroupId(NetServerMsg* msg);
 
-	void OnCreateAccount(NetMsg* msg);
-	void OnGetMysqlMsg(NetMsg* msg);
+	void OnCreateAccount(NetServerMsg* msg);
+	void OnGetMysqlMsg(NetServerMsg* msg);
 	void OnGetMysqlRes(LMsgSqlParam* msg);
 	void OnUpdateTableGroup(NetMsg* msg);
 	void OnAddTableGroup(NetMsg* msg);

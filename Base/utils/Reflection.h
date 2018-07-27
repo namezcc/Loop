@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <functional>
 #include <stdint.h>
 using namespace std;
 
@@ -307,7 +308,7 @@ struct ReflectField
 
 	static FieldMap& GetFieldMap()
 	{
-		static FieldMap m;
+		static thread_local FieldMap m;
 		return m;
 	}
 
@@ -403,9 +404,14 @@ template<> struct Reflect<T>:public ReflectField<T>{ \
 	} \
 }; 
 
-//×î´ó64¸ö×Ö¶Î
+//ï¿½ï¿½ï¿½64ï¿½ï¿½ï¿½Ö¶ï¿½
 #define REFLECT(T,...) \
 	MAKE_REFLECT(T,GET_ARG_N(__VA_ARGS__),__VA_ARGS__)
+
+#define REFLECT_CPP_DEFINE(T) \
+	constexpr array<const char*,Reflect<T>::Size()> Reflect<T>::arr_fields; \
+	constexpr array<int,Reflect<T>::Size()> Reflect<T>::arr_offset; \
+	constexpr array<int,Reflect<T>::Size()> Reflect<T>::arr_type; 
 
 enum SQL_FIELD_TYPE
 {
@@ -472,16 +478,16 @@ struct TableQuery
 
 		for (auto& s : alters)
 		{
-			string alter("alter table ");
+			string alter("alter table `");
 			alter.append(tableName);
-			alter.append(" add ").append(s);
+			alter.append("` add ").append(s);
 			call(alter);
 		}
 		for (auto& s : indexs)
 		{
-			string alter("alter table ");
+			string alter("alter table `");
 			alter.append(tableName);
-			alter.append(" add index ").append(s).append("(").append(s).append(");");
+			alter.append("` add index ").append(s).append("(").append(s).append(");");
 			call(alter);
 		}
 	}
@@ -489,7 +495,7 @@ private:
 	static string GetFieldSql(const FieldDesc& f)
 	{
 		string sql;
-		sql.append(f.name);
+		sql.append("`").append(f.name).append("`");
 		switch (f.type)
 		{
 		case SQL_INT:
@@ -521,7 +527,8 @@ private:
 
 
 #define MAKE_PRIMKEY(N,...) \
-	static constexpr array<const char*,N> paramkey{MAKE_STR_LIST(__VA_ARGS__)};
+	static constexpr array<const char*,N> paramkey{MAKE_STR_LIST(__VA_ARGS__)}; \
+	static constexpr int32_t m_paramSize=N;
 
 #define PRIMKEY(...) \
 	MAKE_PRIMKEY(GET_ARG_N(__VA_ARGS__),__VA_ARGS__)
@@ -535,5 +542,9 @@ template<> struct TableDesc<T>{ \
 	FieldDesc{CONCATSTR(FIELD_FLAG,field),type,len,nullable,defval,index,comment},
 
 #define TABLE_DESC_END };};
+
+#define TABLE_CPP_DEFINE(T) \
+	constexpr array<const char*,TableDesc<T>::m_paramSize> TableDesc<T>::paramkey; \
+	constexpr array<FieldDesc, Reflect<T>::Size()> TableDesc<T>::fields;
 
 #endif

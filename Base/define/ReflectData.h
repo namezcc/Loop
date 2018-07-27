@@ -27,9 +27,9 @@ REFLECT(ServerInfo, id, ip, port, name)
 
 TABLE_DESC_BEGAN(ServerInfo, id)
 FIELD_DESC(id, SQL_FIELD_TYPE::SQL_INT, 11, false, "", false, "")
-FIELD_DESC(ip, SQL_FIELD_TYPE::SQL_VARCHAR,64, false, "", false, "server ip")
-FIELD_DESC(port, SQL_FIELD_TYPE::SQL_INT, 11, false, "", false, "server port")
-FIELD_DESC(name, SQL_FIELD_TYPE::SQL_VARCHAR, 64, false, "", false, "server name")
+FIELD_DESC(ip, SQL_FIELD_TYPE::SQL_VARCHAR,64, false, "", false, "'server ip'")
+FIELD_DESC(port, SQL_FIELD_TYPE::SQL_INT, 11, false, "", false, "'server port'")
+FIELD_DESC(name, SQL_FIELD_TYPE::SQL_VARCHAR, 64, false, "", false, "'server name'")
 TABLE_DESC_END
 
 #endif

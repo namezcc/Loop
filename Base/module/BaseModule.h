@@ -2,6 +2,7 @@
 #define BASE_MODULE_H
 #include "BaseLayer.h"
 #include "MsgDefine.h"
+#include "BaseMsg.h"
 #include "DataDefine.h"
 #include "Utils.h"
 #include "LPStringUtil.h"
@@ -32,5 +33,6 @@ private:
 
 #define GET_MODULE(M) GetLayer()->GetModule<M>()
 #define GET_SHARE(T) GetLayer()->GetSharedLoop<T>()
+#define GET_LAYER_MSG(T) GetLayer()->GetLayerMsg<T>()
 
 #endif
