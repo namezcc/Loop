@@ -5,6 +5,7 @@
 #include "MysqlManagerModule.h"
 #include "MysqlModule.h"
 #include "MysqlLayer.h"
+#include "Coro1Module.h"
 
 EXPORT void DLL_START_NAME(int argc,char* args[])
 {
@@ -17,6 +18,7 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 	auto ll = ser.CreateLayer<LogicLayer>(LY_LOGIC);
 	ll->CreateModule<MysqlManagerModule>();
 	ll->CreateModule<MysqlModule>();
+	ll->CreateModule<Coro1Module>();
 
 	ser.BuildPipe(nl, ll);
 

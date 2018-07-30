@@ -11,14 +11,36 @@ class LOOP_EXPORT TransMsgModule:public BaseModule
 public:
 	TransMsgModule(BaseLayer* l);
 	~TransMsgModule();
+	typedef std::vector<SHARE<ServerNode>> VecPath;
 
-	SHARE<NetServer> GetServerConn(const int& sock);
-	void SendToServer(ServerNode& ser, const int& mid, BuffBlock* buff);
-	void SendToServer(ServerNode& ser, const int& mid, google::protobuf::Message& msg);
-	void SendToAllServer(const int& stype, const int& mid, google::protobuf::Message& msg);
-	void SendToServer(vector<SHARE<ServerNode>>& path, const int& mid, google::protobuf::Message& msg,const int& toidx=1);
-	void SendToServer(vector<SHARE<ServerNode>>& path, const int& mid,BuffBlock* buff, const int& toidx = 1);
-	void SendBackServer(vector<SHARE<ServerNode>>& path, const int& mid, google::protobuf::Message& msg);
+
+	SHARE<NetServer> GetServerConn(const int32_t& sock);
+	void SendToServer(ServerNode& ser, const int32_t& mid, BuffBlock* buff);
+	void SendToServer(ServerNode& ser, const int32_t& mid, google::protobuf::Message& msg);
+	void SendToAllServer(const int32_t& stype, const int32_t& mid, google::protobuf::Message& msg);
+	void SendToServer(vector<SHARE<ServerNode>>& path, const int32_t& mid, google::protobuf::Message& msg);
+	void SendToServer(vector<SHARE<ServerNode>>& path, const int32_t& mid,BuffBlock* buff);
+	void SendBackServer(vector<SHARE<ServerNode>>& path, const int32_t& mid, google::protobuf::Message& msg);
+
+	SHARE<BaseMsg> RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro);
+	SHARE<BaseMsg> RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+	SHARE<BaseMsg> RequestServerAsynMsg(VecPath& path, const int32_t& mid, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro);
+	SHARE<BaseMsg> RequestServerAsynMsg(VecPath& path, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+	SHARE<BaseMsg> RequestBackServerAsynMsg(VecPath& path, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+
+	SHARE<BaseMsg> ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro);
+	SHARE<BaseMsg> ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+	SHARE<BaseMsg> ResponseServerAsynMsg(VecPath& path, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro);
+	SHARE<BaseMsg> ResponseServerAsynMsg(VecPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+	SHARE<BaseMsg> ResponseBackServerAsynMsg(VecPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+
+	void ResponseServerMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff);
+	void ResponseServerMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, gpb::Message& msg);
+	void ResponseServerMsg(VecPath& path, SHARE<BaseMsg>& comsg, BuffBlock* buff);
+	void ResponseServerMsg(VecPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg);
+	void ResponseBackServerMsg(VecPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg);
+
+	BuffBlock* EncodeCoroMsg(BuffBlock* buff, const int32_t& mid, const int32_t& coid, const int32_t& mycoid = 0);
 protected:
 	virtual void Init() override;
 	virtual void Execute() override;
@@ -28,29 +50,29 @@ protected:
 	void OnServerConnect(SHARE<NetServer>& ser);
 	void OnServerClose(SHARE<NetServer>& ser);
 
-	void TransMsgToServer(vector<SHARE<ServerNode>>& sers,const int& mid, google::protobuf::Message& pbmsg, const int& toidx = 1);
-	void TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int& mid,BuffBlock* buffblock,const int& toidx=1);
+	void TransMsgToServer(vector<SHARE<ServerNode>>& sers,const int32_t& mid, google::protobuf::Message& pbmsg);
+	void TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int32_t& mid,BuffBlock* buffblock);
 
-	int GetPathSize(vector<SHARE<ServerNode>>& sers);
+	int32_t GetPathSize(vector<SHARE<ServerNode>>& sers);
 
 	void OnGetTransMsg(NetMsg* nmsg);
 
-	NetServer* GetServer(const int& type, const int& serid);
+	NetServer* GetServer(const int32_t& type, const int32_t& serid);
 
 	void GetTransPath(ServerNode& beg, ServerNode& end, vector<SHARE<ServerNode>>& path);
 	bool GetToPath(vector<SHARE<ServerNode>>& path);
-	BuffBlock* PathToBuff(vector<SHARE<ServerNode>>& path,const int32_t& mid,const int32_t& toidx=1);
+	BuffBlock* PathToBuff(vector<SHARE<ServerNode>>& path,const int32_t& mid, const int32_t& toindex=1);
 private:
 	EventModule* m_eventModule;
 	NetObjectModule* m_netObjMod;
 	MsgModule* m_msgModule;
 
-	map<int, map<int, SHARE<NetServer>>> m_serverList;
-	map<int, SHARE<NetServer>> m_allServer;//sock -> ser
+	map<int32_t, map<int32_t, SHARE<NetServer>>> m_serverList;
+	map<int32_t, SHARE<NetServer>> m_allServer;//sock -> ser
 
-	map<string, int> m_serverType;
-	map<string, list<vector<int>>> m_serverPath;
-	map<int, map<int, int>> m_serverLink;
+	map<string, int32_t> m_serverType;
+	map<string, list<vector<int32_t>>> m_serverPath;
+	map<int32_t, map<int32_t, int32_t>> m_serverLink;
 };
 
 #endif

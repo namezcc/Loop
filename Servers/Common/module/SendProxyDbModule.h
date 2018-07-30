@@ -5,6 +5,7 @@
 #include "Reflection.h"
 
 class TransMsgModule;
+class MsgModule;
 
 class SendProxyDbModule:public BaseModule
 {
@@ -13,6 +14,7 @@ public:
 	~SendProxyDbModule();
 
 	void SendToProxyDb(google::protobuf::Message& msg,const int& hash,const int& mid);
+	SHARE<BaseMsg> RequestToProxyDb(google::protobuf::Message& msg, const int& hash, const int& mid, c_pull& pull, SHARE<BaseCoro>& coro);
 
 
 	template<typename T>
@@ -37,6 +39,7 @@ private:
 
 private:
 	TransMsgModule * m_tranModule;
+	MsgModule* m_msgModule;
 
 	ServerNode m_proxy;
 };

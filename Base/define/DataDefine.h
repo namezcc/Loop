@@ -2,7 +2,9 @@
 #define DATA_DEFINE_H
 #include "FactorManager.h"
 #include "LTime.h"
+#include "BaseMsg.h"
 #include <cstring>
+#include <boost/coroutine2/all.hpp>
 
 enum CONN_TYPE
 {
@@ -183,5 +185,46 @@ struct TransHead
 	};
 };
 
+namespace bc = boost::coroutines2;
+typedef bc::coroutine<SHARE<BaseMsg>&>::push_type c_push;
+typedef bc::coroutine<SHARE<BaseMsg>&>::pull_type c_pull;
+
+#define CORO_TIME_OUT 5		//second
+
+struct BaseCoro:public LoopObject
+{
+	virtual void init(FactorManager* fm)
+	{
+		m_coroId = 0;
+		m_endPoint = 0;
+	}
+
+	virtual void recycle(FactorManager* fm)
+	{
+		if (m_coro) 
+			m_coro.reset();
+	}
+
+	void SetCoro(c_push* nCo)
+	{
+		m_coro.reset(nCo);
+	}
+
+	void Refresh(const int32_t& nCoid)
+	{
+		m_coroId = nCoid;
+		m_endPoint = GetSecend() + CORO_TIME_OUT;
+	}
+
+	void Clear()
+	{
+		if(m_coro)
+			m_coro.reset();
+	}
+
+	int64_t m_endPoint;
+	int32_t m_coroId;
+	SHARE<c_push> m_coro;
+};
 
 #endif

@@ -83,6 +83,7 @@ struct LOOP_EXPORT BuffBlock:public BaseData,public LoopObject
 	BuffBlock();
 
 	void makeRoom(const int32_t& size);
+	void append(const char* buf, const int32_t& size);
 	void write(char* buf, const int32_t& size);
 	virtual void initMsg() override {
 		m_size = 0;
@@ -106,6 +107,8 @@ struct LOOP_EXPORT NetMsg:public BaseData
 	void push_front(BuffBlock* buff);
 	virtual void push_front(BaseLayer* l,const char* buf,const int32_t& size);
 	SHARE<BuffBlock> getCombinBuff(BaseLayer* l);
+	void write_front(const char* buf, const int32_t& size);
+
 	inline int32_t getLen() { return len; };
 
 	int32_t socket;
@@ -160,6 +163,8 @@ struct LOOP_EXPORT LogInfo:public BaseData
 	int32_t level;
 	std::stringstream log;
 };
+
+namespace gpb = google::protobuf;
 
 struct LOOP_EXPORT PB
 {

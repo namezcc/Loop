@@ -2,6 +2,7 @@
 #include "MysqlModule.h"
 #include "MsgModule.h"
 #include "ExecuteMysqlModule.h"
+#include "Coro2Module.h"
 
 MysqlLayer::MysqlLayer():BaseLayer(LY_MYSQL)
 {
@@ -16,6 +17,7 @@ void MysqlLayer::init()
 	CreateModule<MysqlModule>();
 	CreateModule<MsgModule>();
 	CreateModule<ExecuteMysqlModule>();
+	CreateModule<Coro2Module>();
 }
 
 void MysqlLayer::loop()

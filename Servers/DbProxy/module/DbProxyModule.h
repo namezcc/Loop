@@ -25,8 +25,8 @@ private:
 	
 	void OnGetMysqlGroup(NetMsg* msg);
 
-	void OnCreateAccount(NetMsg* msg);
-	void OnMysqlMsg(NetMsg* msg);
+	void OnForwardMsgHash(NetMsg* msg);
+	void OnForwardMsgGroup(NetMsg* msg);
 
 	void SendToProxy(int group,const int& mid,NetMsg* msg);
 private:

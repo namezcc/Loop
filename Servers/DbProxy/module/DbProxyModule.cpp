@@ -28,8 +28,8 @@ void DBProxyModule::Init()
 	m_eventModule->AddEventCallBack(E_SERVER_CLOSE, this, &DBProxyModule::OnServerClose);
 
 	m_msgModule->AddMsgCallBack(N_GET_MYSQL_GROUP, this, &DBProxyModule::OnGetMysqlGroup);
-	m_msgModule->AddMsgCallBack(N_CREATE_ACCOUNT, this, &DBProxyModule::OnCreateAccount);
-	m_msgModule->AddMsgCallBack(N_MYSQL_MSG, this, &DBProxyModule::OnMysqlMsg);
+	m_msgModule->AddMsgCallBack(N_FORWARD_DB_PROXY, this, &DBProxyModule::OnForwardMsgHash);
+	m_msgModule->AddMsgCallBack(N_FORWARD_DB_PROXY_GROUP, this, &DBProxyModule::OnForwardMsgGroup);
 
 	m_hash = 0;
 
@@ -130,9 +130,9 @@ void DBProxyModule::OnGetMysqlGroup(NetMsg * msg)
 	sort(m_groups.begin(), m_groups.end());
 }
 
-void DBProxyModule::OnCreateAccount(NetMsg * msg)
+void DBProxyModule::OnForwardMsgHash(NetMsg * msg)
 {
-	if (msg->getLen() < 4)
+	if (msg->getLen() < sizeof(int32_t)*2)
 		return;
 	if (m_groups.size() == 0)
 	{
@@ -140,24 +140,27 @@ void DBProxyModule::OnCreateAccount(NetMsg * msg)
 		return;
 	}
 	int group = m_groups[0];
+	auto forbeg = msg->m_buff->m_buff;
 	if (m_groups.size() > 1)
 	{
-		auto buff = msg->m_buff->m_buff;
-		int crc = PB::GetInt(buff);
+		int crc = PB::GetInt(forbeg);
 		int idx = crc % (m_groups.size() * 2);
 		if (idx >= m_groups.size())
 			idx = m_groups.size() - 1;
 		group = m_groups[idx];
 	}
-	SendToProxy(group,N_CREATE_ACCOUNT ,msg);
+	int32_t mid = PB::GetInt(forbeg + sizeof(int32_t));
+	SendToProxy(group,mid ,msg);
 }
 
-void DBProxyModule::OnMysqlMsg(NetMsg * msg)
+void DBProxyModule::OnForwardMsgGroup(NetMsg * msg)
 {
-	if (msg->getLen() < 4)
+	if (msg->getLen() < sizeof(int32_t) * 2)
 		return;
-	int group = PB::GetInt(msg->m_buff->m_buff);
-	SendToProxy(group, N_MYSQL_MSG, msg);
+	auto forbeg = msg->m_buff->m_buff;
+	int group = PB::GetInt(forbeg);
+	int32_t mid = PB::GetInt(forbeg +sizeof(int32_t));
+	SendToProxy(group, mid, msg);
 }
 
 void DBProxyModule::SendToProxy(int group, const int& mid, NetMsg * msg)
@@ -190,6 +193,6 @@ void DBProxyModule::SendToProxy(int group, const int& mid, NetMsg * msg)
 	
 	auto buff = msg->getCombinBuff(GetLayer());
 	auto sendbuff = GET_LAYER_MSG(BuffBlock);
-	sendbuff->write(buff->m_buff + 4, buff->m_size - 4);
-	m_tranModule->SendToServer(m_path, mid, sendbuff,2);
+	sendbuff->write(buff->m_buff+ sizeof(int32_t) * 2, buff->m_size - sizeof(int32_t) * 2);
+	m_tranModule->SendToServer(m_path, mid, sendbuff);
 }

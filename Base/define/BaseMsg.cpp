@@ -24,11 +24,23 @@ void BuffBlock::makeRoom(const int32_t & size)
 	m_size = size;
 }
 
+void BuffBlock::append(const char * buf, const int32_t & size)
+{
+	auto oldbuf = m_buff;
+	auto oldsize = m_size;
+	m_buff = NULL;
+	makeRoom(size + m_size);
+	memcpy(m_buff, oldbuf, oldsize);
+	memcpy(m_buff + oldsize, buf, size);
+}
+
 void BuffBlock::write(char * buf, const int32_t & size)
 {
 	if (size <= 0)
 		return;
-	if (m_buff == NULL || m_size != size)
+	if (m_buff)
+		append(buf, size);
+	else
 		makeRoom(size);
 	if(m_buff)
 		memcpy(m_buff, buf, size);
@@ -108,7 +120,9 @@ SHARE<BuffBlock> NetMsg::getCombinBuff(BaseLayer * l)
 		buf = m_buff->m_buff;
 		m_buff->m_buff = NULL;
 		buff->m_buff = buf;
-		buff->m_size = len;
+		buff->m_size = m_buff->m_size;
+		m_buff->m_size = 0;
+		len = 0;
 		return buff;
 	}
 	if (len == 0)
@@ -117,13 +131,21 @@ SHARE<BuffBlock> NetMsg::getCombinBuff(BaseLayer * l)
 	int32_t idx = 0;
 	auto mbf = m_buff;
 	while (mbf) {
-		memcpy(buf + idx, mbf->m_buff, mbf->m_size);
+		if(mbf->m_buff)
+			memcpy(buf + idx, mbf->m_buff, mbf->m_size);
 		idx += mbf->m_size;
 		mbf = mbf->m_next;
 	}
 	buff->m_buff = buf;
 	buff->m_size = len;
 	return buff;
+}
+
+void NetMsg::write_front(const char * buf, const int32_t & size)
+{
+	ASSERT(m_buff);
+	m_buff->write(const_cast<char*>(buf), size);
+	len += size;
 }
 
 void NetMsg::recycleMsg()
@@ -138,12 +160,8 @@ void NetMsg::recycleMsg()
 
 void NetServerMsg::recycleMsg()
 {
-	/*if (m_buff)
-	{
-		m_buff->recycleMsg();
-		m_buff = NULL;
-	}
-	((LoopList<NetServerMsg*>*)m_looplist)->write(this);*/
+	//can't enter this
+	std::cout<<"--- can't enter this NetServerMsg::recycleMsg()"<<std::endl;
 }
 
 void NetServerMsg::init(FactorManager * fm)
