@@ -1,0 +1,52 @@
+#ifndef LUA_MODULE_H
+#define LUA_MODULE_H
+
+#include "BaseModule.h"
+#include "LuaState.h"
+
+class LOOP_EXPORT LuaModule:public BaseModule
+{
+public:
+	LuaModule(BaseLayer* l);
+	~LuaModule();
+
+	// Í¨¹ý BaseModule ¼Ì³Ð
+	virtual void Init() override;
+	virtual void Execute() override;
+
+	int32_t CreateLuaState();
+	SHARE<LuaState> GetLuaState(const int32_t& index);
+	
+	template<typename T,typename F>
+	void BindLuaCall(const std::string& fname, T&&t, F&&f)
+	{
+		auto call = ANY_BIND(t, f);
+		m_luaCallFunc[fname] = [call](LuaState* ls) {
+			if (lua_gettop(ls->GetLuaState()) - 2 != FuncArgsType<F>::SIZE)
+			{
+				std::cout << "error args num expect:" << FuncArgsType<F>::SIZE << std::endl;
+				return 0;
+			}
+			m_curState = ls;
+			return CallTool<FuncArgsType<F>::SIZE>::Call<FuncArgsType<F>::typeR, FuncArgsType<F>::tupleArgs>(L, call);
+		};
+	}
+
+	template<typename ...Args>
+	int32_t PushArgs(Args&&... args)
+	{
+		if(m_curState)
+			return m_curState->PushArgs(std::forward<Args>(args)...);
+		return 0;
+	}
+
+	int32_t CallFunc(LuaState* ls,const std::string& fname);
+	void SetLoopFunc(const int32_t& index, const std::string& fname);
+
+private:
+	LuaState* m_curState;
+	std::vector<SHARE<LuaState>> m_stats;
+	std::unordered_map<std::string, std::function<int(LuaState*)>> m_luaCallFunc;
+};
+
+#endif

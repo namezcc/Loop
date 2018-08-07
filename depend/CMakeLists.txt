@@ -18,3 +18,4 @@ endif()
 
 add_subdirectory(anet)
 add_subdirectory(Crypto)
+add_subdirectory(lua5.3)

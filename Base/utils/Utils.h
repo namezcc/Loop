@@ -20,6 +20,7 @@ struct ArgsBind<N>		\
 	}					\
 };
 
+ARGS_BIND(0);
 ARGS_BIND(1, placeholders::_1);
 ARGS_BIND(2, placeholders::_1, placeholders::_2);
 ARGS_BIND(3, placeholders::_1, placeholders::_2, placeholders::_3);
@@ -88,16 +89,59 @@ struct ArgsTypeN<N, T> :ArgType<N, T>
 };
 template<typename F>
 struct FuncArgsType;
+
+template<typename R, typename ...Args>
+struct FuncArgsType<R(*)(Args...)> :ArgsTypeN<sizeof...(Args), Args...>
+{
+	using typeR = R;
+	static constexpr int SIZE = sizeof...(Args);
+	using tupleArgs = std::tuple<typename std::decay<Args>::type ...>;
+};
+
+template<typename R>
+struct FuncArgsType<R(*)()>
+{
+	using typeR = R;
+	static constexpr int SIZE = 0;
+	using tupleArgs = void;
+};
+
 template<typename R, typename T, typename ...Args>
 struct FuncArgsType<R(T::*)(Args...)> :ArgsTypeN<sizeof...(Args), Args...>
 {
 	using typeR = R;
 	using typeT = T;
+	static constexpr int SIZE = sizeof...(Args);
+	using tupleArgs = std::tuple<typename std::decay<Args>::type...>;
 };
-template<typename R,typename ...Args>
-struct FuncArgsType<R(*)(Args...)> :ArgsTypeN<sizeof...(Args), Args...>
+
+template<typename R, typename T>
+struct FuncArgsType<R(T::*)()>
 {
 	using typeR = R;
+	using typeT = T;
+	static constexpr int SIZE = 0;
+	using tupleArgs = void;
+};
+
+template<int32_t N>
+struct ApplyFunc
+{
+	template<typename R, typename F, typename T, typename ...A>
+	static R apply(F&&f, T&&t, A... args)
+	{
+		return ApplyFunc<N - 1>::apply<R>(std::forward<F>(f), std::forward<T>(t), std::get<N - 1>(std::forward<T>(t)), std::forward<A>(args)...);
+	}
+};
+
+template<>
+struct ApplyFunc<1>
+{
+	template<typename R, typename F, typename T, typename ...A>
+	static R apply(F&&f, T&&t, A... args)
+	{
+		return std::forward<F>(f)(std::get<0>(std::forward<T>(t)), std::forward<A>(args)...);
+	}
 };
 
 #endif

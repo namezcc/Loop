@@ -58,6 +58,7 @@ libuv.lib
 libprotobufd.lib
 jsoncpp.lib
 mysqlpp_d.lib
+Lua.lib
 )
 else()
 set(lib_link
@@ -65,14 +66,15 @@ libuv.lib
 libprotobuf.lib
 jsoncpp.lib
 mysqlpp_d.lib
+Lua.lib
 )
 endif()
 
 if(WIN32)
-set(lib_link ${lib_link} anet.lib libboost_filesystem-vc141-mt-gd-x64-1_66.lib)
+set(lib_link ${lib_link} anet.lib libboost_filesystem-vc141-mt-gd-x64-1_66.lib Lua.lib)
 set(LoopLib Loop.lib)
 else()
-set(lib_link anet.a)
+set(lib_link anet.a Lua.a)
 endif()
 
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/Base/*.cpp)

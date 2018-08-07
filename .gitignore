@@ -2,6 +2,7 @@ build/
 _out/Debug/
 protoPB/
 proto/
+Base/.vscode/
 *.exp
 *.pdb
 *.ilk
