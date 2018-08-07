@@ -126,7 +126,7 @@ struct PushTool
 {
 	static void PushVal(lua_State* L, T&& val)
 	{
-		LuaPushType<std::decay<T>::type>::PushVal(L, std::forward<T>(val));
+		LuaPushType<typename std::decay<T>::type>::PushVal(L, std::forward<T>(val));
 	}
 };
 
@@ -157,7 +157,7 @@ struct PushLuaArgs
 	template<typename T>
 	static void PushVal(lua_State* L, T&& val)
 	{
-		PushTool<T, LuaReflect<std::decay<T>::type>::have_type>::PushVal(L, std::forward<T>(val));
+		PushTool<T, LuaReflect<typename std::decay<T>::type>::have_type>::PushVal(L, std::forward<T>(val));
 	}
 
 	static void PushVal(lua_State* L)
@@ -182,7 +182,7 @@ struct PullLuaArgs
 	};
 	static T PullVal(lua_State* L, const int32_t& idx = -1)
 	{
-		return PullTool<T, LuaReflect<std::decay<T>::type>::have_type>::PullVal(L, idx);
+		return PullTool<T, LuaReflect<typename std::decay<T>::type>::have_type>::PullVal(L, idx);
 	}
 };
 
@@ -305,7 +305,7 @@ struct CallTool
 	static R Call(lua_State* L, C&&f)
 	{
 		auto tp = PullLuaArgs<T>::PullVal(L);
-		return ApplyFunc<N>::apply<R>(std::forward<C>(f), std::forward<T>(tp));
+		return ApplyFunc<N>::template apply<R>(std::forward<C>(f), std::forward<T>(tp));
 	}
 };
 

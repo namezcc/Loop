@@ -55,7 +55,7 @@ public:
 			else
 				LogHook(this,spdlog::level::err)<<__FILE__<<__LINE__<<"Recv Msg cast Null";
 		});*/
-		AddMsgCallBackEx<FuncArgsType<F>::arg1>(mId, std::forward<T>(t), std::forward<F>(f));
+		AddMsgCallBackEx<typename FuncArgsType<F>::arg1>(mId, std::forward<T>(t), std::forward<F>(f));
 	}
 
 	/*template<typename T, typename F>

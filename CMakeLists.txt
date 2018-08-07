@@ -74,7 +74,7 @@ if(WIN32)
 set(lib_link ${lib_link} anet.lib libboost_filesystem-vc141-mt-gd-x64-1_66.lib Lua.lib)
 set(LoopLib Loop.lib)
 else()
-set(lib_link anet.a Lua.a)
+set(lib_link anet.a Lua.a boost_filesystem.a)
 endif()
 
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/Base/*.cpp)

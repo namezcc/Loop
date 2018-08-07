@@ -20,7 +20,16 @@ struct ArgsBind<N>		\
 	}					\
 };
 
-ARGS_BIND(0);
+template<>				
+struct ArgsBind<0>
+{					
+	template<typename R, typename F, typename T>
+	static R Bind(F&&f, T&&t)
+	{											
+		return std::bind(std::forward<F>(f), std::forward<T>(t));
+	}				
+};
+
 ARGS_BIND(1, placeholders::_1);
 ARGS_BIND(2, placeholders::_1, placeholders::_2);
 ARGS_BIND(3, placeholders::_1, placeholders::_2, placeholders::_3);
@@ -130,7 +139,7 @@ struct ApplyFunc
 	template<typename R, typename F, typename T, typename ...A>
 	static R apply(F&&f, T&&t, A... args)
 	{
-		return ApplyFunc<N - 1>::apply<R>(std::forward<F>(f), std::forward<T>(t), std::get<N - 1>(std::forward<T>(t)), std::forward<A>(args)...);
+		return ApplyFunc<N - 1>::template apply<R>(std::forward<F>(f), std::forward<T>(t), std::get<N - 1>(std::forward<T>(t)), std::forward<A>(args)...);
 	}
 };
 

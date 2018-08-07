@@ -10,7 +10,7 @@ public:
 	LuaModule(BaseLayer* l);
 	~LuaModule();
 
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// Í¨ï¿½ï¿½ BaseModule ï¿½Ì³ï¿½
 	virtual void Init() override;
 	virtual void Execute() override;
 
@@ -21,14 +21,14 @@ public:
 	void BindLuaCall(const std::string& fname, T&&t, F&&f)
 	{
 		auto call = ANY_BIND(t, f);
-		m_luaCallFunc[fname] = [call](LuaState* ls) {
+		m_luaCallFunc[fname] = [this,call](LuaState* ls) {
 			if (lua_gettop(ls->GetLuaState()) - 2 != FuncArgsType<F>::SIZE)
 			{
 				std::cout << "error args num expect:" << FuncArgsType<F>::SIZE << std::endl;
 				return 0;
 			}
 			m_curState = ls;
-			return CallTool<FuncArgsType<F>::SIZE>::Call<FuncArgsType<F>::typeR, FuncArgsType<F>::tupleArgs>(L, call);
+			return CallTool<FuncArgsType<F>::SIZE>::Call<FuncArgsType<F>::typeR, FuncArgsType<F>::tupleArgs>(ls, call);
 		};
 	}
 

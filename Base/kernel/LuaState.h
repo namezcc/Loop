@@ -3,6 +3,7 @@
 #include "Utils.h"
 #include "LuaUtil.h"
 #include "Define.h"
+#include <iostream>
 #include <unordered_map>
 
 class LuaModule;
