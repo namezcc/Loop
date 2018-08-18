@@ -14,10 +14,11 @@ set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/GameReflectData.cpp)
 
 add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES} ${SQL_DATA})
 
-
+if(WIN32)
 set(mysqllib
 libprotobufd.lib
 )
+endif()
 
 target_link_libraries(${ProjectName} ${LoopLib} ${mysqllib})
 

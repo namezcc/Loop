@@ -16,9 +16,11 @@ message(STATUS "souce file" ${HEAD_FILES})
 
 add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES})
 
+if(WIN32)
 set(DBProxylib
 libprotobufd.lib
 )
+endif()
 
 target_link_libraries(${ProjectName} ${LoopLib} ${DBProxylib})
 

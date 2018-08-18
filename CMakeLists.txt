@@ -5,6 +5,13 @@ add_compile_options(-std=c++11)
 
 set(CMAKE_BUILD_TYPE "Debug")
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+
+
 set(LPOutDir ${PROJECT_SOURCE_DIR}/_out/)
 set(LPBaseOut ${PROJECT_SOURCE_DIR}/_out/)
 
@@ -34,6 +41,10 @@ link_directories(
 E:/git/boost_1_66_0/bin/vc14/lib
 )
 
+else()
+link_directories(
+/usr/lib64/mysql/
+)
 endif()
 
 if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
@@ -41,6 +52,7 @@ if( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	${PROJECT_SOURCE_DIR}/librarys/libs/win/Debug/ 
 	${PROJECT_SOURCE_DIR}/depend/Build/Debug/ 
 	${PROJECT_SOURCE_DIR}/_out/Debug/ 
+	${PROJECT_SOURCE_DIR}/_out/ 
 	)
 
 	add_definitions(-DDEBUG)
@@ -74,7 +86,8 @@ if(WIN32)
 set(lib_link ${lib_link} anet.lib libboost_filesystem-vc141-mt-gd-x64-1_66.lib Lua.lib)
 set(LoopLib Loop.lib)
 else()
-set(lib_link anet.a Lua.a boost_filesystem.a)
+set(lib_link anet.a Lua.a boost_filesystem boost_context.a uv.a jsoncpp.a protobuf mysqlclient mysqlpp)
+set(LoopLib Loop)
 endif()
 
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/Base/*.cpp)

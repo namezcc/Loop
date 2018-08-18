@@ -28,6 +28,7 @@ public:
 #if PLATFORM == PLATFORM_WIN
 		name.append(".dll");
 #else
+    name = "lib"+name;
 		name.append(".so");
 #endif // PLATFROM
 

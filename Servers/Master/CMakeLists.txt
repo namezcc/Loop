@@ -11,10 +11,12 @@ file(GLOB_RECURSE Master_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
 set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/ReflectData.cpp)
 
+if(WIN32)
 set(Masterlib
 Crypto.lib
 jsoncpp.lib
 )
+endif()
 
 add_library(${ProjectName} SHARED ${Master_HEAD_FILES} ${Master_SOUCE_FILES} ${SQL_DATA})
 target_link_libraries(${ProjectName} ${LoopLib} ${Masterlib})

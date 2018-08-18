@@ -8,6 +8,10 @@
 #include "cmdline.h"
 #include "dump.h"
 
+#if PLATFORM != PLATFORM_WIN
+#include <errno.h>
+#endif
+
 using namespace std;
 
 typedef void(*DLL_START)(int, char*[]);
@@ -104,7 +108,13 @@ int main(int argc, char* args[])
 				cout << "dll get func Name error" << endl;
 		}
 		else
-			cout << "load dll error: " << GetLastError() << endl;
+		{
+#if PLATFORM == PLATFORM_WIN
+    cout << "load dll error: " << GetLastError() << endl;
+#else
+    cout << "load dll error: " << strerror(errno) << endl;
+#endif
+    }
 	}
 	for (auto& t:thrs)
 		t.join();

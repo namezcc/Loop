@@ -75,7 +75,7 @@ bool CrashCallBack(const google_breakpad::MinidumpDescriptor& descriptor,
 	bool succeeded)
 {
 	if (succeeded) {
-		printf("dump guid is %ws\n", id);
+		printf("dump guid is %ws\n", descriptor.path());
 		CrashContext* ctx = (CrashContext*)context;
 		bf::path dmpfile(descriptor.path());
 		bf::path dmppath(dmpfile.parent_path());

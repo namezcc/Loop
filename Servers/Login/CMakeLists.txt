@@ -18,10 +18,12 @@ file(GLOB_RECURSE PB_RECURSE ${PROJECT_SOURCE_DIR}/../../protoPB/client/*.*)
 
 set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/GameReflectData.cpp)
 
+if(WIN32)
 set(Loginlib
 Crypto.lib
 libprotobufd.lib
 )
+endif()
 
 add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES} ${COM_RECURSE} ${PB_RECURSE} ${SQL_DATA})
 

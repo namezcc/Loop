@@ -512,7 +512,8 @@ private:
 			sql.append(" timestamp");
 			break;
 		default:
-			throw exception("error SQL_TYPE");
+			//throw exception("error SQL_TYPE");
+			return "error SQL_TYPE";
 		}
 		if(f.len>0)
 			sql.append("(").append(std::to_string(f.len)).append(")");

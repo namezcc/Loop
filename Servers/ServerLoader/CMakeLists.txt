@@ -22,11 +22,15 @@ crash_generation_client.lib
 common.lib
 )
 else()
+include_directories(
+/usr/local/include/breakpad/
+)
 set(Serverlib 
-jsoncpp.a
-exception_handler.a
-crash_generation_client.a
-common.a
+breakpad_client.a
+boost_filesystem
+boost_system
+pthread
+dl
 )
 endif()
 

@@ -1,4 +1,4 @@
-add_subdirectory(proxy)
+add_subdirectory(Proxy)
 add_subdirectory(Console)
 add_subdirectory(Master)
 add_subdirectory(ServerLoader)

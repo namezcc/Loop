@@ -12,8 +12,6 @@
 #define PLATFORM PLATFORM_LINUX
 #endif
 
-#define EXPORT extern "C"  __declspec(dllexport)
-
 #if PLATFORM == PLATFORM_WIN
 #include <winsock2.h>
 #include <windows.h>
@@ -41,8 +39,11 @@
   #else
     #define LOOP_EXPORT __declspec(dllimport)
   #endif
+
+  #define EXPORT extern "C"  __declspec(dllexport)
 #else
   #define LOOP_EXPORT
+  #define EXPORT extern "C" __attribute ((visibility("default")))
 #endif
 
 #define DLL_START_NAME DllStart
