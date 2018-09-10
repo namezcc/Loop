@@ -1,0 +1,13 @@
+#ifndef ROOM_MSG_DEFINE_H
+#define ROOM_MSG_DEFINE_H
+
+#include "MsgDefine.h"
+
+enum ROOM_EVENT
+{
+	E_ROOM_BEGAN = BASE_EVENT::E_BASE_EVENT_END + 1,
+	E_ON_PLAYER_ONLINE,
+	E_ON_PLAYER_OFFLINE,
+};
+
+#endif

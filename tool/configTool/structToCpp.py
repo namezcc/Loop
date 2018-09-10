@@ -29,6 +29,21 @@ TypeMap = {
     "double":"double",
 }
 
+PbFuncMap = {
+    "bool":"ToBool",
+    "int8":"ToInt8",
+    "int16":"ToInt16",
+    "int32":"ToInt32",
+    "int64":"ToInt64",
+    "uint8":"ToUInt8",
+    "uint16":"ToUInt16",
+    "uint32":"ToUInt32",
+    "uint64":"ToUInt64",
+    "string":"ToString",
+    "float":"ToFloat",
+    "double":"ToDouble",
+}
+
 SqlTypeMap = {
     "int":SQL_TYPE.SQL_INT,
     "bigint":SQL_TYPE.SQL_BIGINT,
@@ -53,6 +68,7 @@ class objectField:
         self._id = nid
         self._name = row["Name"].value
         self._type = TypeMap[row["Type"].value]
+        self._pbFunc = PbFuncMap[row["Type"].value]
         self._defval = self.CheckStr(row,"DefVal")
         isPri = self.CheckBool(row,"Private")
         isPub = self.CheckBool(row,"Public")
@@ -122,18 +138,25 @@ class objectField:
                 assert False,"varchar len null"
             elif self._sqlType == SQL_TYPE.SQL_TIMESTAMP:
                 nlen = "0"
+        elif cell.ctype == xlrd.XL_CELL_NUMBER:
+            if cell.value % 1==0:
+                nlen = str(int(cell.value))
+            else:
+                nlen = str(cell.value)
         else:
             nlen = cell.value
         return nlen
 
     def GetComment(self):
+        ret = ""
         if len(self._comment)>0:
-            ret = "'{0}'".format(self._comment)
+            ret = "'{0}'"
+            ret = ret.format(self._comment)
             if self._increment:
                 ret += " AUTO_INCREMENT"
-            return ret
-        else:
-            return ""
+        elif self._increment:
+            ret += "'' AUTO_INCREMENT"
+        return ret
 
 
 class objectCpp:
@@ -185,6 +208,9 @@ void {0}::Set_{1}(const {2}& v)
         if len(self._member)==0:
             assert False,"struct member 0"
         code = objectCpp.Begin.format(self._name)
+        code += self.MakeGetFieldName()
+        code += self.MakeGetPbFunc()
+        code += self.MakeCopySqlData()
         for field in self._member:
             code += self.MakeGetSet(field)
         code += "\n"
@@ -197,6 +223,51 @@ void {0}::Set_{1}(const {2}& v)
             code += self.MakeReflect()
             code += self.MakeTable()
         return code
+
+    def MakeGetFieldName(self):
+        names = ""
+        for field in self._member:
+            names += '"{0}",'.format(field._name)
+        names = names[:-1]
+        code = '''
+    static constexpr std::array<const char*,{0}> FieldNames{{{1}}};
+    virtual std::string GetProName(const int32_t& pid)
+    {{
+        return {2}::FieldNames[pid];
+    }}
+'''
+        code = code.format(len(self._member),names,self._name)
+        return code
+
+    def MakeGetPbFunc(self):
+        funcs = ""
+        for field in self._member:
+            funcs += '''        &PropertyToPB::{0},\n'''.format(field._pbFunc)
+        funcs = funcs[:-2] + "\n"
+        code = '''
+    static constexpr std::array<PbFunc,{0}> PbFuncs{{
+{1}    }};
+    virtual PbFunc GetPbFunc(const int32_t& pid)
+    {{
+        return {2}::PbFuncs[pid];
+    }}
+'''
+        code = code.format(len(self._member),funcs,self._name)
+        return code
+
+    def MakeCopySqlData(self):
+        doset = ""
+        for field in self._member:
+            if field._isdb:
+                doset += '''        SetValue<{0}>({1},{2});\n'''.format(self._name,field._id,field._name)
+        code = '''
+    virtual void CopySqlData()
+    {{
+{0}
+        Clear();
+    }}
+'''
+        return code.format(doset)
 
     def MakeGetSet(self,field):
         if field._isdb:
@@ -266,8 +337,10 @@ void {0}::init(FactorManager * fm)
         code = '''
 REFLECT_CPP_DEFINE({0})
 TABLE_CPP_DEFINE({0})
+constexpr std::array<const char*,{1}> {0}::FieldNames;
+constexpr std::array<GameObject::PbFunc, {1}> {0}::PbFuncs;
 '''
-        return code.format(self._name)
+        return code.format(self._name,len(self._member))
 
 class objectFile:
     FileName = "ConfigObjects"

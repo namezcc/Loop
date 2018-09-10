@@ -22,6 +22,8 @@ public:
 	RedisModule(BaseLayer* l);
 	~RedisModule();
 
+	inline bool IsConnect() { return m_enable; };
+
 	void SetConnect(const string& host, const string& pass, const int& port = 6379);
 	bool Connect(const string& host, const string& pass, const int& port=6379);
 

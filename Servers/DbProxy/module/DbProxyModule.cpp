@@ -2,7 +2,7 @@
 #include "NetObjectModule.h"
 #include "MsgModule.h"
 #include "EventModule.h"
-#include "protoPB/server/LPSql.pb.h"
+#include "protoPB/base/LPSql.pb.h"
 #include "TransMsgModule.h"
 #include "ScheduleModule.h"
 

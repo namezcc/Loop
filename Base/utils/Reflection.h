@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <set>
 #include <sstream>
 #include <functional>
 #include <stdint.h>
@@ -281,7 +282,7 @@ struct TypeID;
 template<> struct TypeID<T> \
 {constexpr static size_t id = ID;};
 
-MAKE_TYPE_ID(int, REFLECT_TYPE::T_INT)
+MAKE_TYPE_ID(int32_t, REFLECT_TYPE::T_INT)
 MAKE_TYPE_ID(float, REFLECT_TYPE::T_FLOAT)
 MAKE_TYPE_ID(int64_t, REFLECT_TYPE::T_INT64)
 MAKE_TYPE_ID(double, REFLECT_TYPE::T_DOUBLE)
@@ -440,7 +441,7 @@ struct TableDesc;
 template<typename T>
 struct TableQuery
 {
-	static void InitTable(string& newName,function<void(string& query)> call)
+	static void InitTable(string& newName,function<void(string& query)> call,std::set<std::string>& repeateField)
 	{
 		string tableName = Reflect<T>::Name();
 		if (!newName.empty())
@@ -462,7 +463,7 @@ struct TableQuery
 					break;
 				}
 			}
-			if (prim)
+			if (prim || repeateField.find(f.name) != repeateField.end())
 				continue;
 			if (f.index)
 				indexs.push_back(f.name);

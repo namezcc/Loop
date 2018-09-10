@@ -27,7 +27,7 @@ public:
 
 	virtual void Init() override;
 protected:
-	void OnBeginTest(const int64_t& dt);
+	void OnBeginTest(int64_t& dt);
 	void CoroTest1(c_pull& pull, SHARE<BaseCoro>& coro);
 
 private:

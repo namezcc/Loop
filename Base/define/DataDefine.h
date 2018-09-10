@@ -32,6 +32,9 @@ enum SERVER_TYPE
 	LOOP_MASTER = 5,
 	LOOP_CONSOLE = 6,
 	LOOP_PROXY_DB = 7,
+	LOOP_ROOM = 8,
+	LOOP_ROOM_STATE = 9,
+	LOOP_LOGIN_LOCK = 10,
 	LOOP_SERVER_END,
 };
 
@@ -51,7 +54,7 @@ struct NetBuffer
 	int use;
 	int scan;
 
-	NetBuffer():buf(nullptr),len(0),use(0),scan(0)
+	NetBuffer():buf(NULL),len(0),use(0),scan(0)
 	{}
 
 	~NetBuffer()
@@ -62,7 +65,7 @@ struct NetBuffer
 
 	NetBuffer(NetBuffer&& b):buf(b.buf),len(b.len),use(b.use),scan(b.scan)
 	{
-		b.buf = nullptr;
+		b.buf = NULL;
 		b.use = b.len = b.scan = 0;
 	}
 
@@ -71,7 +74,7 @@ struct NetBuffer
 		assert(this != &b);
 		swap(buf, b.buf);
 		/*buf = ;
-		b.buf = nullptr;*/
+		b.buf = NULL;*/
 
 		swap(len,b.len);
 		swap(use,b.use);
@@ -85,7 +88,7 @@ struct NetBuffer
 	{
 		if (buf)
 			free(buf);
-		buf = nullptr;
+		buf = NULL;
 		len = use = scan = 0;
 	}
 
@@ -215,6 +218,10 @@ struct BaseCoro:public LoopObject
 		m_coroId = nCoid;
 		m_endPoint = GetSecend() + CORO_TIME_OUT;
 	}
+
+	inline void SetFail() { m_endPoint = -1; };
+
+	inline bool IsFail() { return m_endPoint == -1; };
 
 	void Clear()
 	{

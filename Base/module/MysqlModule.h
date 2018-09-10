@@ -74,9 +74,20 @@ public:
 	template<typename T>
 	void InitTable(string newName="")
 	{
+		MultRow res;
+		SqlRow fiels;
+		char sql[256];
+		std::string tabName = newName.empty() ? Reflect<T>::Name() : newName;
+		sprintf_s(sql, "select COLUMN_NAME from information_schema.COLUMNS where table_name = '%s';", tabName.c_str());
+		Select(sql, res, fiels);
+		std::set<std::string> repeate;
+		for (auto vec:res)
+		{
+			repeate.insert(vec.front());
+		}
 		TableQuery<T>::InitTable(newName,[this](string& sql) {
 			Query(sql);
-		});
+		}, repeate);
 	}
 
 	bool Query(const string& str);
@@ -126,10 +137,13 @@ public:
 	}
 
 	template<typename T>
-	bool Update(Reflect<T>& rf)
+	bool Update(Reflect<T>& rf, const string& newName = "")
 	{
 		auto param = GetLayer()->GetSharedLoop<SqlParam>();
-		param->tab = Reflect<T>::Name();
+		if (!newName.empty())
+			param->tab = newName;
+		else
+			param->tab = Reflect<T>::Name();
 		param->kname.assign(TableDesc<T>::paramkey.begin(), TableDesc<T>::paramkey.end());
 		auto p = (char*)rf.ptr;
 		for (auto& k: TableDesc<T>::paramkey)
@@ -149,10 +163,13 @@ public:
 	}
 
 	template<typename T>
-	bool Delete(T&t)
+	bool Delete(T&t, const string& newName = "")
 	{
 		auto param = GetLayer()->GetSharedLoop<SqlParam>();
-		param->tab = Reflect<T>::Name();
+		if (!newName.empty())
+			param->tab = newName;
+		else
+			param->tab = Reflect<T>::Name();
 		param->kname.assign(TableDesc<T>::paramkey.begin(), TableDesc<T>::paramkey.end());
 		auto p = (char*)&t;
 		for (auto& k : TableDesc<T>::paramkey)
@@ -161,6 +178,38 @@ public:
 			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[idx], Reflect<T>::arr_type[idx]));
 		}
 		return Delete(*param);
+	}
+
+	template<typename T>
+	bool Select(T& t, const string& newName = "")
+	{
+		auto param = GET_SHARE(SqlParam);
+		if (!newName.empty())
+			param->tab = newName;
+		else
+			param->tab = Reflect<T>::Name();
+		param->kname.assign(TableDesc<T>::paramkey.begin(), TableDesc<T>::paramkey.end());
+		auto p = (char*)&t;
+		for (auto& k : TableDesc<T>::paramkey)
+		{
+			int idx = Reflect<T>::GetFieldIndex(k);
+			param->kval.push_back(Reflect<T>::GetVal(p + Reflect<T>::arr_offset[idx], Reflect<T>::arr_type[idx]));
+		}
+		if (Select(*param))
+		{
+			if (param->field.size() != param->value.size())
+				return false;
+			for (size_t i = 0; i < param->field.size(); i++)
+				Reflect<T>::SetFieldValue(t, param->field[i], param->value[i]);
+			return true;
+		}
+		return false;
+	}
+
+	template<typename T>
+	bool Select(Reflect<T>& t, const string& newName = "")
+	{
+		return Select(*t.ptr,newName);
 	}
 
 	template<typename T>

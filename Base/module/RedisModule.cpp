@@ -36,7 +36,7 @@ return false; \
 
 #define REDIS_CATCH _REDIS_CATCH_(__FUNCTION__, __LINE__)
 
-#define REDIS_CHECK if(!m_enable) Reconnect()
+#define REDIS_CHECK if(!m_enable || !Reconnect()) return false
 
 #if PLATFORM == PLATFORM_WIN
 #pragma comment( lib, "ws2_32" )

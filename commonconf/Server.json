@@ -5,5 +5,8 @@
 	{"name":"Game","type":0},
 	{"name":"Login","type":2},
 	{"name":"MysqlServer","type":3},
-	{"name":"DBProxy","type":7}
+	{"name":"DBProxy","type":7},
+    {"name":"Room","type":8},
+    {"name":"RoomState","type":9},
+    {"name":"LoginLock","type":10}
 ]

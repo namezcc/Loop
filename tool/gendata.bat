@@ -1,4 +1,4 @@
 cd configTool
-python tojson.py
+::python tojson.py
 python toCppObject.py
 pause

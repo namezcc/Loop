@@ -26,6 +26,6 @@ void LogLayer::close()
 {
 }
 
-void LogLayer::GetDefaultTrans(int & ltype, int & lid)
+void LogLayer::GetDefaultTrans(int32_t & ltype, int32_t & lid)
 {
 }

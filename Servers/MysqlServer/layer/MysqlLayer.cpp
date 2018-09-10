@@ -28,7 +28,7 @@ void MysqlLayer::close()
 {
 }
 
-void MysqlLayer::GetDefaultTrans(int & ltype, int & lid)
+void MysqlLayer::GetDefaultTrans(int32_t & ltype, int32_t & lid)
 {
 	ltype = LY_LOGIC;
 	lid = 0;

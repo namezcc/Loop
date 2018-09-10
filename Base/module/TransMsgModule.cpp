@@ -32,7 +32,7 @@ void TransMsgModule::Init()
 
 	m_msgModule->AddMsgCallBack(N_TRANS_SERVER_MSG, this, &TransMsgModule::OnGetTransMsg);
 
-	InitServerNet();
+	//InitServerNet();
 }
 
 void TransMsgModule::Execute()
@@ -114,8 +114,10 @@ void TransMsgModule::OnServerConnect(SHARE<NetServer>& ser)
 	if (its != m_serverList[ser->type].end())
 	{
 		m_netObjMod->CloseNetObject(its->second->socket);
+		RemoveRand(ser->type, ser->serid);
 	}
 	m_serverList[ser->type][ser->serid] = ser;
+	m_randServer[ser->type].push_back(ser.get());
 	m_allServer[ser->socket] = ser;
 }
 
@@ -123,13 +125,29 @@ void TransMsgModule::OnServerClose(SHARE<NetServer>& ser)
 {
 	m_serverList[ser->type].erase(ser->serid);
 	m_allServer.erase(ser->socket);
+	RemoveRand(ser->type, ser->serid);
+}
+
+void TransMsgModule::RemoveRand(const int32_t & stype, const int32_t & sid)
+{
+	auto it = m_randServer.find(stype);
+	if (it == m_randServer.end())
+		return;
+	for (size_t i = 0; i < it->second.size(); i++)
+	{
+		if (it->second[i]->serid == sid)
+		{
+			it->second[i] = it->second[it->second.size() - 1];
+			it->second.pop_back();
+		}
+	}
 }
 
 SHARE<NetServer> TransMsgModule::GetServerConn(const int32_t & sock)
 {
 	auto it = m_allServer.find(sock);
 	if (it == m_allServer.end())
-		return nullptr;
+		return NULL;
 	return it->second;
 }
 
@@ -141,10 +159,11 @@ void TransMsgModule::SendToServer(ServerNode & ser, const int32_t & mid, BuffBlo
 		m_netObjMod->SendNetMsg(toser->socket, mid, buff);
 		return;
 	}
-	auto myser = GetLayer()->GetServer();
+	RECYCLE_LAYER_MSG(buff);
+	/*auto myser = GetLayer()->GetServer();
 	vector<SHARE<ServerNode>> path;
 	GetTransPath(*myser, ser, path);
-	SendToServer(path, mid,buff);
+	SendToServer(path, mid,buff);*/
 }
 
 void TransMsgModule::SendToServer(ServerNode & ser, const int32_t & mid, google::protobuf::Message & msg)
@@ -155,10 +174,10 @@ void TransMsgModule::SendToServer(ServerNode & ser, const int32_t & mid, google:
 		m_netObjMod->SendNetMsg(toser->socket, mid, msg);
 		return;
 	}
-	auto myser = GetLayer()->GetServer();
+	/*auto myser = GetLayer()->GetServer();
 	vector<SHARE<ServerNode>> path;
 	GetTransPath(*myser, ser, path);
-	TransMsgToServer(path, mid, msg);
+	TransMsgToServer(path, mid, msg);*/
 }
 
 void TransMsgModule::SendToAllServer(const int32_t& stype, const int32_t & mid, google::protobuf::Message & msg)
@@ -170,13 +189,13 @@ void TransMsgModule::SendToAllServer(const int32_t& stype, const int32_t & mid, 
 			m_netObjMod->SendNetMsg(s.second->socket, mid, msg);
 		return;
 	}
-	
-	ServerNode ser{stype,0};
-	auto myser = GetLayer()->GetServer();
-	vector<SHARE<ServerNode>> path;
-	GetTransPath(*myser, ser, path);
-	path.back()->serid = -1;	//-1 ��ʾȫ����
-	TransMsgToServer(path, mid, msg);
+	//
+	//ServerNode ser{stype,0};
+	//auto myser = GetLayer()->GetServer();
+	//vector<SHARE<ServerNode>> path;
+	//GetTransPath(*myser, ser, path);
+	//path.back()->serid = -1;	//-1 ��ʾȫ����
+	//TransMsgToServer(path, mid, msg);
 
 }
 
@@ -333,21 +352,23 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 NetServer* TransMsgModule::GetServer(const int32_t& type, const int32_t& serid)
 {
 	auto it = m_serverList.find(type);
-	if (it == m_serverList.end() || it->second.size()==0)
-		return nullptr;
+	if (it == m_serverList.end() || it->second.size() == 0)
+	{
+		LP_ERROR(m_msgModule) << "GetServer NULL type:" << type << " serid:" << serid;
+		return NULL;
+	}
 	
 	if (serid == 0)
 	{//hash һ��
-		auto fir = it->second.begin();
-		auto last = it->second.rbegin();
-		auto ser = GetLayer()->GetServer();
-		int32_t slot = (ser->serid + last->first) % (last->first - fir->first + 1) + fir->first;
-		auto its = it->second.lower_bound(slot);
-		return its->second.get();
+		auto sit = m_randServer.find(type);
+		if (sit == m_randServer.end())
+			return it->second.begin()->second.get();
+		auto res = rand() % sit->second.size();
+		return sit->second[res];
 	}
 	auto its = it->second.find(serid);
 	if (its == it->second.end())
-		return nullptr;
+		return NULL;
 	return its->second.get();
 }
 
@@ -489,6 +510,30 @@ SHARE<BaseMsg> TransMsgModule::RequestBackServerAsynMsg(VecPath& path, const int
 {
 	std::reverse(path.begin(), path.end());
 	return RequestServerAsynMsg(path,mid,msg,pull,coro);
+}
+
+SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(ServerNode & ser, const int32_t & mid, gpb::Message & msg, c_pull & pull, SHARE<BaseCoro>& coro, const ReqFail & failCall)
+{
+	bool res = false;
+	ExitCall call([&res, failCall]() {
+		if (!res)
+			failCall();
+	});
+	auto resmsg = RequestServerAsynMsg(ser, mid, msg, pull, coro);
+	res = true;
+	return resmsg;
+}
+
+SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(VecPath & path, const int32_t & mid, gpb::Message & msg, c_pull & pull, SHARE<BaseCoro>& coro, const ReqFail & failCall)
+{
+	bool res = false;
+	ExitCall call([&res,failCall]() {
+		if (!res)
+			failCall;
+	});
+	auto resmsg = RequestServerAsynMsg(path,mid,msg,pull,coro);
+	res = true;
+	return resmsg;
 }
 
 SHARE<BaseMsg> TransMsgModule::ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)

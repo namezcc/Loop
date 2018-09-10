@@ -2,11 +2,12 @@
 #define MYSQL_MANAGER_MODULE
 
 #include "BaseModule.h"
-#include "protoPB/server/LPSql.pb.h"
+#include "protoPB/base/LPSql.pb.h"
 
 class MysqlModule;
 class MsgModule;
 class TransMsgModule;
+class GameTableModule;
 
 struct LMsgSqlParam;
 
@@ -47,6 +48,7 @@ private:
 
 	void OnCreateAccount(NetServerMsg* msg);
 	void OnGetMysqlMsg(NetServerMsg* msg);
+	void OnRequestMysqlMsg(SHARE<BaseMsg>& msg, c_pull& pull, SHARE<BaseCoro>& coro);
 	void OnGetMysqlRes(LMsgSqlParam* msg);
 	void OnUpdateTableGroup(NetMsg* msg);
 	void OnAddTableGroup(NetMsg* msg);
@@ -59,6 +61,8 @@ protected:
 	MysqlModule* m_mysqlmodule;
 	MsgModule*	m_msgmodule;
 	TransMsgModule* m_transModule;
+	GameTableModule* m_gameTableModule;
+
 	uint32_t m_index;
 	int m_sqlLayerNum;
 

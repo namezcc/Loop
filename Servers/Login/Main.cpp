@@ -6,6 +6,7 @@
 #include "SendProxyDbModule.h"
 #include "RedisModule.h"
 #include "Coro3Module.h"
+#include "RoomStateModule.h"
 
 EXPORT void DLL_START_NAME(int argc,char* args[])
 {
@@ -17,12 +18,8 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 	ll->CreateModule<LoginModule>();
 	ll->CreateModule<SendProxyDbModule>();
 	ll->CreateModule<RedisModule>()->SetConnect("127.0.0.1","",6379);
-	ll->CreateModule<Coro3Module>();
+	ll->CreateModule<RoomStateModule>();
 
 	ser.BuildPipe(nl, ll);
 	ser.Run();
-	/*while (true)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	}*/
 }

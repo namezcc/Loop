@@ -153,4 +153,17 @@ struct ApplyFunc<1>
 	}
 };
 
+
+template<typename T>
+struct PointType
+{
+	using type = T;
+};
+
+template<typename T>
+struct PointType<T*>
+{
+	using type = T;
+};
+
 #endif

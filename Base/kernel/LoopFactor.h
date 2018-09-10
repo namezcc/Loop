@@ -35,7 +35,7 @@ public:
 
 	void recycle(T* t)
 	{
-		assert(t!=nullptr);
+		assert(t!=NULL);
 		m_pool.push_back(t);
 	}
 

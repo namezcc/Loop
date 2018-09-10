@@ -14,18 +14,20 @@ file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
 file(GLOB_RECURSE COM_RECURSE ${PROJECT_SOURCE_DIR}/../Common/*.*)
-file(GLOB_RECURSE PB_RECURSE ${PROJECT_SOURCE_DIR}/../../protoPB/client/*.*)
+#file(GLOB_RECURSE PB_RECURSE ${PROJECT_SOURCE_DIR}/../../protoPB/client/*.*)
 
 set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/GameReflectData.cpp)
 
 if(WIN32)
 set(Loginlib
 Crypto.lib
+clientpb.lib
+serverpb.lib
 libprotobufd.lib
 )
 endif()
 
-add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES} ${COM_RECURSE} ${PB_RECURSE} ${SQL_DATA})
+add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES} ${COM_RECURSE} ${SQL_DATA})
 
 target_link_libraries(${ProjectName} ${LoopLib} ${Loginlib})
 

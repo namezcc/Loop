@@ -5,12 +5,13 @@ add_compile_options(-std=c++11)
 
 set(CMAKE_BUILD_TYPE "Debug")
 
+if(NOT WIN32)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
 SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
-
+endif()
 
 set(LPOutDir ${PROJECT_SOURCE_DIR}/_out/)
 set(LPBaseOut ${PROJECT_SOURCE_DIR}/_out/)
@@ -26,6 +27,9 @@ ${PROJECT_SOURCE_DIR}/Base/utils/
 ${PROJECT_SOURCE_DIR}/librarys/include/ 
 ${PROJECT_SOURCE_DIR}/librarys/include/redis/ 
 ${PROJECT_SOURCE_DIR}/depend/ 
+${PROJECT_SOURCE_DIR}/protoPB/ 
+${PROJECT_SOURCE_DIR}/Servers/sqldata/ 
+${PROJECT_SOURCE_DIR}/Servers/struct/ 
 )
 
 if(WIN32)
@@ -92,7 +96,7 @@ endif()
 
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/Base/*.cpp)
 file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/Base/*.h)
-file(GLOB_RECURSE PROTO_FILES ${PROJECT_SOURCE_DIR}/protoPB/server/*.*)
+file(GLOB_RECURSE PROTO_FILES ${PROJECT_SOURCE_DIR}/protoPB/base/*.*)
 
 add_library(Loop SHARED ${HEAD_FILES} ${SOUCE_FILES} ${PROTO_FILES})
 target_link_libraries(Loop ${lib_link})

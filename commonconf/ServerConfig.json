@@ -4,7 +4,9 @@
 		"1":{
 			"addr":{"ip":"127.0.0.1","port":22001},
 			"connect":[
-				{"type":7,"id":1,"ip":"127.0.0.1","port":27001}
+				{"name":"DBProxy","type":7,"id":1,"ip":"127.0.0.1","port":27001},
+				{"name":"LoginLock","type":10,"id":1,"ip":"127.0.0.1","port":30001},
+				{"name":"RoomState","type":9,"id":1,"ip":"127.0.0.1","port":29001}
 			]
 		}
 	},
@@ -39,5 +41,28 @@
 				{"type":1,"id":1,"ip":"127.0.0.1","port":21001}
 			]
 		}
+	},
+	"comment8":"Room Server",
+	"8":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":28001},
+			"connect":[
+				{"name":"RoomState","type":9,"id":1,"ip":"127.0.0.1","port":29001},
+				{"name":"DBProxy","type":7,"id":1,"ip":"127.0.0.1","port":27001}
+			]
+		}
+	},
+	"comment9":"RoomState Server",
+	"9":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":29001}
+		}
+	},
+	"comment10":"LoginLock Server",
+	"10":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":30001}
+		}
 	}
+
 }

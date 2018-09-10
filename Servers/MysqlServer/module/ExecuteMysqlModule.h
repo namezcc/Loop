@@ -20,6 +20,7 @@ private:
 	virtual void AfterInit() override;
 
 	void OnGetMysqlMsg(LMsgSqlParam* msg);
+	void OnRequestMysqlMsg(SHARE<BaseMsg>& comsg);
 
 	void OnUpdateTableGroup(NetSocket* num);
 

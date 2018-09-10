@@ -79,6 +79,14 @@ void NetModule::on_close_client(uv_handle_t* client) {
 	server->RemoveConn(conn->socket);
 }
 
+void NetModule::OnActiveClose(uv_handle_t * client)
+{
+	auto tcpcli = (uv_tcp_t*)client;
+	auto conn = (Conn*)tcpcli->data;
+	auto server = conn->netmodule;
+	server->m_waitClose.erase(conn->socket);
+}
+
 void NetModule::RemoveConn(const int& socket)
 {
 	m_conns.erase(socket);
@@ -93,7 +101,7 @@ bool NetModule::ReadPack(Conn* conn, char* buf, int len)
 
 	bool res = true;
 	int read = 0;
-	while (oldbuf.use - read > MsgHead::HEAD_SIZE)
+	while (oldbuf.use - read >= MsgHead::HEAD_SIZE)
 	{
 		MsgHead head;
 		if (!MsgHead::Decode(head, oldbuf.buf + read))
@@ -127,7 +135,8 @@ void NetModule::OnCloseSocket(NetSocket* msg)
 	auto it = m_conns.find(msg->socket);
 	if (it != m_conns.end())
 	{
-		uv_close((uv_handle_t*)it->second->conn, NULL);
+		uv_close((uv_handle_t*)it->second->conn, NetModule::OnActiveClose);
+		m_waitClose[it->second->socket] = it->second;
 		m_conns.erase(it);
 	}
 }

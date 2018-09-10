@@ -3,6 +3,8 @@
 #include "ScheduleModule.h"
 #include "TransMsgModule.h"
 
+#include "protoPB/base/LPBase.pb.h"
+
 Coro1Module::Coro1Module(BaseLayer* l):BaseModule(l)
 {
 }

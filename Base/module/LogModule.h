@@ -20,7 +20,10 @@ static const char* server_name[]{
 	"Proxy-pp",
 	"Master",
 	"Console",
-	"Proxy-DB"
+	"Proxy-DB",
+	"Room",
+	"RoomState",
+	"LoginLock"
 };
 
 class LogModule:public BaseModule

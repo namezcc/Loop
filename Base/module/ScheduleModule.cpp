@@ -50,3 +50,8 @@ size_t ScheduleModule::GetTimerIndex()
 {
 	return ++m_timerIndex;
 }
+
+void ScheduleModule::AddPlate(SHARE<Plate>& plate)
+{
+	m_plate.AddPlate(plate);
+}

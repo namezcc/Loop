@@ -14,10 +14,10 @@ struct Conn:public LoopObject
 
 	void init(FactorManager* fm)
 	{
-		buffer.buf = nullptr;
+		buffer.buf = NULL;
 		buffer.len = 0;
 		buffer.use = 0;
-		conn = nullptr;
+		conn = NULL;
 	}
 
 	void recycle(FactorManager* fm)
@@ -108,6 +108,7 @@ protected:
 	virtual void Execute();
 
 	static void on_close_client(uv_handle_t* client);
+	static void OnActiveClose(uv_handle_t* client);
 
 	virtual bool ReadPack(Conn* conn, char* buf, int len);
 	static void After_write(uv_write_t* req, int status);
@@ -116,7 +117,8 @@ protected:
 	void OnSocketSendData(NetMsg* nMsg);
 protected:
 	MsgModule* m_mgsModule;
-	std::unordered_map<int, SHARE<Conn>> m_conns;
+	std::unordered_map<int32_t, SHARE<Conn>> m_conns;
+	std::unordered_map<int32_t, SHARE<Conn>> m_waitClose;
 	uv_loop_t* m_uvloop;
 };
 

@@ -180,14 +180,28 @@ private:
 };
 
 #define LP_TRACE(M) MsgModule::LogHook(M,spdlog::level::trace)
-#define LP_DEBUG(M) MsgModule::LogHook(M,spdlog::level::debug)<<__FILE__<<__LINE__
+#define LP_DEBUG(M) MsgModule::LogHook(M,spdlog::level::debug)<<__FILE__<<__LINE__<<"\t"
 #define LP_INFO(M) MsgModule::LogHook(M,spdlog::level::info)
 #define LP_WARN(M) MsgModule::LogHook(M,spdlog::level::warn)
-#define LP_ERROR(M) MsgModule::LogHook(M,spdlog::level::err)<<__FILE__<<__LINE__
+#define LP_ERROR(M) MsgModule::LogHook(M,spdlog::level::err)<<__FILE__<<__LINE__<<"\t"
+
+#define PARSEPB_NAME_IF_FALSE(name,T,msg,msgModule)\
+	T name; \
+	if(!name.ParseFromArray(msg->getCombinBuff(msgModule->GetLayer())->m_buff, msg->getLen()))
+
+#define PARSEPB_IF_FALSE(T,msg,msgModule)\
+	T pbMsg; \
+	if(!pbMsg.ParseFromArray(msg->getCombinBuff(msgModule->GetLayer())->m_buff, msg->getLen()))
 
 #define TRY_PARSEPB(T,msg,msgModule) \
 	T pbMsg; \
 	if(!pbMsg.ParseFromArray(msg->getCombinBuff(msgModule->GetLayer())->m_buff, msg->getLen())){	\
+		LP_ERROR(msgModule)<<"parse "<< #T << "error";	\
+	return;}
+
+#define TRY_PARSEPB_NAME(name,T,msg,msgModule) \
+	T name; \
+	if(!name.ParseFromArray(msg->getCombinBuff(msgModule->GetLayer())->m_buff, msg->getLen())){	\
 		LP_ERROR(msgModule)<<"parse "<< #T << "error";	\
 	return;}
 

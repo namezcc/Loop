@@ -6,3 +6,10 @@ message ReqLogin
 	string account = 1;
 	string password = 2;
 }
+
+message RoomInfo
+{
+	string     ip = 1;
+	int32      port = 2;
+    int64      pid = 3; 
+}

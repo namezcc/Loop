@@ -3,6 +3,10 @@ import xlrd
 import os
 from structToCpp import *
 
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
 fromPath = "../../cfgdata/struct/"
 outPath = "../../Servers/struct/"
 fileMaker = objectFile()

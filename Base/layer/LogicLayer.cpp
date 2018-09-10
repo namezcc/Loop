@@ -30,7 +30,7 @@ void LogicLayer::loop() {
 void LogicLayer::close() {
 
 }
-void LogicLayer::GetDefaultTrans(int & ltype, int & lid)
+void LogicLayer::GetDefaultTrans(int32_t & ltype, int32_t & lid)
 {
 	ltype = LY_NET;
 	lid = 0;

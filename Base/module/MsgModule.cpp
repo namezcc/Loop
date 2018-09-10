@@ -30,7 +30,7 @@ void MsgModule::Execute()
 	if (dt > m_coroCheckTime)
 	{
 		CheckCoroClear(dt);
-		m_coroCheckTime = dt + 30;
+		m_coroCheckTime = dt + 30;	//per second check
 	}
 }
 
@@ -117,25 +117,27 @@ void MsgModule::ResponseMsg(SHARE<BaseMsg>& msg,BaseData* data,const int32_t& lt
 void MsgModule::CheckCoroClear(const int64_t& dt)
 {
 	for (auto it=m_coroList1.begin();it!=m_coroList1.end();)
+	{
+		if (dt >= it->second->m_endPoint)
 		{
-			if (dt >= it->second->m_endPoint)
-			{
-				it->second->Clear();
-				m_coroList1.erase(it++);
-			}
-			else
-				break;
+			it->second->m_endPoint = -1; //mean fail
+			it->second->Clear();
+			m_coroList1.erase(it++);
 		}
-		for (auto it = m_coroList2.begin(); it != m_coroList2.end();)
+		else
+			break;
+	}
+	for (auto it = m_coroList2.begin(); it != m_coroList2.end();)
+	{
+		if (dt >= it->second->m_endPoint)
 		{
-			if (dt >= it->second->m_endPoint)
-			{
-				it->second->Clear();
-				m_coroList2.erase(it++);
-			}
-			else
-				break;
+			it->second->m_endPoint = -1;	//mean fail
+			it->second->Clear();
+			m_coroList2.erase(it++);
 		}
+		else
+			break;
+	}
 }
 
 void MsgModule::RequestCoroMsg(const int32_t& mid, BaseData* data,const int32_t& coid)

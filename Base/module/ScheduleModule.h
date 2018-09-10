@@ -18,34 +18,34 @@ public:
 	ScheduleModule(BaseLayer* l);
 	~ScheduleModule();
 
-	//ºÁÃë µ¥Î»
-	template<typename T,typename F>
-	size_t AddInterValTask(T&&t, F&&f, const int& interval,const int& count = -1,const int& delay = 0)
+	//ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Î»
+	template<typename T>
+	size_t AddInterValTask(T*&&t,void(T::*&&f)(int64_t&), const int& interval,const int& count = -1,const int& delay = 0)
 	{
 		auto timer = GetLayer()->GetSharedLoop<Timer>();
 		timer->count = count;
 		timer->interval = interval;
-		timer->task = move(bind(forward<F>(f),forward<T>(t),placeholders::_1));
+		timer->task = std::move(std::bind(f,t,placeholders::_1));
 		timer->index = GetTimerIndex();
 		timer->begtime = GetMilliSecend() + delay;
 		m_timers[timer->index] = timer;
 		return timer->index;
 	}
 
-	//@repeat -1 ÎÞÏÞ
-	template<typename T,typename F>
-	size_t AddTimePointTask(T&&t,F&&f,const int& repeat, const int& sec=0, const int& min=-1, const int& hour=-1, const int& week=-1, const int& mday=-1)
+	//@repeat -1 ï¿½ï¿½ï¿½ï¿½
+	template<typename T>
+	size_t AddTimePointTask(T*&&t, void(T::*&&f)(int64_t&),const int& repeat, const int& sec=0, const int& min=-1, const int& hour=-1, const int& week=-1, const int& mday=-1)
 	{
 		auto timer = GetLayer()->GetSharedLoop<Plate>();
 		timer->rep = repeat;
 		timer->mid = GetTimerIndex();
-		timer->task = AnyFuncBind::Bind(forward<F>(f), forward<T>(t));
+		timer->task = std::move(std::bind(f, t, placeholders::_1));
 		timer->plate[PLATE::P_SEC] = sec;
 		timer->plate[PLATE::P_MIN] = min;
 		timer->plate[PLATE::P_HOUR] = hour;
 		timer->plate[PLATE::P_WEEK] = week;
 		timer->plate[PLATE::P_MDAY] = mday;
-		m_plate.AddPlate(timer);
+		AddPlate(timer);
 		return timer->mid;
 	}
 
@@ -55,6 +55,7 @@ protected:
 	virtual void Execute() override;
 
 	size_t GetTimerIndex();
+	void AddPlate(SHARE<Plate>& plate);
 
 private:
 

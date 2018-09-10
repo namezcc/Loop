@@ -29,7 +29,7 @@ void TcpServer::start()
 	r = uv_tcp_bind(&m_hand, (const struct sockaddr*) &addr, 0);
 	ASSERT(r == 0);
 	m_hand.data = this;
-	r = uv_listen((uv_stream_t*)&m_hand, 128, connection_cb);
+	r = uv_listen((uv_stream_t*)&m_hand, 4096, connection_cb);
 	ASSERT(r == 0);
 	//std::cout << "start listen port:" << port << std::endl;
 	LP_WARN(m_netModule->GetMsgModule()) << "start listen port:" << m_port;

@@ -39,17 +39,19 @@ public:
 		m_pipes[ltype].push_back(RWPipe(rp, wp));
 	}
 
-	void writePipe(void* msg)
+	void writePipe(BaseData* msg)
 	{
-		int32_t ltype, lid;
-		GetDefaultTrans(ltype, lid);
-		writePipe(ltype, lid, msg);
+		writePipe(m_defltype, m_deflid, msg);
 	}
 
-	void writePipe(const int32_t& ltype,const int32_t& lid, void* msg)
+	void writePipe(const int32_t& ltype,const int32_t& lid, BaseData* msg)
 	{
 		auto it = m_pipes.find(ltype);
-		assert(it != m_pipes.end());
+		if (it == m_pipes.end())
+		{
+			RecycleLayerMsg(msg);
+			assert(0);
+		}
 		it->second[lid].wpipe->write(msg);
 	}
 
@@ -148,6 +150,7 @@ protected:
 
 	virtual void GetDefaultTrans(int32_t& ltype,int32_t& lid)=0;
 protected:
+	int32_t m_defltype, m_deflid;
 	int32_t m_type;
 	int32_t m_lsindex;	//在server的下标
 	SHARE<LayerMsg> m_msgCall;

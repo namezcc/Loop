@@ -3,6 +3,8 @@
 #include "ScheduleModule.h"
 #include "SendProxyDbModule.h"
 
+#include "protoPB/base/LPBase.pb.h"
+
 Coro3Module::Coro3Module(BaseLayer * l):BaseModule(l)
 {
 }
@@ -20,7 +22,7 @@ void Coro3Module::Init()
 	m_schedule->AddInterValTask(this, &Coro3Module::OnBeginTest, 3000, -1, 3000);
 }
 
-void Coro3Module::OnBeginTest(const int64_t & dt)
+void Coro3Module::OnBeginTest(int64_t & dt)
 {
 	m_msgModule->DoCoroFunc([this](c_pull& p, SHARE<BaseCoro>& c) {
 		CoroTest1(p, c);

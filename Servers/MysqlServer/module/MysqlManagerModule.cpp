@@ -3,7 +3,9 @@
 #include "MysqlModule.h"
 #include "MsgModule.h"
 #include "TransMsgModule.h"
+#include "GameTableModule.h"
 
+#include <algorithm>
 
 MysqlManagerModule::MysqlManagerModule(BaseLayer * l):BaseModule(l)
 {
@@ -19,10 +21,13 @@ void MysqlManagerModule::Init()
 	m_mysqlmodule = GET_MODULE(MysqlModule);
 	m_msgmodule = GET_MODULE(MsgModule);
 	m_transModule = GET_MODULE(TransMsgModule);
+	m_gameTableModule = GET_MODULE(GameTableModule);
 
 	
 	m_msgmodule->AddMsgCallBack(N_GET_MYSQL_GROUP, this, &MysqlManagerModule::OnGetGroupId);
 	m_msgmodule->AddMsgCallBack(N_MYSQL_MSG, this, &MysqlManagerModule::OnGetMysqlMsg);
+	m_msgmodule->AddAsynMsgCallBack(N_MYSQL_CORO_MSG, this, &MysqlManagerModule::OnRequestMysqlMsg);
+
 	m_msgmodule->AddMsgCallBack(L_MYSQL_MSG, this, &MysqlManagerModule::OnGetMysqlRes);
 	m_msgmodule->AddMsgCallBack(N_UPDATE_TABLE_GROUP, this, &MysqlManagerModule::OnUpdateTableGroup);
 	m_msgmodule->AddMsgCallBack(N_ADD_TABLE_GROUP, this, &MysqlManagerModule::OnAddTableGroup);
@@ -50,10 +55,19 @@ void MysqlManagerModule::InitTableGroupNum()
 	SqlRow field;
 	m_mysqlmodule->Select("show TABLES;", row, field);
 	m_tableGroup = 0;
-	for (auto& r:row)
-		for (auto& t:r)
-			if (t.find(Reflect<AccoutInfo>::Name()))
+	std::string tname = Reflect<AccoutInfo>::Name();
+	std::string lowername = tname;
+	std::transform(lowername.begin(), lowername.end(), lowername.begin(), std::tolower);
+	for (auto& r : row)
+	{
+		for (auto& t : r)
+		{
+			if (t.find(tname) != std::string::npos || t.find(lowername) != std::string::npos)
+			{
 				++m_tableGroup;
+			}
+		}
+	}
 
 	for (size_t i = 0; i < m_sqlLayerNum; i++)
 	{//拿 NetSocket 结构代用一下
@@ -68,20 +82,7 @@ void MysqlManagerModule::InitTableGroupNum()
 
 void MysqlManagerModule::CreateMysqlTable(int group)
 {
-	auto dbgroup = m_mysqlmodule->GetDBGroup();
-	int64_t uid = (dbgroup << 8) | group;
-	uid <<= 48;
-
-	auto tname = Reflect<AccoutInfo>::Name() + std::to_string(group);
-	m_mysqlmodule->InitTable<AccoutInfo>(tname);
-	//还要插入默认数据
-	AccoutInfo data1;
-
-	Reflect<AccoutInfo> rf(&data1);
-	rf.Set_id(uid);
-	rf.Set_name("_%Template%_");
-	rf.Set_pass("%123456789%");
-	m_mysqlmodule->Insert(rf, tname);
+	m_gameTableModule->CreateTables(group);
 }
 
 void MysqlManagerModule::OnGetGroupId(NetServerMsg * msg)
@@ -146,6 +147,52 @@ void MysqlManagerModule::OnGetMysqlMsg(NetServerMsg * msg)
 
 	reply->path = move(msg->path);
 	SendSqlReply(reply, gid);
+}
+
+void MysqlManagerModule::OnRequestMysqlMsg(SHARE<BaseMsg>& msg, c_pull & pull, SHARE<BaseCoro>& coro)
+{
+	auto netmsg = (NetServerMsg*)msg->m_data;
+	if (netmsg->path.size() == 0)
+	{
+		LP_ERROR(m_msgmodule) << "ERROR Server path";
+		return;
+	}
+
+	TRY_PARSEPB(LPMsg::PBSqlParam, netmsg, m_msgmodule);
+	auto gid = (pbMsg.uid() >> 48) & 0xff;
+	if (gid == 0)
+		return;
+
+	auto lmsg = GET_LAYER_MSG(LMsgSqlParam);
+	lmsg->param = GET_LAYER_MSG(SqlParam);
+
+	lmsg->param->opt = pbMsg.opt();
+	lmsg->param->tab = pbMsg.table() + std::to_string(gid);
+	lmsg->param->kname.assign(pbMsg.kname().begin(), pbMsg.kname().end());
+	lmsg->param->kval.assign(pbMsg.kval().begin(), pbMsg.kval().end());
+	lmsg->param->field.assign(pbMsg.field().begin(), pbMsg.field().end());
+	lmsg->param->value.assign(pbMsg.value().begin(), pbMsg.value().end());
+
+	auto sendid = GetSendLayerId();
+
+	SHARE<BaseMsg> ackmsg = m_msgmodule->RequestAsynMsg(L_MYSQL_CORO_MSG, lmsg, pull, coro, LY_MYSQL, sendid);
+	auto sqlres = (LMsgSqlParam*)ackmsg->m_data;
+	pbMsg.set_ret(sqlres->param->ret);
+	if (pbMsg.field_size() != sqlres->param->field.size())
+	{
+		pbMsg.clear_field();
+		for (auto& s : sqlres->param->field)
+			pbMsg.add_field(s);
+	}
+
+	if (pbMsg.value_size() != sqlres->param->value.size())
+	{
+		pbMsg.clear_value();
+		for (auto& s : sqlres->param->value)
+			pbMsg.add_value(s);
+	}
+
+	m_transModule->ResponseBackServerMsg(netmsg->path, msg, pbMsg);
 }
 
 void MysqlManagerModule::OnGetMysqlRes(LMsgSqlParam * msg)

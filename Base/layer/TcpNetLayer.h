@@ -36,7 +36,7 @@ protected:
 		
 	};
 
-	virtual void GetDefaultTrans(int& ltype, int& lid)
+	virtual void GetDefaultTrans(int32_t & ltype, int32_t & lid)
 	{
 		auto it = m_pipes.begin();
 		ltype = it->first;

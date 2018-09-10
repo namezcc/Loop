@@ -18,7 +18,7 @@ private:
 
 	virtual void close() override;
 
-	virtual void GetDefaultTrans(int & ltype, int & lid) override;
+	virtual void GetDefaultTrans(int32_t & ltype, int32_t & lid) override;
 
 };
 

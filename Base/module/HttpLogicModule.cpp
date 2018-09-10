@@ -27,7 +27,7 @@ void HttpMsg::Clear()
 
 void HttpRequest::Init()
 {
-	buff.buf = nullptr;
+	buff.buf = NULL;
 	buff.len = 0;
 	buff.use = 0;
 	state = HTTP_POINT::FIRST_LINE;

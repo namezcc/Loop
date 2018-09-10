@@ -7,7 +7,9 @@
 #include <memory>
 #include "Define.h"
 #include "FactorManager.h"
-#include "protoPB/server/LPBase.pb.h"
+//#include "protoPB/base/LPBase.pb.h"
+#include <google/protobuf/message.h>
+
 
 #define SAFE_FREE(ptr) if(ptr){free(ptr);ptr=NULL;}
 
@@ -49,16 +51,16 @@ struct BaseData
 	void* m_looplist;
 };
 
-typedef struct _BaseMsg:public BaseData
+struct BaseMsg:public BaseData
 {
-	_BaseMsg():m_data(NULL)
+	BaseMsg():m_data(NULL)
 	{}
 
 	virtual void initMsg() override {};
 	virtual void recycleMsg() override;
 	int32_t msgId;
 	BaseData* m_data;
-}BaseMsg;
+};
 
 
 struct CoroMsg:public BaseMsg

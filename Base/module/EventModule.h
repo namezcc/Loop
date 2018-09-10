@@ -44,7 +44,7 @@ protected:
 	virtual void Execute() override;
 
 private:
-	std::unordered_map<int, vector<void*>> m_events;
+	std::unordered_map<int32_t, std::list<void*>> m_events;
 };
 
 #endif

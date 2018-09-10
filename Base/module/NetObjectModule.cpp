@@ -2,8 +2,11 @@
 #include "MsgModule.h"
 #include "EventModule.h"
 #include "LoopServer.h"
+#include "TransMsgModule.h"
 
-NetObjectModule::NetObjectModule(BaseLayer* l):BaseModule(l)
+#include "protoPB/base/LPBase.pb.h"
+
+NetObjectModule::NetObjectModule(BaseLayer* l):BaseModule(l), m_acceptNoCheck(false)
 {
 }
 
@@ -16,6 +19,7 @@ void NetObjectModule::Init()
 {
 	m_msgModule = GetLayer()->GetModule<MsgModule>();
 	m_eventModule = GetLayer()->GetModule<EventModule>();
+	m_transModule = GET_MODULE(TransMsgModule);
 
 	m_msgModule->AddMsgCallBack(L_SOCKET_CONNET,this,&NetObjectModule::OnSocketConnet);
 	m_msgModule->AddMsgCallBack(L_SOCKET_CLOSE, this, &NetObjectModule::OnSocketClose);
@@ -50,7 +54,10 @@ void NetObjectModule::OnSocketConnet(NetSocket * sock)
 	auto netobj = GetLayer()->GetSharedLoop<NetObject>();
 	netobj->socket = sock->socket;
 	netobj->ctime = GetSecend()+m_outTime;
-	m_objects_tmp[sock->socket] = netobj;
+	if (m_acceptNoCheck)
+		m_objects[sock->socket] = netobj;
+	else
+		m_objects_tmp[sock->socket] = netobj;
 	m_eventModule->SendEvent(E_SOCKEK_CONNECT, sock->socket);
 }
 
@@ -76,6 +83,7 @@ void NetObjectModule::NoticeSocketClose(NetObject* obj)
 	switch (obj->type)
 	{
 	case CONN_CLIENT:
+		m_eventModule->SendEvent(E_SOCKET_CLOSE, obj->socket);
 		break;
 	case CONN_SERVER:
 		ServerClose(obj->socket);
@@ -89,12 +97,13 @@ void NetObjectModule::NoticeSocketClose(NetObject* obj)
 	}
 }
 
-void NetObjectModule::AcceptConn(const int & socket)
+void NetObjectModule::AcceptConn(const int & socket, const int32_t& connType)
 {
 	auto it = m_objects_tmp.find(socket);
 	if (it == m_objects_tmp.end())
 		return;
 
+	it->second->type = connType;
 	m_objects[socket] = it->second;
 	m_objects_tmp.erase(it);
 }
@@ -102,7 +111,6 @@ void NetObjectModule::AcceptConn(const int & socket)
 void NetObjectModule::SendNetMsg(const int & socket, const int & mid, google::protobuf::Message & pbmsg)
 {
 	NetMsg* nMsg = GetLayer()->GetLayerMsg<NetMsg>();
-	//new NetMsg();
 	nMsg->socket = socket;
 	nMsg->mid = mid;
 	auto buff = PB::PBToBuffBlock(GetLayer(),pbmsg);
@@ -114,26 +122,50 @@ void NetObjectModule::SendNetMsg(const int& socket,const int32_t & mid, BuffBloc
 {
 	//m_object û���ж� ... ����Ҫ
 	NetMsg* nMsg = GetLayer()->GetLayerMsg<NetMsg>();
-	//new NetMsg();
 	nMsg->socket = socket;
 	nMsg->mid = mid;
-	//nMsg->len = len;
-	//nMsg->msg = msg;
 	nMsg->push_front(buff);
 	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
+}
+
+SHARE<BaseMsg> NetObjectModule::ResponseAsynMsg(const int32_t & socket, SHARE<BaseMsg>& comsg, gpb::Message & pbmsg, c_pull& pull, SHARE<BaseCoro>& coro)
+{
+	auto buff = PB::PBToBuffBlock(GetLayer(), pbmsg);
+	return ResponseAsynMsg(socket,comsg,buff,pull,coro);
+}
+
+SHARE<BaseMsg> NetObjectModule::ResponseAsynMsg(const int32_t & socket, SHARE<BaseMsg>& comsg, BuffBlock * buff, c_pull& pull, SHARE<BaseCoro>& coro)
+{
+	auto coroMsg = (CoroMsg*)comsg.get();
+	auto coid = coroMsg->m_mycoid >0 ? coroMsg->m_mycoid : coroMsg->m_coroId;
+	auto mycoid = m_msgModule->GenCoroIndex();
+	auto cobuf = m_transModule->EncodeCoroMsg(buff,0, coid, mycoid);
+	SendNetMsg(socket, N_RESPONSE_CORO_MSG, cobuf);
+	return m_msgModule->PullWait(mycoid,coro,pull);
+}
+
+void NetObjectModule::ResponseMsg(const int32_t & socket, SHARE<BaseMsg>& comsg, gpb::Message & pbmsg)
+{
+	auto buff = PB::PBToBuffBlock(GetLayer(), pbmsg);
+	ResponseMsg(socket, comsg, buff);
+}
+
+void NetObjectModule::ResponseMsg(const int32_t & socket, SHARE<BaseMsg>& comsg, BuffBlock * buff)
+{
+	auto coroMsg = (CoroMsg*)comsg.get();
+	auto coid = coroMsg->m_mycoid >0 ? coroMsg->m_mycoid : coroMsg->m_coroId;
+	auto corobuff = m_transModule->EncodeCoroMsg(buff, 0, coid, 0);
+	SendNetMsg(socket, N_RESPONSE_CORO_MSG, corobuff);
 }
 
 void NetObjectModule::SendHttpMsg(const int& socket, NetBuffer& buf)
 {
 	NetMsg* nMsg = GetLayer()->GetLayerMsg<NetMsg>();
 	auto buffblk = GetLayer()->GetLayerMsg<BuffBlock>();
-	//new NetMsg();
 	nMsg->socket = socket;
-	//nMsg->len = buf.use;
-	//nMsg->msg = buf.buf;
 	buffblk->m_buff = buf.buf;
 	buffblk->m_size = buf.use;
-	buf.buf = nullptr;
+	buf.buf = NULL;
 	nMsg->push_front(buffblk);
 	m_msgModule->SendMsg(L_SOCKET_SEND_HTTP_DATA, nMsg);
 }
@@ -146,7 +178,6 @@ void NetObjectModule::CloseNetObject(const int& socket)
 
 	NetSocket* sock = GetLayer()->GetLayerMsg<NetSocket>();
 	sock->socket = socket;
-	//new NetSocket(socket);
 
 	m_msgModule->SendMsg(L_SOCKET_CLOSE, sock);
 	m_objects.erase(it);
@@ -161,20 +192,19 @@ void NetObjectModule::AddServerConn(const int& sType, const int& sid, const std:
 	ser->serid = sid;
 	ser->state = CONN_STATE::CLOSE;
 	ser->socket = -1;
-	m_serverTmp[ser->serid] = ser;
+	m_serverTmp[GetSerTypeId64(ser->type,ser->serid)] = ser;
 }
 
 void NetObjectModule::ConnectPHPCgi(NetServer& cgi)
 {
 	auto msg = GetLayer()->GetLayerMsg<NetServer>();
 	*msg = cgi;
-	//new NetServer(cgi);
 	m_msgModule->SendMsg(L_CONNECT_PHP_CGI, msg);
 }
 
 void NetObjectModule::OnServerConnet(NetServer* ser)
 {
-	auto it = m_serverTmp.find(ser->serid);
+	auto it = m_serverTmp.find(GetSerTypeId64(ser->type, ser->serid));
 	if (it == m_serverTmp.end())
 		return;
 
@@ -190,9 +220,14 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 
 	//����ע����Ϣ
 	auto myser = GetLayer()->GetServer();
+	auto config = GetLayer()->GetLoopServer()->GetConfig();
+
 	LPMsg::ServerInfo xMsg;
 	xMsg.set_id(myser->serid);
 	xMsg.set_type(myser->type);
+	xMsg.set_ip(config.addr.ip);
+	xMsg.set_port(config.addr.port);
+
 	SendNetMsg(ser->socket, N_REGISTE_SERVER, xMsg);
 
 	//֪ͨ���ӳɹ�
@@ -207,7 +242,7 @@ void NetObjectModule::ServerClose(const int& socket)
 		return;
 	it->second->socket = -1;
 	it->second->state = CONN_STATE::CLOSE;
-	m_serverTmp[it->second->serid] = it->second;
+	m_serverTmp[GetSerTypeId64(it->second->type, it->second->serid)] = it->second;
 	//�� m_object��ɾ��
 	//m_objects.erase(socket); �ѽ��h��
 	//�¼�֪ͨ
@@ -225,9 +260,6 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 	m_objects[msg->socket] = it->second;
 	m_objects_tmp.erase(it);
 	
-	//���Ż�
-	//LPMsg::ServerInfo xMsg;
-	//xMsg.ParseFromArray(msg->msg, msg->len);
 	TRY_PARSEPB(LPMsg::ServerInfo,msg,m_msgModule)
 	
 	auto server = GetLayer()->GetSharedLoop<NetServer>();
@@ -236,10 +268,12 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 	server->type = pbMsg.type();
 	server->socket = msg->socket;
 	server->state = CONN_STATE::CONNECT;
+	server->ip = pbMsg.ip();
+	server->port = pbMsg.port();
+
 	m_eventModule->SendEvent(E_SERVER_CONNECT, server);
 
 	LP_WARN(m_msgModule) << "Server registe type:" << server->type << " ID:" << server->serid;
-	//cout << "Server registe type:" << server->type << " ID:" << server->serid << endl;
 }
 
 void NetObjectModule::OnPHPCgiConnect(NetServer* ser)
@@ -278,7 +312,6 @@ void NetObjectModule::CheckOutTime()
 		{
 			NetSocket* sock = GetLayer()->GetLayerMsg<NetSocket>();
 			sock->socket = it->second->socket;
-			//new NetSocket(it->second->socket);
 			m_msgModule->SendMsg(L_SOCKET_CLOSE, sock);
 			m_objects_tmp.erase(it++);
 		}
@@ -299,7 +332,13 @@ void NetObjectModule::CheckReconnect()
 	{
 		auto msg = GetLayer()->GetLayerMsg<NetServer>();
 		*msg = *it.second;
-		//new NetServer(*it.second);
 		m_msgModule->SendMsg(L_TO_CONNET_SERVER, msg);
 	}
+}
+
+int64_t NetObjectModule::GetSerTypeId64(const int32_t & stype, const int32_t & sid)
+{
+	int64_t id = stype;
+	id <<= 32;
+	return id | sid;
 }

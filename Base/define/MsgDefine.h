@@ -28,6 +28,7 @@ enum MSG_FROM_LAYER
 	L_HL_GET_MACHINE_LIST,	//��ȡconsole��
 
 	L_MYSQL_MSG,
+	L_MYSQL_CORO_MSG,
 	L_UPDATE_TABLE_GROUP,
 
 	L_CORO_1_TEST_1,
@@ -42,6 +43,8 @@ enum MSG_FROM_NET
 {
 	N_BEGAN = MSG_FROM_LAYER::L_END,
 
+	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> common ------------------
+	
 	N_REQUEST_CORO_MSG,
 	N_RESPONSE_CORO_MSG,
 
@@ -55,6 +58,7 @@ enum MSG_FROM_NET
 	N_RECV_PHP_CGI_MSG,
 
 	N_MYSQL_MSG,
+	N_MYSQL_CORO_MSG,
 	N_UPDATE_TABLE_GROUP,
 	N_ADD_TABLE_GROUP,
 	N_CREATE_ACCOUNT,
@@ -66,12 +70,28 @@ enum MSG_FROM_NET
 
 	N_CORO_TEST_1,
 
+	// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< common -----------------
+
+	//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> server msg ----------------------
+
+	N_LOGIN_LOCK,
+	N_LOGIN_UNLOCK,
+
+	N_ROOM_STATE,
+	N_REQ_ROOM_LIST,
+	N_ACK_ROOM_LIST,
+
+	N_ROOM_READY_TAKE_PLAYER,
+
+	//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< server msg ----------------------
+
 	N_END,
 };
 //�ͻ����������֮����Ϣid > 10000
 enum BASE_EVENT
 {
 	E_SOCKEK_CONNECT,
+	E_SOCKET_CLOSE,
 
 	E_SERVER_CONNECT,
 	E_SERVER_CLOSE,
@@ -81,6 +101,8 @@ enum BASE_EVENT
 
 	E_PHP_CGI_CONNECT,
 	E_PHP_CGI_CLOSE,
+
+	E_BASE_EVENT_END,
 };
 
 #endif

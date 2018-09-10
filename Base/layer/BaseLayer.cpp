@@ -7,6 +7,7 @@ BaseLayer::~BaseLayer() {
 
 void BaseLayer::StartRun()
 {
+	GetDefaultTrans(m_defltype, m_deflid);
 	init();
 	for (auto& it : m_modules)
 		it.second->Init();
