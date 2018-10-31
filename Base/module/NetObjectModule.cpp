@@ -128,6 +128,26 @@ void NetObjectModule::SendNetMsg(const int& socket,const int32_t & mid, BuffBloc
 	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
 }
 
+void NetObjectModule::BroadNetMsg(const std::vector<int32_t>& socks, const int32_t & mid, gpb::Message & pbmsg)
+{
+	auto nMsg = GET_LAYER_MSG(BroadMsg);
+
+	nMsg->m_socks = std::move(socks);
+	nMsg->mid = mid;
+	auto buff = PB::PBToBuffBlock(GetLayer(), pbmsg);
+	nMsg->push_front(buff);
+	m_msgModule->SendMsg(L_SOCKET_BROAD_DATA, nMsg);
+}
+
+void NetObjectModule::BroadNetMsg(const std::vector<int32_t>& socks, const int32_t & mid, BuffBlock * buff)
+{
+	auto nMsg = GET_LAYER_MSG(BroadMsg);
+	nMsg->m_socks = std::move(socks);
+	nMsg->mid = mid;
+	nMsg->push_front(buff);
+	m_msgModule->SendMsg(L_SOCKET_BROAD_DATA, nMsg);
+}
+
 SHARE<BaseMsg> NetObjectModule::ResponseAsynMsg(const int32_t & socket, SHARE<BaseMsg>& comsg, gpb::Message & pbmsg, c_pull& pull, SHARE<BaseCoro>& coro)
 {
 	auto buff = PB::PBToBuffBlock(GetLayer(), pbmsg);
@@ -192,6 +212,7 @@ void NetObjectModule::AddServerConn(const int& sType, const int& sid, const std:
 	ser->serid = sid;
 	ser->state = CONN_STATE::CLOSE;
 	ser->socket = -1;
+	ser->activeLink = true;
 	m_serverTmp[GetSerTypeId64(ser->type,ser->serid)] = ser;
 }
 
@@ -232,6 +253,7 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 
 	//֪ͨ���ӳɹ�
 	m_eventModule->SendEvent(E_SERVER_CONNECT, it->second);
+	m_eventModule->SendEvent(E_SERVER_CONNECT_AFTER, it->second);
 	m_serverTmp.erase(it);
 }
 
@@ -242,9 +264,8 @@ void NetObjectModule::ServerClose(const int& socket)
 		return;
 	it->second->socket = -1;
 	it->second->state = CONN_STATE::CLOSE;
-	m_serverTmp[GetSerTypeId64(it->second->type, it->second->serid)] = it->second;
-	//�� m_object��ɾ��
-	//m_objects.erase(socket); �ѽ��h��
+	if(it->second->activeLink)
+		m_serverTmp[GetSerTypeId64(it->second->type, it->second->serid)] = it->second;
 	//�¼�֪ͨ
 	m_eventModule->SendEvent(E_SERVER_CLOSE, it->second);
 	m_serverConn.erase(it);
@@ -260,7 +281,7 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 	m_objects[msg->socket] = it->second;
 	m_objects_tmp.erase(it);
 	
-	TRY_PARSEPB(LPMsg::ServerInfo,msg,m_msgModule)
+	TRY_PARSEPB(LPMsg::ServerInfo, msg);
 	
 	auto server = GetLayer()->GetSharedLoop<NetServer>();
 
@@ -270,10 +291,13 @@ void NetObjectModule::OnServerRegiste(NetMsg* msg)
 	server->state = CONN_STATE::CONNECT;
 	server->ip = pbMsg.ip();
 	server->port = pbMsg.port();
+	server->activeLink = false;
 
+	m_serverConn[msg->socket] = server;
 	m_eventModule->SendEvent(E_SERVER_CONNECT, server);
+	m_eventModule->SendEvent(E_SERVER_CONNECT_AFTER, server);
 
-	LP_WARN(m_msgModule) << "Server registe type:" << server->type << " ID:" << server->serid;
+	LP_WARN << "Server registe type:" << server->type << " ID:" << server->serid;
 }
 
 void NetObjectModule::OnPHPCgiConnect(NetServer* ser)
@@ -305,7 +329,7 @@ void NetObjectModule::CheckOutTime()
 	auto nt = GetSecend();
 	if (nt < m_tmpObjTime)
 		return;
-	m_tmpObjTime = nt + 1;
+	m_tmpObjTime = nt + 5;
 	for (auto it=m_objects_tmp.begin();it!=m_objects_tmp.end();)
 	{
 		if (it->second->ctime < nt)

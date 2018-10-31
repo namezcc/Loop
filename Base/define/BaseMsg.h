@@ -33,13 +33,15 @@ struct ServerNode
 
 struct BaseData
 {
-	BaseData() = default;
-	BaseData(const BaseData&)
-	{}
+	BaseData():m_looplist(NULL)
+	{};
+	/*BaseData(const BaseData&)
+	{}*/
+	//这个函数是为了子类拷贝是防止拷贝 m_looplist
 	BaseData & operator = (const BaseData&)
 	{
 		return *this;
-	}
+	};
 
 
 	virtual ~BaseData()
@@ -47,6 +49,7 @@ struct BaseData
 
 	virtual void initMsg()=0;
 	virtual void recycleMsg()=0;
+	virtual void recycleCheck(){};
 
 	void* m_looplist;
 };
@@ -76,23 +79,37 @@ struct CoroMsg:public BaseMsg
 };
 
 
-struct LOOP_EXPORT BuffBlock:public BaseData,public LoopObject
+struct LOOP_EXPORT BuffBlock:public BaseData
 {
-	char* m_buff;
-	int32_t m_size;
-	BuffBlock* m_next;
-
 	BuffBlock();
-
-	void makeRoom(const int32_t& size);
-	void append(const char* buf, const int32_t& size);
+	virtual void makeRoom(const int32_t& size);
 	void write(char* buf, const int32_t& size);
 	virtual void initMsg() override {
 		m_size = 0;
+		m_allsize = 0;
+		m_ref = 0;
 	};
 	virtual void recycleMsg() override;
+	virtual void recycleCheck() override;
+	char* m_buff;
+	int32_t m_size;
+	BuffBlock* m_next;
+	int16_t m_ref;
+protected:
+	int32_t m_allsize;
+	void* m_recylist;
 
 	// ͨ�� LoopObject �̳�
+	//virtual void init(FactorManager * fm) override;
+	//virtual void recycle(FactorManager * fm) override;
+};
+
+struct LOOP_EXPORT LocalBuffBlock:public BuffBlock,public LoopObject
+{
+	LocalBuffBlock();
+	virtual void makeRoom(const int32_t& size);
+	virtual void recycleMsg() override {};
+
 	virtual void init(FactorManager * fm) override;
 	virtual void recycle(FactorManager * fm) override;
 };
@@ -108,8 +125,9 @@ struct LOOP_EXPORT NetMsg:public BaseData
 
 	void push_front(BuffBlock* buff);
 	virtual void push_front(BaseLayer* l,const char* buf,const int32_t& size);
-	SHARE<BuffBlock> getCombinBuff(BaseLayer* l);
-	void write_front(const char* buf, const int32_t& size);
+	char* getNetBuff();
+	SHARE<LocalBuffBlock> getCombinBuff(BaseLayer* l);
+	BuffBlock* popBuffBlock();
 
 	inline int32_t getLen() { return len; };
 
@@ -120,6 +138,15 @@ protected:
 	int32_t len;
 };
 
+struct BroadMsg:public NetMsg
+{
+	std::vector<int32_t> m_socks;
+
+	virtual void initMsg() override {
+		NetMsg::initMsg();
+		m_socks.clear();
+	};
+};
 
 struct LOOP_EXPORT NetServerMsg:public NetMsg,public LoopObject
 {
@@ -155,6 +182,7 @@ struct LOOP_EXPORT NetServer:public BaseData
 	int32_t state;
 	std::string ip;
 	int32_t port;
+	bool activeLink;	//是否主动链接
 };
 
 struct LOOP_EXPORT LogInfo:public BaseData
@@ -170,8 +198,8 @@ namespace gpb = google::protobuf;
 
 struct LOOP_EXPORT PB
 {
-	static BuffBlock* PBToBuffBlock(BaseLayer* l,google::protobuf::Message& msg);
-	static BuffBlock* PBToBuffBlock(BaseLayer* l, google::protobuf::Message& msg,const int32_t& append);
+	static BuffBlock* PBToBuffBlock(BaseLayer* l,const google::protobuf::Message& msg);
+	static BuffBlock* PBToBuffBlock(BaseLayer* l, const google::protobuf::Message& msg,const int32_t& append);
 
 	static int32_t GetInt(char* msg)
 	{
@@ -190,5 +218,7 @@ struct LOOP_EXPORT PB
 		res[3] = (unsigned char)(n >> 24);
 	}
 };
+
+typedef std::vector<SHARE<ServerNode>> VecPath;
 
 #endif

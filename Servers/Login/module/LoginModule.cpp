@@ -47,12 +47,12 @@ void LoginModule::OnClientConnect(const int32_t& sock)
 void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro)
 {
 	auto msg = (NetMsg*)comsg->m_data;
-	TRY_PARSEPB(LPMsg::ReqLogin, msg, m_msgModule);
+	TRY_PARSEPB(LPMsg::ReqLogin, msg);
 
 	auto itc = m_tmpClient.find(pbMsg.account());
 	if (itc != m_tmpClient.end())
 	{
-		LP_WARN(m_msgModule) << "allread wait to login account:" << pbMsg.account();
+		LP_WARN << "allread wait to login account:" << pbMsg.account();
 		if(itc->second->sock != msg->socket)
 			m_netModule->CloseNetObject(msg->socket);
 		return;
@@ -76,7 +76,7 @@ void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Base
 	auto acklock = m_transModule->RequestServerAsynMsg(lockser, N_LOGIN_LOCK, lockpb, pull, coro);
 	{
 		auto netmsg = (NetMsg*)acklock->m_data;
-		PARSEPB_NAME_IF_FALSE(acklockpb,LPMsg::LoginLock, netmsg, m_msgModule)
+		PARSEPB_NAME_IF_FALSE(acklockpb,LPMsg::LoginLock, netmsg)
 		{
 			coro->SetFail();
 			return;
@@ -91,7 +91,7 @@ void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Base
 	if (!m_redisModule->IsConnect())
 	{
 		coro->SetFail();
-		LP_ERROR(m_msgModule) << "Redis Connect invalid";
+		LP_ERROR << "Redis Connect invalid";
 		return;
 	}
 
@@ -118,7 +118,7 @@ void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Base
 void LoginModule::OnGetAccountInfo(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro)
 {
 	auto msg = (NetMsg*)comsg->m_data;
-	TRY_PARSEPB(LPMsg::PBSqlParam, msg, m_msgModule);
+	TRY_PARSEPB(LPMsg::PBSqlParam, msg);
 
 	vector<string> field(pbMsg.field().begin(), pbMsg.field().end());
 	vector<string> value(pbMsg.value().begin(), pbMsg.value().end());
@@ -157,10 +157,10 @@ void LoginModule::OnGetAccountInfo(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<B
 			auto ackmsg = m_sendProxyDb->RequestUpdateDbGroup(rf, account->id, account->id >> 56, N_MYSQL_CORO_MSG, pull, coro);
 
 			auto sqlres = (NetMsg *)ackmsg->m_data;
-			TRY_PARSEPB_NAME(pbsqlmsg,LPMsg::PBSqlParam, sqlres, m_msgModule);
+			TRY_PARSEPB_NAME(pbsqlmsg,LPMsg::PBSqlParam, sqlres);
 			if (!pbsqlmsg.ret())
 			{
-				LP_ERROR(m_msgModule) << "Update Account roomid Fail";
+				LP_ERROR << "Update Account roomid Fail";
 				room = NULL;
 			}
 		}
@@ -169,7 +169,7 @@ void LoginModule::OnGetAccountInfo(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<B
 	else
 	{
 		RemoveClient(account->name);
-		LP_WARN(m_msgModule)<< "Account:" << account->name << "  Login pass Error";
+		LP_WARN<< "Account:" << account->name << "  Login pass Error";
 	}
 }
 
@@ -199,11 +199,11 @@ void LoginModule::CreateAccount(const string & name, const string & pass, c_pull
 void LoginModule::OnCreateAccount(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro)
 {
 	auto msg = (NetMsg *)comsg->m_data;
-	TRY_PARSEPB(LPMsg::PBSqlParam, msg, m_msgModule);
+	TRY_PARSEPB(LPMsg::PBSqlParam, msg);
 
 	if (!pbMsg.ret())
 	{
-		LP_ERROR(m_msgModule) << "CreateAccount Fail";
+		LP_ERROR << "CreateAccount Fail";
 		return;
 	}
 
@@ -213,7 +213,7 @@ void LoginModule::OnCreateAccount(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Ba
 	SHARE<AccoutInfo> account = m_sendProxyDb->CreateObject<AccoutInfo>(field, value);
 	if (!account)
 	{
-		LP_ERROR(m_msgModule) << "OnCreateAccount get account error";
+		LP_ERROR << "OnCreateAccount get account error";
 		return;
 	}
 
@@ -233,7 +233,7 @@ void LoginModule::OnCreateAccount(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Ba
 	if (!res)
 	{
 		RemoveClient(account->name);
-		LP_ERROR(m_msgModule) << "Redis connect fail";
+		LP_ERROR << "Redis connect fail";
 		return;
 	}
 
@@ -254,7 +254,7 @@ bool LoginModule::TryPlayerLogin(SHARE<ClientObj>& client, SHARE<AccoutInfo>& ac
 	auto ackmsg = m_transModule->RequestServerAsynMsg(ser, N_LOGIN_LOCK, msg, pull, coro);
 	auto netmsg = (NetMsg*)ackmsg->m_data;
 	{
-		PARSEPB_IF_FALSE(LPMsg::LoginLock, netmsg, m_msgModule)
+		PARSEPB_IF_FALSE(LPMsg::LoginLock, netmsg)
 		{
 			RemoveClient(account->name);
 			return false;
@@ -289,12 +289,12 @@ bool LoginModule::TryPlayerLogin(SHARE<ClientObj>& client, SHARE<AccoutInfo>& ac
 			auto ackmsg = m_sendProxyDb->RequestUpdateDbGroup(rf, account->id, account->id >> 56, N_MYSQL_CORO_MSG, pull, coro);
 
 			auto sqlres = (NetMsg *)ackmsg->m_data;
-			PARSEPB_IF_FALSE(LPMsg::PBSqlParam, sqlres, m_msgModule)
+			PARSEPB_IF_FALSE(LPMsg::PBSqlParam, sqlres)
 			{
 			}
 			if (!pbMsg.ret())
 			{
-				LP_ERROR(m_msgModule) << "Update Account roomid Fail";
+				LP_ERROR << "Update Account roomid Fail";
 				room = NULL;
 			}
 		}
@@ -310,7 +310,7 @@ void LoginModule::SendRoomInfo(SHARE<AccoutInfo>& account, SHARE<ClientObj>& cli
 {
 	if (!room)
 	{
-		LP_ERROR(m_msgModule) << " ERROR No Room Server Open";
+		LP_ERROR << " ERROR No Room Server Open";
 		return;
 	}
 

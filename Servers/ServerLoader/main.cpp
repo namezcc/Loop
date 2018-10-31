@@ -10,6 +10,8 @@
 
 #if PLATFORM != PLATFORM_WIN
 #include <errno.h>
+#else
+#include <strsafe.h>
 #endif
 
 using namespace std;
@@ -51,6 +53,15 @@ void StartInitCrash(const std::string& proname,const int32_t& nid)
 	auto path = LoopFile::GetExecutePath();
 	path.append("dump/");
 	InitCrash(path, proname+"_"+std::to_string(nid));
+
+#if PLATFORM == PLATFORM_WIN
+	//set title
+
+	char title[MAX_PATH] = { 0 };
+	sprintf_s(title, "server %s-%d", proname.c_str(), nid);
+	//StringCchPrintf(title,MAX_PATH,"%s-%d",)
+	::SetConsoleTitle(title);
+#endif // PLATFORM == PLATFORM_WIN
 }
 
 int main(int argc, char* args[])

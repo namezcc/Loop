@@ -39,7 +39,7 @@ void ProcessModule::CreateServer(const SERVER_TYPE& sertype, const int32_t& nid,
 {
 	if (sertype <= SERVER_TYPE::LOOP_SERVER_NONE || sertype >= SERVER_TYPE::LOOP_SERVER_END)
 	{
-		LP_ERROR(m_msgModule) << "CreateServer error sertype:" << sertype;
+		LP_ERROR << "CreateServer error sertype:" << sertype;
 		return;
 	}
 	std::vector<std::string> args;

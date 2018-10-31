@@ -41,7 +41,7 @@ void Coro3Module::CoroTest1(c_pull & pull, SHARE<BaseCoro>& coro)
 
 	auto msg2 = m_sendProxyDb->RequestToProxyDb(msg, hash, N_CORO_TEST_1, pull, coro);
 	auto netmsg = (NetServerMsg*)msg2->m_data;
-	TRY_PARSEPB(LPMsg::ServerInfo, netmsg, m_msgModule);
+	TRY_PARSEPB(LPMsg::ServerInfo, netmsg);
 	std::cout << "coro 'login' test get:" << pbMsg.id() << std::endl;
 	std::cout << "--------------------------------" << std::endl;
 }

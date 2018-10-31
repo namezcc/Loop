@@ -8,8 +8,19 @@ ${PROJECT_SOURCE_DIR}/module
 file(GLOB_RECURSE PROXY_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE PROXY_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
-add_library(${ProjectName} SHARED ${PROXY_HEAD_FILES} ${PROXY_SOUCE_FILES})
-target_link_libraries(${ProjectName} ${LoopLib})
+set(COM_RECURSE ${PROJECT_SOURCE_DIR}/../Common/module/NoticeServerModule.cpp)
+
+if(WIN32)
+set(Proxylib
+serverpb.lib
+libprotobufd.lib
+)
+else()
+set(Proxylib )
+endif()
+
+add_library(${ProjectName} SHARED ${PROXY_HEAD_FILES} ${PROXY_SOUCE_FILES} ${COM_RECURSE})
+target_link_libraries(${ProjectName} ${LoopLib} ${Proxylib})
 
 set_target_properties(${ProjectName} PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${LPOutDir}

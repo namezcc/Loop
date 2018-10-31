@@ -1,0 +1,17 @@
+LPMSG = {
+    N_REQ_BEGIN_BATTLE_SCENE = 1010,
+    N_REQ_BATTLE_ADD_PLAYER = 1011,
+    N_REQ_ENTER_BATTLE_SCENE = 10011,
+    N_ACK_PLAYER_OPERATION = 10013,
+}
+
+SEND_MSG = {
+    N_ACK_OBJECT_INFO_ENTER_VIEW = 1013,
+    N_ACK_SCENE_AOI_UPDATE = 1014,
+    N_ACK_FINISH_FRAME = 1015,
+    N_ACK_SELF_ROLE_INFO = 10015,
+}
+
+for k,v in pairs(LPMSG) do
+    LoopState:callFunction("LuaBindNetMsg",v)
+end

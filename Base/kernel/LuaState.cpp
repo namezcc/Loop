@@ -1,14 +1,20 @@
 #include "LuaState.h"
 #include "LuaModule.h"
+extern "C" {
+#include "lua5.3/mpb.h"
+}
 #include <iostream>
 
 LuaState::LuaState():m_module(NULL)
 {
 	m_L = luaL_newstate();
 	luaL_openlibs(m_L);
+	luaopen_mpb(m_L);
+	lua_settop(m_L, 0);
 	open_libs();
 	RegistCallFunc();
 	PushSelf();
+	lua_settop(m_L, 0);
 }
 
 LuaState::~LuaState()
@@ -82,6 +88,16 @@ int LuaState::open_callFunc(lua_State* L)
 	return 1;
 }
 
+int LuaState::traceback(lua_State * L)
+{
+	const char *msg = lua_tostring(L, -1);
+	if (msg)
+		luaL_traceback(L, L, msg, 1);
+	else
+		lua_pushliteral(L, "no message");
+	return 1;
+}
+
 void LuaState::open_libs()
 {
 	luaL_Reg lib_s[] = {
@@ -119,18 +135,20 @@ void LuaState::PushSelf()
 	luaL_getmetatable(m_L, "Module");
 	lua_setmetatable(m_L, -2);
 
+	lua_pushcfunction(m_L, traceback);
+	m_errIndex = luaL_ref(m_L, LUA_REGISTRYINDEX);
 }
 
-void LuaState::printLuaStack(lua_State *L)
+void LuaState::printLuaStack()
 {
 	int nIndex;
 	int nType;
 	fprintf(stderr, "================栈顶================\n");
 	fprintf(stderr, "   索引  类型          值\n");
-	for (nIndex = lua_gettop(L); nIndex > 0; --nIndex) {
-		nType = lua_type(L, nIndex);
+	for (nIndex = lua_gettop(m_L); nIndex > 0; --nIndex) {
+		nType = lua_type(m_L, nIndex);
 		fprintf(stderr, "   (%d)  %s         %s\n", nIndex,
-			lua_typename(L, nType), lua_tostring(L, nIndex));
+			lua_typename(m_L, nType), lua_tostring(m_L, nIndex));
 	}
 	fprintf(stderr, "================栈底================\n");
 }

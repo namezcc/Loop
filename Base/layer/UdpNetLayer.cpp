@@ -6,10 +6,15 @@
 
 void UdpNetLayer::init()
 {
-	CreateModule<MsgModule>();
+	m_msg = CreateModule<MsgModule>();
 	CreateModule<ScheduleModule>();
 	CreateModule<UdpNetModule>();
 	CreateModule<UdpServerModule>()->Listen(m_port);
+}
+
+void UdpNetLayer::afterInit()
+{
+	RegLayerMsg(&MsgModule::MsgCallBack2, m_msg);
 }
 
 void UdpNetLayer::loop()

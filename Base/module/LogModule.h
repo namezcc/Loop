@@ -23,7 +23,13 @@ static const char* server_name[]{
 	"Proxy-DB",
 	"Room",
 	"RoomState",
-	"LoginLock"
+	"LoginLock",
+	"BattleScene",
+	"BattleTrans",
+	"Match",
+	"MatchState",
+	"Team",
+	"TeamState"
 };
 
 class LogModule:public BaseModule

@@ -1,0 +1,5 @@
+OPT_BUFF_SIZE = 20
+
+OPT_TYPE = {
+    OPT_TEST = 1,
+}

@@ -43,6 +43,7 @@ void SendProxyDbModule::SendToProxyDb(google::protobuf::Message & msg, const int
 {
 	auto forbuff = GET_LAYER_MSG(BuffBlock);
 	forbuff->makeRoom(sizeof(int32_t) * 2);
+	forbuff->m_size = sizeof(int32_t) * 2;
 	PB::WriteInt(forbuff->m_buff, hash);
 	PB::WriteInt(forbuff->m_buff + sizeof(int32_t), mid);
 	auto buff = PB::PBToBuffBlock(GetLayer(), msg);
@@ -54,6 +55,7 @@ SHARE<BaseMsg> SendProxyDbModule::RequestToProxyDb(google::protobuf::Message & m
 {
 	auto forbuff = GET_LAYER_MSG(BuffBlock);
 	forbuff->makeRoom(sizeof(int32_t) * 2);
+	forbuff->m_size = sizeof(int32_t) * 2;
 	PB::WriteInt(forbuff->m_buff, hash);
 	PB::WriteInt(forbuff->m_buff + sizeof(int32_t), N_REQUEST_CORO_MSG);
 	auto buff = PB::PBToBuffBlock(GetLayer(), msg);

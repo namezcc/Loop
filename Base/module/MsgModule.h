@@ -8,23 +8,21 @@
 class ScheduleModule;
 
 typedef std::function<void(SHARE<BaseMsg>&)> MsgCall;
+typedef std::function<void(BaseMsg*)> MsgCall2;
 
 class LOOP_EXPORT MsgModule:public BaseModule
 {
 public:
 
-	struct LogHook
+	struct LOOP_EXPORT LogHook
 	{
-		LogHook(MsgModule* nm,const int32_t& lv):m(nm)
+		LogHook(BaseModule* nm,const int32_t& lv):m(nm)
 		{
 			log = nm->GetLayer()->GetLayerMsg<LogInfo>();
 			log->level = lv;
 		}
 
-		~LogHook()
-		{
-			m->SendMsg(LY_LOG, 0, L_LOG_INFO, log);
-		}
+		~LogHook();
 
 		template<typename T>
 		LogHook& operator <<(T&&t)
@@ -33,7 +31,7 @@ public:
 			return *this;
 		}
 	private:
-		MsgModule* m;
+		BaseModule * m;
 		LogInfo* log;
 	};
 
@@ -43,30 +41,24 @@ public:
 	void SendMsg(const int32_t& msgid, BaseData* data);
 	void SendMsg(const int32_t& ltype, const int32_t& lid, const int32_t& msgid, BaseData* data);
 
-	//typename std::enable_if<!std::is_same<F,void(T::*)(SHARE<BaseMsg>&)>::value,void>::type 
 	template<typename T, typename F>
 	void AddMsgCallBack(const int32_t mId, T&&t, F&&f)
 	{
-		/*auto call = std::move(ANY_BIND(t,f));
-		m_callBack[mId] = move([call](SHARE<BaseMsg>& msg) {
-			auto mdata = dynamic_cast<FuncArgsType<F>::arg1>(msg->m_data);
-			if(mdata)
-				call(mdata);
-			else
-				LogHook(this,spdlog::level::err)<<__FILE__<<__LINE__<<"Recv Msg cast Null";
-		});*/
 		AddMsgCallBackEx<typename FuncArgsType<F>::arg1>(mId, std::forward<T>(t), std::forward<F>(f));
 	}
 
-	/*template<typename T, typename F>
-	typename std::enable_if<std::is_same<F, void(T::*)(SHARE<BaseMsg>&)>::value,void>::type
-	AddMsgCallBack(const int32_t mId, T&&t, F&&f)
+	template<typename T, typename F>
+	void AddMsgCallBack2(const int32_t mId, T&&t, F&&f)
 	{
-		auto call = std::move(ANY_BIND(t,f));
-		m_callBack[mId] = move([call](SHARE<BaseMsg>& msg) {
-			call(msg);
+		auto call = std::move(ANY_BIND(t, f));
+		m_callBack2[mId] = move([this, call](BaseMsg* msg) {
+			auto mdata = dynamic_cast<typename FuncArgsType<F>::arg1>(msg->m_data);
+			if (mdata)
+				call(mdata);
+			else
+				LogHook(this, spdlog::level::err) << __FILE__ << __LINE__ << "Recv Msg cast Null";
 		});
-	}*/
+	}
 
 	template<typename T, typename F>
 	void AddAsynMsgCallBack(const int32_t& mid,T&&t,F&&f)
@@ -114,6 +106,9 @@ public:
 		}
 		return m_coroIndex;
 	}
+
+	void MsgCallBack(void* msg);
+	void MsgCallBack2(void* msg);
 protected:
 
 	template<typename C,typename T, typename F>
@@ -145,7 +140,6 @@ private:
 
 	void Init();
 	void Execute();
-	void MsgCallBack(void* msg);
 
 	void CheckCoroClear(const int64_t& dt);
 	void RequestCoroMsg(const int32_t& mid, BaseData* data,const int32_t& coid);
@@ -171,6 +165,7 @@ private:
 	ScheduleModule* m_schedule;
 
 	std::unordered_map<int32_t, MsgCall> m_callBack;
+	std::unordered_map<int32_t, MsgCall2> m_callBack2;
 
 	int64_t m_coroCheckTime;
 	int32_t m_coroIndex;
@@ -179,30 +174,31 @@ private:
 	coroMap* m_curList;
 };
 
-#define LP_TRACE(M) MsgModule::LogHook(M,spdlog::level::trace)
-#define LP_DEBUG(M) MsgModule::LogHook(M,spdlog::level::debug)<<__FILE__<<__LINE__<<"\t"
-#define LP_INFO(M) MsgModule::LogHook(M,spdlog::level::info)
-#define LP_WARN(M) MsgModule::LogHook(M,spdlog::level::warn)
-#define LP_ERROR(M) MsgModule::LogHook(M,spdlog::level::err)<<__FILE__<<__LINE__<<"\t"
+#define LP_TRACE MsgModule::LogHook(this,spdlog::level::trace)
+#define LP_DEBUG MsgModule::LogHook(this,spdlog::level::debug)<<__FILE__<<__LINE__<<"\t"
+#define LP_INFO MsgModule::LogHook(this,spdlog::level::info)
+#define LP_WARN MsgModule::LogHook(this,spdlog::level::warn)
+#define LP_ERROR MsgModule::LogHook(this,spdlog::level::err)<<__FILE__<<__LINE__<<"\t"
+#define LP_ERROR_2(M) MsgModule::LogHook(M,spdlog::level::err)<<__FILE__<<__LINE__<<"\t"
 
-#define PARSEPB_NAME_IF_FALSE(name,T,msg,msgModule)\
+#define PARSEPB_NAME_IF_FALSE(name,T,msg)\
 	T name; \
-	if(!name.ParseFromArray(msg->getCombinBuff(msgModule->GetLayer())->m_buff, msg->getLen()))
+	if(!name.ParseFromArray(msg->getNetBuff(), msg->getLen()))
 
-#define PARSEPB_IF_FALSE(T,msg,msgModule)\
+#define PARSEPB_IF_FALSE(T,msg)\
 	T pbMsg; \
-	if(!pbMsg.ParseFromArray(msg->getCombinBuff(msgModule->GetLayer())->m_buff, msg->getLen()))
+	if(!pbMsg.ParseFromArray(msg->getNetBuff(), msg->getLen()))
 
-#define TRY_PARSEPB(T,msg,msgModule) \
+#define TRY_PARSEPB(T,msg) \
 	T pbMsg; \
-	if(!pbMsg.ParseFromArray(msg->getCombinBuff(msgModule->GetLayer())->m_buff, msg->getLen())){	\
-		LP_ERROR(msgModule)<<"parse "<< #T << "error";	\
+	if(!pbMsg.ParseFromArray(msg->getNetBuff(), msg->getLen())){	\
+		LP_ERROR<<"parse "<< #T << "error";	\
 	return;}
 
-#define TRY_PARSEPB_NAME(name,T,msg,msgModule) \
+#define TRY_PARSEPB_NAME(name,T,msg) \
 	T name; \
-	if(!name.ParseFromArray(msg->getCombinBuff(msgModule->GetLayer())->m_buff, msg->getLen())){	\
-		LP_ERROR(msgModule)<<"parse "<< #T << "error";	\
+	if(!name.ParseFromArray(msg->getNetBuff(), msg->getLen())){	\
+		LP_ERROR<<"parse "<< #T << "error";	\
 	return;}
 
 #endif

@@ -243,16 +243,31 @@ void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int
 	}
 
 	auto toser = sers[toindex];
-	auto it = m_serverList.find(toser->type);
-	if (it == m_serverList.end())
-		return;
-	auto its = it->second.find(toser->serid);
-	if (its == it->second.end())
-		return;
 
-	auto pathbuff = PathToBuff(sers,mid,toindex);
-	pathbuff->m_next = buffblock;
-	m_netObjMod->SendNetMsg(its->second->socket, N_TRANS_SERVER_MSG, pathbuff);
+	if (toser->serid != -1)
+	{
+		auto sersock = GetServer(toser->type, toser->serid);
+		if (!sersock)
+			return;
+		
+		auto pathbuff = PathToBuff(sers, mid, toindex);
+		pathbuff->m_next = buffblock;
+		m_netObjMod->SendNetMsg(sersock->socket, N_TRANS_SERVER_MSG, pathbuff);
+	}
+	else {
+		auto it = m_serverList.find(toser->type);
+		if (it == m_serverList.end())
+			return;
+
+		sers[toindex]->serid = 0;
+		auto pathbuff = PathToBuff(sers, mid, toindex);
+		pathbuff->m_next = buffblock;
+
+		std::vector<int32_t> broad;
+		for (auto& ser:it->second)
+			broad.push_back(ser.second->socket);
+		m_netObjMod->BroadNetMsg(broad, N_TRANS_SERVER_MSG, pathbuff);
+	}
 	res = true;
 }
 
@@ -263,9 +278,8 @@ int32_t TransMsgModule::GetPathSize(vector<SHARE<ServerNode>>& sers)
 
 void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 {
-	auto buffblock = nmsg->getCombinBuff(GetLayer());
-	auto nmsgbuff = buffblock->m_buff;
-	auto msglen = buffblock->m_size;
+	auto nmsgbuff = nmsg->getNetBuff();
+	auto msglen = nmsg->getLen();
 	char hsize = nmsgbuff[0];
 	char hindex = nmsgbuff[1];
 	char* first = nmsgbuff + TransHead::SIZE;
@@ -314,24 +328,23 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 		int8_t nxtype = next[0];
 		int16_t nxid = next[1]&0xff;
 		nxid |= (next[2] &0xff)<<8;
-
+		// -1 send to all server  0 hash server
 		if (nxid == -1)
 		{//ȫת��
 			auto it = m_serverList.find(nxtype);
 			if (it == m_serverList.end())
 				return;
 			int32_t nextFn = hindex*ServerNode::SIZE+TransHead::SIZE;
+			std::vector<int32_t> broad;
 			for (auto& s:it->second)
-			{
-				// auto tmsg = new char[nmsg->len+PACK_HEAD_SIZE];
-				// memcpy(tmsg+ PACK_HEAD_SIZE, nmsg->msg, nmsg->len);
-				auto buffblock = GetLayer()->GetLayerMsg<BuffBlock>();
-				buffblock->write(nmsgbuff, msglen);
-				char* tnext = buffblock->m_buff + nextFn;
-				tnext[1] = (unsigned char)s.second->serid;
-				tnext[2] = (unsigned char)(s.second->serid >> 8);
-				m_netObjMod->SendNetMsg(s.second->socket, N_TRANS_SERVER_MSG, buffblock);
-			}
+				broad.push_back(s.second->socket);
+
+			auto buffblock = GET_LAYER_MSG(BuffBlock);
+			buffblock->write(nmsgbuff, msglen);
+			char* tnext = buffblock->m_buff + nextFn;
+			tnext[1] = (unsigned char)0;
+			tnext[2] = (unsigned char)0;
+			m_netObjMod->BroadNetMsg(broad, N_TRANS_SERVER_MSG, buffblock);
 			return;
 		}
 		auto server = GetServer(nxtype, nxid);
@@ -340,9 +353,7 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 			next[1] = (unsigned char)server->serid;
 			next[2] = (unsigned char)(server->serid >> 8);
 
-			// char* tmsg = new char[nmsg->len + PACK_HEAD_SIZE];
-			// memcpy(tmsg + PACK_HEAD_SIZE, nmsg->msg, nmsg->len);
-			auto buffblock = GetLayer()->GetLayerMsg<BuffBlock>();
+			auto buffblock = GET_LAYER_MSG(BuffBlock);
 			buffblock->write(nmsgbuff, msglen);
 			m_netObjMod->SendNetMsg(server->socket, N_TRANS_SERVER_MSG, buffblock);
 		}
@@ -354,7 +365,7 @@ NetServer* TransMsgModule::GetServer(const int32_t& type, const int32_t& serid)
 	auto it = m_serverList.find(type);
 	if (it == m_serverList.end() || it->second.size() == 0)
 	{
-		LP_ERROR(m_msgModule) << "GetServer NULL type:" << type << " serid:" << serid;
+		LP_ERROR << "GetServer NULL type:" << type << " serid:" << serid;
 		return NULL;
 	}
 	
@@ -448,7 +459,8 @@ bool TransMsgModule::GetToPath(vector<SHARE<ServerNode>>& path)
 BuffBlock* TransMsgModule::PathToBuff(vector<SHARE<ServerNode>>& path,const int32_t& mid, const int32_t& toindex)
 {
 	auto buff = GetLayer()->GetLayerMsg<BuffBlock>();
-	buff->makeRoom(GetPathSize(path));
+	buff->m_size = GetPathSize(path);
+	buff->makeRoom(buff->m_size);
 	char* began = buff->m_buff;
 
 	began[0] = (unsigned char)path.size();
@@ -471,6 +483,7 @@ BuffBlock* TransMsgModule::EncodeCoroMsg(BuffBlock* buff,const int32_t& mid,cons
 {
 	auto corobuff = GET_LAYER_MSG(BuffBlock);
 	corobuff->makeRoom(sizeof(int32_t)*3);
+	corobuff->m_size = sizeof(int32_t) * 3;
 	PB::WriteInt(corobuff->m_buff,mid);
 	PB::WriteInt(corobuff->m_buff+sizeof(int32_t),coid);
 	PB::WriteInt(corobuff->m_buff+sizeof(int32_t)*2,mycoid);
@@ -606,4 +619,16 @@ void TransMsgModule::ResponseBackServerMsg(VecPath& path, SHARE<BaseMsg>& comsg,
 {
 	std::reverse(path.begin(), path.end());
 	ResponseServerMsg(path,comsg,msg);
+}
+
+VecPath TransMsgModule::GetFromSelfPath(const int32_t& allSize, const int32_t& stype, const int32_t& sid)
+{
+	VecPath path;
+	for (size_t i = 0; i < allSize; i++)
+		path.push_back(GET_SHARE(ServerNode));
+	
+	*path.front() = *GetLayer()->GetServer();
+	path.back()->type = stype;
+	path.back()->serid = sid;
+	return path;
 }

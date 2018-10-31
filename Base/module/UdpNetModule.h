@@ -11,7 +11,7 @@ struct UdpBuff;
 
 struct UdpCashNode:public LoopObject
 {
-	SHARE<BuffBlock> m_buff;
+	SHARE<LocalBuffBlock> m_buff;
 	SHARE<UdpBuff> m_udpbuff;
 
 	// Í¨¹ý LoopObject ¼Ì³Ð
@@ -32,6 +32,7 @@ protected:
 	void InitHandle();
 	void OnCloseSocket(NetSocket* msg);
 	void OnSocketSendData(NetMsg* nMsg);
+	void OnBroadData(BroadMsg* nMsg);
 
 	void TickSendBuff(int64_t& dt);
 
@@ -40,7 +41,7 @@ private:
 	MsgModule* m_msgModule;
 	ScheduleModule* m_schedule;
 
-	std::unordered_map<int32_t,std::list<SHARE<UdpCashNode>>> m_cashSendBuff;
+	std::unordered_map<int32_t,std::vector<SHARE<UdpCashNode>>> m_cashSendBuff;
 };
 
 #endif

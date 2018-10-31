@@ -1,6 +1,7 @@
 [
 	{"name":"Console","type":6},
 	{"name":"LoopProxy","type":1},
+    {"name":"LoopProxy","type":4},
 	{"name":"Master","type":5},
 	{"name":"Game","type":0},
 	{"name":"Login","type":2},
@@ -8,5 +9,11 @@
 	{"name":"DBProxy","type":7},
     {"name":"Room","type":8},
     {"name":"RoomState","type":9},
-    {"name":"LoginLock","type":10}
+    {"name":"LoginLock","type":10},
+    {"name":"BattleScene","type":11},
+    {"name":"BattleTrans","type":12},
+    {"name":"Match","type":13},
+    {"name":"MatchState","type":14},
+    {"name":"Team","type":15},
+    {"name":"TeamState","type":16}
 ]

@@ -10,3 +10,7 @@ set_target_properties( Lua PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY ${OutPutDir}
 	LIBRARY_OUTPUT_DIRECTORY ${OutPutDir} 
 )
+
+target_compile_definitions(Lua
+PRIVATE   LUA_COMPAT_5_1
+)

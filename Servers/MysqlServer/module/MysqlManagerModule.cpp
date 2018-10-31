@@ -87,10 +87,10 @@ void MysqlManagerModule::CreateMysqlTable(int group)
 
 void MysqlManagerModule::OnGetGroupId(NetServerMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::EmptyPB,msg,m_msgmodule);
+	TRY_PARSEPB(LPMsg::EmptyPB,msg);
 	if (msg->path.size() <= 0)
 	{
-		LP_ERROR(m_msgmodule) << "Get group Error Path size = 0";
+		LP_ERROR << "Get group Error Path size = 0";
 		return;
 	}
 	
@@ -103,14 +103,14 @@ void MysqlManagerModule::OnCreateAccount(NetServerMsg * msg)
 {
 	if (msg->path.size() == 0)
 	{
-		LP_ERROR(m_msgmodule) << "ERROR Server path";
+		LP_ERROR << "ERROR Server path";
 		return;
 	}
 
 	auto reply = GetLayer()->GetSharedLoop<SqlReply>();
-	if (!reply->pbMsg.ParseFromArray(msg->getCombinBuff(GetLayer())->m_buff, msg->getLen()))
+	if (!reply->pbMsg.ParseFromArray(msg->getNetBuff(), msg->getLen()))
 	{
-		LP_ERROR(m_msgmodule) << "parse PBSqlParam error";
+		LP_ERROR << "parse PBSqlParam error";
 		return;
 	}
 	
@@ -130,14 +130,14 @@ void MysqlManagerModule::OnGetMysqlMsg(NetServerMsg * msg)
 {
 	if (msg->path.size() == 0)
 	{
-		LP_ERROR(m_msgmodule) << "ERROR Server path";
+		LP_ERROR << "ERROR Server path";
 		return;
 	}
 
 	auto reply = GetLayer()->GetSharedLoop<SqlReply>();
-	if (!reply->pbMsg.ParseFromArray(msg->getCombinBuff(GetLayer())->m_buff, msg->getLen()))
+	if (!reply->pbMsg.ParseFromArray(msg->getNetBuff(), msg->getLen()))
 	{
-		LP_ERROR(m_msgmodule) << "parse PBSqlParam error";
+		LP_ERROR << "parse PBSqlParam error";
 		return;
 	}
 	//检查是否有组ID 高 16位 8 数据库 id 8 组id
@@ -154,11 +154,11 @@ void MysqlManagerModule::OnRequestMysqlMsg(SHARE<BaseMsg>& msg, c_pull & pull, S
 	auto netmsg = (NetServerMsg*)msg->m_data;
 	if (netmsg->path.size() == 0)
 	{
-		LP_ERROR(m_msgmodule) << "ERROR Server path";
+		LP_ERROR << "ERROR Server path";
 		return;
 	}
 
-	TRY_PARSEPB(LPMsg::PBSqlParam, netmsg, m_msgmodule);
+	TRY_PARSEPB(LPMsg::PBSqlParam, netmsg);
 	auto gid = (pbMsg.uid() >> 48) & 0xff;
 	if (gid == 0)
 		return;
@@ -226,7 +226,7 @@ void MysqlManagerModule::OnGetMysqlRes(LMsgSqlParam * msg)
 
 void MysqlManagerModule::OnUpdateTableGroup(NetMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::UpdateTableGroup, msg, m_msgmodule);
+	TRY_PARSEPB(LPMsg::UpdateTableGroup, msg);
 	m_tableGroup = pbMsg.groupcount();
 
 	for (size_t i = 0; i < m_sqlLayerNum; i++)
@@ -239,7 +239,7 @@ void MysqlManagerModule::OnUpdateTableGroup(NetMsg * msg)
 
 void MysqlManagerModule::OnAddTableGroup(NetMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::UpdateTableGroup, msg, m_msgmodule);
+	TRY_PARSEPB(LPMsg::UpdateTableGroup, msg);
 
 	++m_tableGroup;
 	CreateMysqlTable(m_tableGroup);

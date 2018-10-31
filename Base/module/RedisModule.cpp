@@ -5,28 +5,28 @@
 #define  _REDIS_CATCH_(function, line)     catch(redis::connection_error er)\
 {\
     m_enable = false;\
-    LP_ERROR(m_msgModule)<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line;\
+    LP_ERROR << " Function:" << function << " Line:" << line;\
     return false;\
 }\
 catch(redis::timeout_error er)\
 {\
     m_enable = false;\
-    LP_ERROR(m_msgModule)<<"Redis Error:"<< er.what() << " Function:" << function << " Line:" << line;\
+    LP_ERROR << " Function:" << function << " Line:" << line;\
     return false;\
 }\
 catch(redis::protocol_error er)\
 {\
-    LP_ERROR(m_msgModule)<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line;\
+    LP_ERROR << " Function:" << function << " Line:" << line;\
     return false;\
 }\
 catch(redis::key_error er)\
 {\
-    LP_ERROR(m_msgModule)<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line;\
+    LP_ERROR << " Function:" << function << " Line:" << line;\
     return false;\
 }\
 catch(redis::value_error er)\
 {\
-    LP_ERROR(m_msgModule)<< "Redis Error:"<< er.what() << " Function:" << function << " Line:" << line;\
+    LP_ERROR << " Function:" << function << " Line:" << line;\
     return false;\
 }\
 catch (...)\
@@ -60,9 +60,9 @@ void RedisModule::Init()
 void RedisModule::AfterInit()
 {
 	if (Reconnect())
-		LP_WARN(m_msgModule) << "Connect redis " << m_host << " " << m_port << " success";
+		LP_WARN << "Connect redis " << m_host << " " << m_port << " success";
 	else
-		LP_ERROR(m_msgModule) << "Connect redis " << m_host << " " << m_port << " Fail";
+		LP_ERROR << "Connect redis " << m_host << " " << m_port << " Fail";
 }
 
 void RedisModule::Execute()

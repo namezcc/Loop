@@ -2,6 +2,8 @@
 #define PLAYER_MODULE_H
 
 #include "BaseModule.h"
+#include "GameReflectData.h"
+#include "ConfigObjects.h"
 
 #define ROOM_READY_OUT_TIME 60	//second
 
@@ -11,9 +13,6 @@ class NetObjectModule;
 class SendProxyDbModule;
 class EventModule;
 
-class Player;
-struct AccoutInfo;
-
 enum READY_STATE
 {
 	RS_NONE,
@@ -21,6 +20,12 @@ enum READY_STATE
 	RS_CREATE,
 };
 
+enum PlayerState
+{
+	PS_NONE,
+	PS_IN_MATCH,
+	PS_IN_BATTLE,
+};
 
 struct ReadyInfo
 {
@@ -30,11 +35,33 @@ struct ReadyInfo
 	int8_t state;
 };
 
-struct RoomPlayer
+struct MatchInfo
+{
+	int8_t m_state;	//0: none 1: in match 2: in Battle
+	int16_t m_proxyId;
+	int16_t m_matchSerId;
+	int32_t m_sceneId;
+	std::string	m_battleIp;
+	int32_t m_battlePort;
+};
+
+struct RoomPlayer:public LoopObject
 {
 	int32_t sock;
 	SHARE<Player> m_player;
 	SHARE<AccoutInfo> m_account;
+	SHARE<MatchInfo> m_matchInfo;
+
+	virtual void init(FactorManager*f)
+	{
+	}
+
+	virtual void recycle(FactorManager*f)
+	{
+		m_player = NULL;
+		m_account = NULL;
+		m_matchInfo = NULL;
+	}
 };
 
 class PlayerModule:public BaseModule
@@ -57,10 +84,12 @@ protected:
 	void RemovePlayer(const int64_t& pid);
 	void KickChangePlayer(const int32_t& newSock, const int64_t& pid);
 
+public:
 	SHARE<RoomPlayer> GetRoomPlayer(const int32_t& sock);
 	SHARE<RoomPlayer> GetRoomPlayer(const int64_t& pid);
 	SHARE<Player> GetPlayer(const int32_t& sock);
 	SHARE<Player> GetPlayer(const int64_t& pid);
+	SHARE<RoomPlayer> CheckRoomPlayer(const int32_t& sock);
 
 private:
 	

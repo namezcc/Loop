@@ -48,7 +48,7 @@ void Coro1Module::CoroTest1(c_pull & pull, SHARE<BaseCoro>& coro)
 void Coro1Module::CoroTest2(SHARE<BaseMsg>& msg, c_pull & pull, SHARE<BaseCoro>& coro)
 {
 	auto netmsg = (NetServerMsg*)msg->m_data;
-	TRY_PARSEPB(LPMsg::ServerInfo, netmsg, m_msgModule);
+	TRY_PARSEPB(LPMsg::ServerInfo, netmsg);
 	std::cout << "coro forward get sock:" << pbMsg.id() << std::endl;
 	auto sock = GET_LAYER_MSG(NetSocket);
 	DieTest die;

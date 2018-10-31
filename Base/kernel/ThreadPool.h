@@ -11,6 +11,8 @@
 using namespace std;
 
 typedef function<void()> task;
+
+//template<typename T = task>
 class LOOP_EXPORT ThreadPool
 {
 public:

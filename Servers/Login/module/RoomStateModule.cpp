@@ -62,7 +62,7 @@ void RoomStateModule::Init()
 
 void RoomStateModule::OnRoomState(NetMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::RoomState, msg, m_msgModule);
+	TRY_PARSEPB(LPMsg::RoomState, msg);
 
 	if (pbMsg.state() == ROOM_CLOSE || pbMsg.state() == ROOM_FULL)
 		RemoveRoom(pbMsg.id());
@@ -84,7 +84,7 @@ void RoomStateModule::OnRoomState(NetMsg * msg)
 
 void RoomStateModule::OnAckRoomList(NetMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::RoomStateList, msg, m_msgModule);
+	TRY_PARSEPB(LPMsg::RoomStateList, msg);
 
 	m_roomArray.clear();
 	m_roomTable.clear();

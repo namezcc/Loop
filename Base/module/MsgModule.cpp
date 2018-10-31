@@ -60,6 +60,15 @@ void MsgModule::MsgCallBack(void* msg)
 		it->second(smsg);
 }
 
+void MsgModule::MsgCallBack2(void * msg)
+{
+	BaseMsg* smsg = (BaseMsg*)msg;
+	auto it = m_callBack2.find(smsg->msgId);
+	if (it != m_callBack2.end())
+		it->second(smsg);
+	GetLayer()->RecycleLayerMsg(smsg);
+}
+
 void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
 {
 	auto base = GetLayer()->GetLoopObj<BaseMsg>();
@@ -228,20 +237,26 @@ SHARE<CoroMsg> MsgModule::DecodeCoroMsg(SHARE<BaseMsg>& msg)
 	auto netmsg = dynamic_cast<NetMsg*>(msg->m_data);
 	if (netmsg == NULL)
 	{
-		LP_ERROR(this) << "DecodeCoroMsg error m_data not NetMsg*";
+		LP_ERROR << "DecodeCoroMsg error m_data not NetMsg*";
 		return NULL;
 	}
-	auto netbuff = netmsg->getCombinBuff(GetLayer());
+	auto netbuff = netmsg->popBuffBlock();
 	auto coromsg = GetLayer()->GetLoopObj<CoroMsg>();
 
 	coromsg->m_subMsgId = PB::GetInt(netbuff->m_buff);
 	coromsg->m_coroId = PB::GetInt(netbuff->m_buff+sizeof(int32_t));
 	coromsg->m_mycoid = PB::GetInt(netbuff->m_buff+sizeof(int32_t)*2);
 	int32_t nOffset = sizeof(int32_t)*3;
-	netmsg->write_front(netbuff->m_buff+nOffset,netbuff->m_size-nOffset);
+	netbuff->m_buff += nOffset;		//move offset to data
+	netbuff->m_size -= nOffset;
+	netmsg->push_front(netbuff);
+	//netmsg->write_front(netbuff->m_buff+nOffset,netbuff->m_size-nOffset);
 	//swap m_data
 	std::swap(coromsg->m_data,msg->m_data);
-	auto coroShar = SHARE<CoroMsg>(coromsg,[this,msg](CoroMsg* ptr){
+	auto coroShar = SHARE<CoroMsg>(coromsg,[this,msg,nOffset,netbuff](CoroMsg* ptr){
+		//move offset back
+		netbuff->m_buff -= nOffset;
+		netbuff->m_size += nOffset;
 		//swap back m_data
 		std::swap(ptr->m_data,msg->m_data);
 		GetLayer()->Recycle(ptr);
@@ -261,4 +276,13 @@ void MsgModule::DoNetResponseMsg(SHARE<BaseMsg>& msg)
 	auto comsg = std::dynamic_pointer_cast<BaseMsg>(DecodeCoroMsg(msg));
 	if (comsg)
 		DoResponseMsg(comsg);
+}
+
+MsgModule::LogHook::~LogHook()
+{
+	//m->SendMsg(LY_LOG, 0, L_LOG_INFO, log);
+	auto msg = m->GET_LAYER_MSG(BaseMsg);
+	msg->msgId = L_LOG_INFO;
+	msg->m_data = log;
+	m->GetLayer()->writePipe(LY_LOG, 0, msg);
 }

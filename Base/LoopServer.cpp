@@ -84,6 +84,12 @@ void LoopServer::InitConfig()
 		m_port = m_config.addr.port;
 	}
 
+	if (config.isMember("udpaddr"))
+	{
+		m_config.udpAddr.ip = config["udpaddr"]["ip"].asString();
+		m_config.udpAddr.port = config["udpaddr"]["port"].asInt();
+	}
+
 	if (config.isMember("connect"))
 	{
 		for (auto& v:config["connect"])
@@ -167,5 +173,6 @@ void LoopServer::Loop()
 void LoopServer::recycle(int32_t index, BaseData* msg)
 {
 	assert(msg->m_looplist);
+	msg->recycleCheck();
 	m_recycle[index].recycle(msg);
 }

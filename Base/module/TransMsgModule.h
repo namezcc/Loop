@@ -11,7 +11,6 @@ class LOOP_EXPORT TransMsgModule:public BaseModule
 public:
 	TransMsgModule(BaseLayer* l);
 	~TransMsgModule();
-	typedef std::vector<SHARE<ServerNode>> VecPath;
 	typedef std::function<void()> ReqFail;
 
 	SHARE<NetServer> GetServerConn(const int32_t& sock);
@@ -45,6 +44,7 @@ public:
 
 	BuffBlock* EncodeCoroMsg(BuffBlock* buff, const int32_t& mid, const int32_t& coid, const int32_t& mycoid = 0);
 	inline std::unordered_map<int32_t, std::unordered_map<int32_t, SHARE<NetServer>>>& GetServerList() { return m_serverList; };
+	VecPath GetFromSelfPath(const int32_t& allSize, const int32_t& stype, const int32_t& sid = 0);
 protected:
 	virtual void Init() override;
 	virtual void Execute() override;

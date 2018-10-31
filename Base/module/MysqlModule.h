@@ -20,7 +20,7 @@ enum SQL_OPT
 	SQL_INSERT_SELECT,
 };
 
-struct SqlParam:public BaseData
+struct SqlParam:public BaseData,public LoopObject
 {
 	int opt;
 	bool ret;
@@ -39,6 +39,9 @@ struct SqlParam:public BaseData
 		field.clear();
 		value.clear();
 	};
+	virtual void init(FactorManager * fm) override
+	{};
+	virtual void recycle(FactorManager * fm) override { recycleMsg();};
 };
 
 struct LMsgSqlParam:public BaseData

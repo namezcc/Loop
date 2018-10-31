@@ -41,16 +41,20 @@ void HttpNetModule::OnSendHttpMsg(NetMsg * msg)
 	auto it = m_conns.find(msg->socket);
 	if (it != m_conns.end())
 	{
-		auto buff = msg->getCombinBuff(GetLayer());
-
-		uv_write_t* whand = GetLayer()->GetLoopObj<uv_write_t>();
-		Write_t* buf = GetLayer()->GetLoopObj<Write_t>();
-		buf->baseModule = this;
-		buf->buf.base = buff->m_buff;
-		buff->m_buff = NULL;	//转移buff 置为 NULL
-		buf->buf.len = buff->m_size;
-		whand->data = buf;
-		uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
+		BuffBlock* buff = NULL;
+		
+		while (buff= msg->popBuffBlock())
+		{
+			uv_write_t* whand = GetLayer()->GetLoopObj<uv_write_t>();
+			Write_t* buf = GetLayer()->GetLoopObj<Write_t>();
+			buf->baseModule = this;
+			buf->buf.base = buff->m_buff;
+			//buff->m_buff = NULL;	//转移buff 置为 NULL
+			buf->buf.len = buff->m_size;
+			buf->block = buff;
+			whand->data = buf;
+			uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
+		}
 	}
 }
 
@@ -95,7 +99,7 @@ void HttpNetModule::Connect_cb(uv_connect_t* req, int status)
 	}
 	else {
 		//cout << "PHP CGI not run on host:" << ser->ip << " port:" << ser->port << endl;
-		LP_ERROR(md->m_mgsModule)<<"PHP CGI not run on host:"<<ser->ip<<" port:"<<ser->port;
+		LP_ERROR_2(md) <<"PHP CGI not run on host:"<<ser->ip<<" port:"<<ser->port;
 		//delete ser;
 		md->GetLayer()->RecycleLayerMsg(ser);
 		md->GetLayer()->Recycle(cli);

@@ -20,6 +20,7 @@ struct SqlInfo
 struct ServerConfig
 {
 	NetServer addr;
+	NetServer udpAddr;
 	vector<NetServer> connect;
 	SqlInfo sql;
 };

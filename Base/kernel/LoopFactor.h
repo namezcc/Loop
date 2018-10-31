@@ -1,6 +1,5 @@
 #ifndef LOOP_FACTOR_H
 #define LOOP_FACTOR_H
-#include <list>
 #include "Block.h"
 #include "Single.h"
 
@@ -28,8 +27,8 @@ public:
 		{
 			newBlock();
 		}
-		auto t = m_pool.front();
-		m_pool.pop_front();
+		auto t = m_pool.back();
+		m_pool.pop_back();
 		return t;
 	}
 
@@ -56,7 +55,7 @@ private:
 	}
 
 	Block<T> m_block;
-	std::list<T*> m_pool;
+	std::vector<T*> m_pool;
 };
 
 #endif

@@ -43,10 +43,35 @@ struct Write_t:public LoopObject
 
 	void recycle(FactorManager* fm)
 	{
-		SAFE_FREE(buf.base);
+		//SAFE_FREE(buf.base);
+		buf.base = NULL;
+		buf.len = 0;
+		if (block)
+		{
+			--block->m_ref;
+			if (block->m_ref <= 0)
+			{
+				if (block->m_looplist)
+					baseModule->RECYCLE_LAYER_MSG(block);
+				else
+					baseModule->LOOP_RECYCLE((LocalBuffBlock*)block);
+			}
+			block = NULL;
+		}
+	}
+
+	void SetBlock(BuffBlock* b)
+	{
+		buf.base = b->m_buff;
+		buf.len = b->m_size;
+		block = b;
+		++block->m_ref;
+		if (block->m_looplist)
+			block->recycleCheck();
 	}
 
 	uv_buf_t buf;
+	BuffBlock* block;
 	BaseModule* baseModule;
 };
 
@@ -92,12 +117,7 @@ public:
 	NetModule(BaseLayer* l):BaseModule(l)
 	{};
 	~NetModule() {};
-	static void read_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf)
-	{
-		buf->base = new char[suggested_size];
-		buf->len = suggested_size;
-	}
-
+	static void read_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf);
 	static void after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf);
 	void Connected(uv_tcp_t* conn,bool client=true);
 	void RemoveConn(const int& socket);
@@ -115,11 +135,13 @@ protected:
 
 	void OnCloseSocket(NetSocket* msg);
 	void OnSocketSendData(NetMsg* nMsg);
+	void OnBroadData(BroadMsg* nMsg);
 protected:
 	MsgModule* m_mgsModule;
 	std::unordered_map<int32_t, SHARE<Conn>> m_conns;
 	std::unordered_map<int32_t, SHARE<Conn>> m_waitClose;
 	uv_loop_t* m_uvloop;
+	std::vector<BuffBlock*> m_broadBuff;
 };
 
 #endif

@@ -51,14 +51,14 @@ void DBProxyModule::Init()
 		m_getGrouppath.push_back(node);
 	}
 	*m_getGrouppath[0] = *myser;
-	m_getGrouppath[1]->type = LOOP_PROXY_SQL;
+	m_getGrouppath[1]->type = LOOP_PROXY;
 	m_getGrouppath[2]->serid = 0;
 	m_getGrouppath[2]->type = LOOP_MYSQL;
 }
 
 void DBProxyModule::OnServerConnect(SHARE<NetServer>& ser)
 {
-	if (ser->type != LOOP_PROXY_SQL)
+	if (ser->type != LOOP_PROXY)
 		return;
 
 	m_tmpProxy[ser->socket] = ser;
@@ -66,7 +66,7 @@ void DBProxyModule::OnServerConnect(SHARE<NetServer>& ser)
 
 void DBProxyModule::OnServerClose(SHARE<NetServer>& ser)
 {
-	if (ser->type != LOOP_PROXY_SQL)
+	if (ser->type != LOOP_PROXY)
 		return;
 	auto itg = m_groupMap.find(ser->socket);
 	if (itg == m_groupMap.end())
@@ -110,7 +110,7 @@ void DBProxyModule::OnCheckProxy(int64_t & dt)
 
 void DBProxyModule::OnGetMysqlGroup(NetMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::UpdateTableGroup, msg, m_msgModule);
+	TRY_PARSEPB(LPMsg::UpdateTableGroup, msg);
 	auto ser = m_tranModule->GetServerConn(msg->socket);
 	if (!ser)
 		return;
@@ -136,11 +136,11 @@ void DBProxyModule::OnForwardMsgHash(NetMsg * msg)
 		return;
 	if (m_groups.size() == 0)
 	{
-		LP_ERROR(m_msgModule) << "Proxy Db group Error";
+		LP_ERROR << "Proxy Db group Error";
 		return;
 	}
 	int group = m_groups[0];
-	auto forbeg = msg->m_buff->m_buff;
+	auto forbeg = msg->getNetBuff();
 	if (m_groups.size() > 1)
 	{
 		int crc = PB::GetInt(forbeg);
@@ -157,7 +157,7 @@ void DBProxyModule::OnForwardMsgGroup(NetMsg * msg)
 {
 	if (msg->getLen() < sizeof(int32_t) * 2)
 		return;
-	auto forbeg = msg->m_buff->m_buff;
+	auto forbeg = msg->getNetBuff();
 	int group = PB::GetInt(forbeg);
 	int32_t mid = PB::GetInt(forbeg +sizeof(int32_t));
 	SendToProxy(group, mid, msg);
@@ -168,12 +168,12 @@ void DBProxyModule::SendToProxy(int group, const int& mid, NetMsg * msg)
 	auto it = m_proxyGroup.find(group);
 	if (it == m_proxyGroup.end())
 	{
-		LP_ERROR(m_msgModule) << "Proxy DB No group " << group;
+		LP_ERROR << "Proxy DB No group " << group;
 		return;
 	}
 	if (it->second.size() == 0)
 	{
-		LP_ERROR(m_msgModule) << "Proxy DB group:" << group << " size == 0";
+		LP_ERROR << "Proxy DB group:" << group << " size == 0";
 		return;
 	}
 
@@ -183,7 +183,7 @@ void DBProxyModule::SendToProxy(int group, const int& mid, NetMsg * msg)
 	auto head = m_tranModule->GetServerConn(msg->socket);
 	if (!head)
 	{
-		LP_ERROR(m_msgModule) << "Send To Mysql Error No Head";
+		LP_ERROR << "Send To Mysql Error No Head";
 		return;
 	}
 
@@ -191,8 +191,8 @@ void DBProxyModule::SendToProxy(int group, const int& mid, NetMsg * msg)
 	m_path[0]->type = head->type;
 	*m_path[2] = *proxy;
 	
-	auto buff = msg->getCombinBuff(GetLayer());
+	auto buff = msg->getNetBuff();
 	auto sendbuff = GET_LAYER_MSG(BuffBlock);
-	sendbuff->write(buff->m_buff+ sizeof(int32_t) * 2, buff->m_size - sizeof(int32_t) * 2);
+	sendbuff->write(buff + sizeof(int32_t) * 2, msg->getLen() - sizeof(int32_t) * 2);
 	m_tranModule->SendToServer(m_path, mid, sendbuff);
 }

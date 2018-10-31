@@ -59,6 +59,28 @@ void LoopFile::GetRootPath(string & res)
 	}
 }
 
+std::string LoopFile::GetRootPath2()
+{
+	try
+	{
+		boost::filesystem::path p = boost::filesystem::initial_path();
+		while (p.has_parent_path())
+		{
+			if (p.leaf() == "Loop")
+				break;
+			p.remove_leaf();
+		}
+		auto res = p.string();
+		res.append("/");
+		return res;
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	return "";
+}
+
 string LoopFile::GetExecutePath()
 {
 	std::string path;

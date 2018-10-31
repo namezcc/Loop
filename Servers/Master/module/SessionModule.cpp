@@ -41,7 +41,7 @@ void SessionModule::LoadAdmin()
 	m_mysqlModule->Select(res, "select * from Admin;");
 	if (res.size() == 0)
 	{
-		LP_WARN(m_msgModule)<< "Error LoadAdmin Size 0";
+		LP_WARN<< "Error LoadAdmin Size 0";
 		return;
 	}
 	

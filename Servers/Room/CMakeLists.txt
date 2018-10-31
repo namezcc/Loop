@@ -14,7 +14,10 @@ ${PROJECT_SOURCE_DIR}/../Common/layer
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
-file(GLOB_RECURSE COM_RECURSE ${PROJECT_SOURCE_DIR}/../Common/*.*)
+set(COM_RECURSE ${PROJECT_SOURCE_DIR}/../Common/module/ProxyNodeModule.cpp 
+${PROJECT_SOURCE_DIR}/../Common/module/SendProxyDbModule.cpp 
+)
+
 file(GLOB_RECURSE OBJECT_RECURSE ${PROJECT_SOURCE_DIR}/../struct/*.cpp)
 
 set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/GameReflectData.cpp)

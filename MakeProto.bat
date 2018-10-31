@@ -13,7 +13,7 @@ protoc.exe -I=../proto/client/ --cpp_out=dllexport_decl=LIBPROTOC_EXPORT:../prot
 )
 
 echo success
-echo Enter to make base
+echo Enter to gen base proto
 pause
 
 set input_path=..\proto\base\

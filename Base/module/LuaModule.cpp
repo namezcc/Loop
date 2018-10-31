@@ -41,7 +41,7 @@ int32_t LuaModule::CallFunc(LuaState * ls, const std::string & fname)
 {
 	auto it = m_luaCallFunc.find(fname);
 	if (it != m_luaCallFunc.end())
-		return it->second(ls);
+		return it->second(ls,ls->GetLuaState());
 	return 0;
 }
 

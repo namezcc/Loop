@@ -30,6 +30,7 @@ ${PROJECT_SOURCE_DIR}/depend/
 ${PROJECT_SOURCE_DIR}/protoPB/ 
 ${PROJECT_SOURCE_DIR}/Servers/sqldata/ 
 ${PROJECT_SOURCE_DIR}/Servers/struct/ 
+${PROJECT_SOURCE_DIR}/Servers/Common/ 
 )
 
 if(WIN32)

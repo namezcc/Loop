@@ -12,6 +12,7 @@ void BaseLayer::StartRun()
 	for (auto& it : m_modules)
 		it.second->Init();
 
+	afterInit();
 	for (auto& it : m_modules)
 		it.second->AfterInit();
 

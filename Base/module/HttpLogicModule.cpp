@@ -370,7 +370,7 @@ bool HttpLogicModule::SendFile(HttpMsg* msg, const string& file)
 {
 	auto pos = file.find_last_of('.');
 	auto ftype = file.substr(pos == string::npos ? pos : ++pos);
-	if (ftype == "php")
+	if (!ftype.empty()) // == "php"
 	{//��php
 		HeadData header;
 		header["REQUEST_METHOD"] = GET;

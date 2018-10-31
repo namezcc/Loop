@@ -128,7 +128,7 @@ public:
 		auto sqlmsg = (NetMsg*)acksql->m_data;
 		PARSEPB_IF_FALSE(LPMsg::PBSqlParam, sqlmsg, m_msgModule)
 		{
-			LP_ERROR(m_msgModule) << "parse PBSqlParam Error";
+			LP_ERROR << "parse PBSqlParam Error";
 			return false;
 		}
 		if (pbMsg.value_size() == 0)
@@ -154,7 +154,7 @@ public:
 		auto sqlmsg = (NetMsg*)acksql->m_data;
 		PARSEPB_IF_FALSE(LPMsg::PBSqlParam, sqlmsg, m_msgModule)
 		{
-			LP_ERROR(m_msgModule) << "parse PBSqlParam Error";
+			LP_ERROR << "parse PBSqlParam Error";
 			return false;
 		}
 		if (pbMsg.value_size() == 0)

@@ -58,8 +58,7 @@ public:
 	template<typename F,typename T>
 	void RegLayerMsg(F&&f,T&&t)
 	{
-		if (!m_msgCall)
-			m_msgCall = SHARE<LayerMsg>(new LayerMsg(std::bind(std::forward<F>(f), std::forward<T>(t), std::placeholders::_1)));
+		m_msgCall = SHARE<LayerMsg>(new LayerMsg(std::bind(std::forward<F>(f), std::forward<T>(t), std::placeholders::_1)));
 	}
 
 	template<typename T>
@@ -118,26 +117,6 @@ public:
 protected:
 	void startRead(const RWPipe& pipe)
 	{
-		if (!m_msgCall)
-			return;
-		readMsg(pipe);
-	}
-
-	void readMsg(const RWPipe& pipe)
-	{
-		/*while (true)
-		{*/
-			// PIPE::LPList l;
-			// if (!pipe.rpipe->read(l))
-			// 	break;
-			// auto head = l.getHead();
-			// while (head)
-			// {
-			// 	auto n = head->next;
-			// 	m_msgCall.get()->operator()(head->data);
-			// 	head = n;
-			// }
-		//}
 		void* msg = NULL;
 		while (pipe.rpipe->pop(msg)) {
 			m_msgCall.get()->operator()(msg);
@@ -145,6 +124,7 @@ protected:
 	}
 
 	virtual void init() = 0;
+	virtual void afterInit(){};
 	virtual void loop()=0;
 	virtual void close()=0;
 

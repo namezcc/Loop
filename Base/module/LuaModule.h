@@ -21,14 +21,24 @@ public:
 	void BindLuaCall(const std::string& fname, T&&t, F&&f)
 	{
 		auto call = ANY_BIND(t, f);
-		m_luaCallFunc[fname] = [this,call](LuaState* ls) {
-			if (lua_gettop(ls->GetLuaState()) - 2 != FuncArgsType<F>::SIZE)
+		m_luaCallFunc[fname] = [this,call](LuaState* ls,lua_State* L) {
+			if (lua_gettop(L) - 2 != FuncArgsType<F>::SIZE)
 			{
 				std::cout << "error args num expect:" << FuncArgsType<F>::SIZE << std::endl;
 				return 0;
 			}
 			m_curState = ls;
-			return CallTool<FuncArgsType<F>::SIZE>::Call<FuncArgsType<F>::typeR, FuncArgsType<F>::tupleArgs>(ls, call);
+			return CallTool<FuncArgsType<F>::SIZE>::Call<FuncArgsType<F>::typeR, FuncArgsType<F>::tupleArgs>(L, call);
+		};
+	}
+
+	template<typename T, typename F>
+	void BindLuaOrgCall(const std::string& fname, T&&t, F&&f)
+	{
+		auto call = ANY_BIND(t, f);
+		m_luaCallFunc[fname] = [this, call](LuaState* ls,lua_State* L) {
+			m_curState = ls;
+			return call(L);
 		};
 	}
 
@@ -46,7 +56,7 @@ public:
 private:
 	LuaState* m_curState;
 	std::vector<SHARE<LuaState>> m_stats;
-	std::unordered_map<std::string, std::function<int(LuaState*)>> m_luaCallFunc;
+	std::unordered_map<std::string, std::function<int(LuaState*,lua_State*)>> m_luaCallFunc;
 };
 
 #endif

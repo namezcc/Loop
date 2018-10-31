@@ -72,14 +72,17 @@ struct LuaPush
 };
 
 template<typename T>
-struct LuaPushType {
-	static void PushVal(lua_State* L, T&& val) { LuaPush::PushString(L, val); }
-};
+struct LuaPushType;
+//{
+//	template<typename V>
+//	static void PushVal(lua_State* L, V&& val) { LuaPush::PushString(L, val); }
+//};
 
 #define SET_PUSH_FUNC(T,F) \
 template<>	\
 struct LuaPushType<T>{		\
-	static void PushVal(lua_State* L,T&& val){ F(L, val); }	\
+	template<typename V>	\
+	static void PushVal(lua_State* L,V&& val){ F(L, val); }	\
 };	\
 
 SET_PUSH_FUNC(int16_t, LuaPush::PushInt)
@@ -89,7 +92,7 @@ SET_PUSH_FUNC(uint32_t, LuaPush::PushInt)
 SET_PUSH_FUNC(int64_t, LuaPush::PushInt)
 SET_PUSH_FUNC(uint64_t, LuaPush::PushInt)
 SET_PUSH_FUNC(bool, LuaPush::PushBool)
-SET_PUSH_FUNC(const char*, LuaPush::PushString)
+//SET_PUSH_FUNC(const char*, LuaPush::PushString)
 SET_PUSH_FUNC(std::string, LuaPush::PushString)
 SET_PUSH_FUNC(float, LuaPush::PushNumber)
 SET_PUSH_FUNC(double, LuaPush::PushNumber)
@@ -124,9 +127,10 @@ struct LuaReflect
 template<typename T, bool cond>
 struct PushTool
 {
-	static void PushVal(lua_State* L, T&& val)
+	template<typename V>
+	static void PushVal(lua_State* L, V&& val)
 	{
-		LuaPushType<typename std::decay<T>::type>::PushVal(L, std::forward<T>(val));
+		LuaPushType<typename std::decay<T>::type>::PushVal(L, std::forward<V>(val));
 	}
 };
 

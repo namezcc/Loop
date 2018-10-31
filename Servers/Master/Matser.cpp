@@ -31,8 +31,4 @@ EXPORT void DLL_START_NAME(int argc, char* args[])
 	ser.BuildPipe(ll, llogic);
 
 	ser.Run();
-	while (true)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	}
 }

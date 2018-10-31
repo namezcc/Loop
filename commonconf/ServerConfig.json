@@ -27,10 +27,13 @@
 			}
 		}
 	},
-	"comment3":"ProxySql type 1",
+	"comment3":"Proxy type 1",
 	"1":{
 		"1":{
 			"addr":{"ip":"127.0.0.1","port":21001}
+		},
+		"11":{
+			"addr":{"ip":"127.0.0.1","port":21011}
 		}
 	},
 	"comment4":"DBProxy type 7",
@@ -48,7 +51,8 @@
 			"addr":{"ip":"127.0.0.1","port":28001},
 			"connect":[
 				{"name":"RoomState","type":9,"id":1,"ip":"127.0.0.1","port":29001},
-				{"name":"DBProxy","type":7,"id":1,"ip":"127.0.0.1","port":27001}
+				{"name":"DBProxy","type":7,"id":1,"ip":"127.0.0.1","port":27001},
+				{"name":"Proxy","type":1,"id":11,"ip":"127.0.0.1","port":21011}
 			]
 		}
 	},
@@ -62,6 +66,50 @@
 	"10":{
 		"1":{
 			"addr":{"ip":"127.0.0.1","port":30001}
+		}
+	},
+	"comment11":"BattleScene Server",
+	"11":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":31001}
+		}
+	},
+	"comment12":"BattleTrans Server",
+	"12":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":32001},
+			"udpaddr":{"ip":"127.0.0.1","port":32002},
+			"connect":[
+				{"name":"BattleScene","type":11,"id":1,"ip":"127.0.0.1","port":31001},
+				{"name":"Proxy","type":1,"id":11,"ip":"127.0.0.1","port":21011}
+			]
+		}
+	},
+	"comment13":"Match Server",
+	"13":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":33001},
+			"connect":[
+				{"name":"Proxy","type":1,"id":11,"ip":"127.0.0.1","port":21011}
+			]
+		}
+	},
+	"comment14":"MatchState Server",
+	"14":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":34001},
+			"connect":[
+				{"name":"Proxy","type":1,"id":11,"ip":"127.0.0.1","port":21011}
+			]
+		}
+	},
+	"comment4":"ProxyProxy Server",
+	"4":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":24001},
+			"connect":[
+				{"name":"Proxy","type":1,"id":11,"ip":"127.0.0.1","port":21011}
+			]
 		}
 	}
 

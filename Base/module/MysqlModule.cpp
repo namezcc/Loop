@@ -17,27 +17,27 @@ std::cout << "std::exception [" <<msg << "] Error:Unknown " << std::endl; \
 #define MYSQL_CATCH(msg) }\
 	catch (mysqlpp::BadQuery& er) \
     { \
-        LP_ERROR(m_msgModule)<<"BadQuery ["<<msg<<"] Error: "<<er.what(); \
+        LP_ERROR<<"BadQuery ["<<msg<<"] Error: "<<er.what(); \
         return false; \
     } \
     catch (const mysqlpp::BadConversion& er)  \
     { \
-		LP_ERROR(m_msgModule)<<"BadConversion ["<<msg<<"] Error:"<<er.what()<<" retrieved data size:"<<er.retrieved<<", actual size:"<<er.actual_size;	\
+		LP_ERROR<<" retrieved data size:"<<er.retrieved<<", actual size:"<<er.actual_size;	\
         return false; \
     } \
 	catch (const mysqlpp::ConnectionFailed& er) \
 	{ \
-		LP_ERROR(m_msgModule)<<"Failed to connect to database server: "<<er.what();	\
+		LP_ERROR<<"Failed to connect to database server: "<<er.what();	\
 		return false; \
 	} \
     catch (const mysqlpp::Exception& er) \
     { \
-		LP_ERROR(m_msgModule)<<"mysqlpp::Exception ["<<msg<<"] Error:"<<er.what();	\
+		LP_ERROR<<"mysqlpp::Exception ["<<msg<<"] Error:"<<er.what();	\
         return false; \
     }\
     catch ( ... ) \
     { \
-		LP_ERROR(m_msgModule)<<"std::exception ["<<msg<<"] Error:Unknown ";	\
+		LP_ERROR<<"std::exception ["<<msg<<"] Error:Unknown ";	\
         return false; \
     }
 
@@ -109,10 +109,10 @@ bool MysqlModule::Reconnect()
 	}
 	catch(const std::exception& e)
 	{
-		LP_ERROR(m_msgModule) << "Mysql Connect Error "<<e.what();
+		LP_ERROR << "Mysql Connect Error "<<e.what();
 	}
 	if (!res)
-		LP_WARN(m_msgModule) << "Mysql Connect Error "<<"db:"<<m_dbname<<" ip:"<<m_ip<<" user:"<<m_user<<" pass:"<<m_pass<<" port:"<<m_port;
+		LP_WARN << "Mysql Connect Error "<<"db:"<<m_dbname<<" ip:"<<m_ip<<" user:"<<m_user<<" pass:"<<m_pass<<" port:"<<m_port;
 	return res;
 }
 
@@ -123,7 +123,7 @@ bool MysqlModule::Query(const string & str)
 
 	ExitCall _call([this,&ret,&str]() {
 		if (!ret)
-			LP_ERROR(m_msgModule)<< "Query Error:"<< str;
+			LP_ERROR<< "Query Error:"<< str;
 		//cout << "Query Error:" << str <<endl;
 	});
 	MYSQL_TRY
@@ -139,7 +139,7 @@ bool MysqlModule::Select(const string & str, MultRow & res, SqlRow & files)
 
 	ExitCall _call([this,&ret, &str]() {
 		if (!ret)
-			LP_ERROR(m_msgModule)<< "Select Error:"<< str;
+			LP_ERROR<< "Select Error:"<< str;
 		//cout << "Select Error:" << str << endl;
 	});
 	MYSQL_TRY
@@ -170,7 +170,7 @@ bool MysqlModule::Insert(SqlParam & p)
 	Qinsert(q, p.tab, p.field, p.value);
 	ExitCall _call([this,&ret,&q]() {
 		if (!ret)
-			LP_ERROR(m_msgModule)<<"Inster Error:"<<q.str();
+			LP_ERROR<<"Inster Error:"<<q.str();
 		//cout<<"Inster Error:" << q.str() << endl;
 	});
 	MYSQL_TRY
@@ -187,7 +187,7 @@ bool MysqlModule::Delete(SqlParam & p)
 	Qwhere(q, p.kname, p.kval);
 	ExitCall _call([this,&ret, &q]() {
 		if (!ret)
-			LP_ERROR(m_msgModule)<< "Delete Error:"<< q.str();
+			LP_ERROR<< "Delete Error:"<< q.str();
 		//cout << "Delete Error:" << q.str() << endl;
 	});
 	MYSQL_TRY
@@ -204,7 +204,7 @@ bool MysqlModule::Update(SqlParam & p)
 	Qwhere(q, p.kname, p.kval);
 	ExitCall _call([this,&ret, &q]() {
 		if (!ret)
-			LP_ERROR(m_msgModule)<< "Update Error:"<<q.str();
+			LP_ERROR<< "Update Error:"<<q.str();
 		//cout << "Update Error:" << q.str() << endl;
 	});
 	MYSQL_TRY
@@ -221,7 +221,7 @@ bool MysqlModule::Select(SqlParam & p)
 	Qwhere(q, p.kname, p.kval);
 	ExitCall _call([this,&ret, &q]() {
 		if (!ret)
-			LP_ERROR(m_msgModule)<<"Select Error:"<< q.str();
+			LP_ERROR<<"Select Error:"<< q.str();
 		//cout << "Select Error:" << q.str() << endl;
 	});
 	MYSQL_TRY

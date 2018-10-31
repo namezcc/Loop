@@ -4,6 +4,8 @@
 #include "LogicLayer.h"
 #include "PlayerModule.h"
 #include "SendProxyDbModule.h"
+#include "ProxyNodeModule.h"
+#include "MatchModule.h"
 
 EXPORT void DLL_START_NAME(int argc,char* args[])
 {
@@ -15,6 +17,8 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 
 	ll->CreateModule<PlayerModule>();
 	ll->CreateModule<SendProxyDbModule>();
+	ll->CreateModule<ProxyNodeModule>();
+	ll->CreateModule<MatchModule>();
 
 	ser.BuildPipe(nl, ll);
 	ser.Run();

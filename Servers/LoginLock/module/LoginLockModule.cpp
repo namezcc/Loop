@@ -27,7 +27,7 @@ void LoginLockModule::Init()
 void LoginLockModule::OnLoginLock(SHARE<BaseMsg>& msg)
 {
 	auto netmsg = (NetMsg*)msg->m_data;
-	TRY_PARSEPB(LPMsg::LoginLock, netmsg,m_msgModule);
+	TRY_PARSEPB(LPMsg::LoginLock, netmsg);
 
 	auto it = m_lockPid.find(pbMsg.pid());
 	auto now = GetSecend();
@@ -45,7 +45,7 @@ void LoginLockModule::OnLoginLock(SHARE<BaseMsg>& msg)
 
 void LoginLockModule::OnLoginUnlock(NetMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::LoginLock, msg, m_msgModule);
+	TRY_PARSEPB(LPMsg::LoginLock, msg);
 	m_lockPid.erase(pbMsg.pid());
 }
 

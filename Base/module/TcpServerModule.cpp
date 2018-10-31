@@ -32,7 +32,7 @@ void TcpServer::start()
 	r = uv_listen((uv_stream_t*)&m_hand, 4096, connection_cb);
 	ASSERT(r == 0);
 	//std::cout << "start listen port:" << port << std::endl;
-	LP_WARN(m_netModule->GetMsgModule()) << "start listen port:" << m_port;
+	LP_WARN << "start listen port:" << m_port;
 }
 
 void TcpServer::connection_cb(uv_stream_t* serhand, int status)

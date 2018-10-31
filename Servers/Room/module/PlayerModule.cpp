@@ -10,9 +10,6 @@
 #include "protoPB/client/define.pb.h"
 #include "protoPB/client/room.pb.h"
 
-#include "GameReflectData.h"
-#include "ConfigObjects.h"
-
 PlayerModule::PlayerModule(BaseLayer * l):BaseModule(l)
 {
 }
@@ -39,7 +36,7 @@ void PlayerModule::Init()
 void PlayerModule::OnReadyTakePlayer(SHARE<BaseMsg>& comsg)
 {
 	auto msg = (NetServerMsg*)comsg->m_data;
-	TRY_PARSEPB(LPMsg::RoomReadyInfo, msg, m_msgModule);
+	TRY_PARSEPB(LPMsg::RoomReadyInfo, msg);
 
 	auto it = m_readyTable.find(pbMsg.pid());
 	if (it == m_readyTable.end())
@@ -56,7 +53,7 @@ void PlayerModule::OnReadyTakePlayer(SHARE<BaseMsg>& comsg)
 
 void PlayerModule::OnPlayerEnter(NetMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::ReqEnterRoom, msg, m_msgModule);
+	TRY_PARSEPB(LPMsg::ReqEnterRoom, msg);
 
 	auto it = m_readyTable.find(pbMsg.pid());
 	if (it == m_readyTable.end())
@@ -69,7 +66,7 @@ void PlayerModule::OnPlayerEnter(NetMsg * msg)
 
 	if (it->second->state != READY_STATE::RS_NONE)
 	{
-		LP_WARN(m_msgModule) << "in doing select or create pid:"<< pbMsg.pid();
+		LP_WARN << "in doing select or create pid:"<< pbMsg.pid();
 		return;
 	}
 
@@ -108,7 +105,7 @@ void PlayerModule::OnPlayerEnter(NetMsg * msg)
 			ExitCall failCall([this,&rdinfo,&socket,&coro]() {
 				if (!coro->IsFail())
 					return;
-				LP_ERROR(m_msgModule) << "Select Role Faile";
+				LP_ERROR << "Select Role Faile";
 				m_netobjModule->CloseNetObject(socket);
 				rdinfo->state = READY_STATE::RS_NONE;
 			});
@@ -130,7 +127,7 @@ void PlayerModule::OnPlayerEnter(NetMsg * msg)
 void PlayerModule::OnCreatePlayer(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro)
 {
 	auto msg = (NetMsg*)comsg->m_data;
-	TRY_PARSEPB(LPMsg::ReqCreateRole, msg, m_msgModule);
+	TRY_PARSEPB(LPMsg::ReqCreateRole, msg);
 	auto it = m_readyTable.find(pbMsg.pid());
 	if (it == m_readyTable.end())
 	{
@@ -140,13 +137,13 @@ void PlayerModule::OnCreatePlayer(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Ba
 
 	if (pbMsg.name().size() >= 30)
 	{
-		LP_INFO(m_msgModule) << "name to lone name:" << pbMsg.name();
+		LP_INFO << "name to lone name:" << pbMsg.name();
 		return;
 	}
 
 	if (it->second->state != READY_STATE::RS_NONE)
 	{
-		LP_WARN(m_msgModule) << "onCreate in doing select or create pid:" << pbMsg.pid();
+		LP_WARN << "onCreate in doing select or create pid:" << pbMsg.pid();
 		return;
 	}
 
@@ -158,7 +155,7 @@ void PlayerModule::OnCreatePlayer(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Ba
 	ExitCall failCall([this,&rdinfo,&msg,&coro]() {
 		if (!coro->IsFail())
 			return;
-		LP_ERROR(m_msgModule) << "Create Role Faile";
+		LP_ERROR << "Create Role Faile";
 		m_netobjModule->CloseNetObject(msg->socket);
 		rdinfo->state = READY_STATE::RS_NONE;
 	});
@@ -166,7 +163,7 @@ void PlayerModule::OnCreatePlayer(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Ba
 	auto checkres = m_sendProxyDb->RequestSelectDbGroup(*player,*player->m_sql, pbMsg.pid(), pull, coro,true);
 	if (checkres)
 	{
-		LP_WARN(m_msgModule) << "create role fail same Name:" << pbMsg.name();
+		LP_WARN << "create role fail same Name:" << pbMsg.name();
 		rdinfo->state = READY_STATE::RS_NONE;
 		return;
 	}
@@ -174,7 +171,7 @@ void PlayerModule::OnCreatePlayer(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Ba
 	auto ackres = m_sendProxyDb->RequestInsertSelectDbGroup(*player,*player->m_sql, pbMsg.pid(), pull, coro,true);
 	if (!ackres)
 	{
-		LP_ERROR(m_msgModule) << "Create Insert player Error";
+		LP_ERROR << "Create Insert player Error";
 		coro->SetFail();
 		return;
 	}
@@ -206,9 +203,10 @@ void PlayerModule::OnClientClose(const int32_t & sock)
 
 	m_sendProxyDb->UpdateDbGroup(rf, it->second->m_account->id);
 
-	LP_INFO(m_msgModule) << "player offLine id:" << it->second->m_player->id << " name:" << it->second->m_player->Get_name();
+	LP_INFO << "player offLine id:" << it->second->m_player->id << " name:" << it->second->m_player->Get_name();
 
-	m_playerTable.erase(it->second->m_player->Get_id());
+	if(it->second->m_matchInfo->m_state == PlayerState::PS_NONE)
+		m_playerTable.erase(it->second->m_player->Get_id());
 	m_sockPlayer.erase(it);
 }
 
@@ -224,6 +222,9 @@ SHARE<RoomPlayer> PlayerModule::AddPlayer(const int32_t & sock, SHARE<Player>& p
 	auto rmplayer = GET_SHARE(RoomPlayer);
 	rmplayer->m_player = player;
 	rmplayer->sock = sock;
+	rmplayer->m_matchInfo = GET_SHARE(MatchInfo);
+	rmplayer->m_matchInfo->m_state = PlayerState::PS_NONE;
+
 	m_playerTable[player->Get_id()] = rmplayer;
 	m_sockPlayer[sock] = rmplayer;
 	return rmplayer;
@@ -245,9 +246,12 @@ void PlayerModule::KickChangePlayer(const int32_t & newSock, const int64_t & pid
 	auto ply = GetRoomPlayer(pid);
 	if (!ply || ply->sock == newSock)
 		return;
-	
-	m_sockPlayer.erase(ply->sock);
-	m_netobjModule->CloseNetObject(ply->sock);
+	if (ply->sock != -1)
+	{
+		m_sockPlayer.erase(ply->sock);
+		m_netobjModule->CloseNetObject(ply->sock);
+	}
+
 	ply->sock = newSock;
 	m_sockPlayer[newSock] = ply;
 }
@@ -282,4 +286,15 @@ SHARE<Player> PlayerModule::GetPlayer(const int64_t & pid)
 	if (it == m_playerTable.end())
 		return NULL;
 	return it->second->m_player;
+}
+
+SHARE<RoomPlayer> PlayerModule::CheckRoomPlayer(const int32_t & sock)
+{
+	auto player = GetRoomPlayer(sock);
+	if (!player)
+	{
+		m_netobjModule->CloseNetObject(sock);
+		return NULL;
+	}
+	return player;
 }
