@@ -70,7 +70,7 @@ LAPI static bool WriteRawVarint64(OutPutStream* str,uint64_t v)
 	{
 		if (str->pos >= str->len)
 			return false;
-		str->buf[str->pos++] = (char)((v & 0x7F) | 0x80);
+		str->buf[str->pos++] = (char)(v | 0x80);
 		v >>= 7;
 	}
 	if (str->pos >= str->len)
@@ -95,7 +95,7 @@ LAPI static bool WriteRawVarint32(OutPutStream* str, uint32_t v)
 	{
 		if (str->pos >= str->len)
 			return false;
-		str->buf[str->pos++] = (char)((v & 0x7F) | 0x80);
+		str->buf[str->pos++] = (char)(v | 0x80);
 		v >>= 7;
 	}
 	if (str->pos >= str->len)
@@ -301,9 +301,10 @@ LAPI static int ReadRawVarint32(OutPutStream* str, uint32_t* res)
 	int shift = 0;
 	uint32_t tmp = 0;
 	*res = 0;
+	uint32_t b;
 	for (size_t i = 0; i < len; i++)
 	{
-		int b = str->buf[str->pos++];
+		b = str->buf[str->pos++];
 		tmp |= (b & 0x7F) << shift;
 		if ((b & 0x80) == 0)
 		{
@@ -311,6 +312,11 @@ LAPI static int ReadRawVarint32(OutPutStream* str, uint32_t* res)
       return 0;
 		}
 		shift += 7;
+	}
+	uint8_t* ptr = (uint8_t*)(str->buf+str->pos);
+	for (size_t i = 0; i < 5; i++)
+	{
+		b = *(ptr++); ++str->pos; if (!(b & 0x80)) break;
 	}
 	*res = tmp;
 	return -1;

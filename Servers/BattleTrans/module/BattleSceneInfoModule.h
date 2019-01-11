@@ -41,7 +41,7 @@ private:
 	//udp client msg
 	void OnReqEnterBattleScene(NetMsg* msg);
 	void OnReqPlayerOperation(NetMsg* msg);
-
+	void OnReqFixFrame(NetMsg* msg);
 
 	void SendFreeSceneToMatch();
 

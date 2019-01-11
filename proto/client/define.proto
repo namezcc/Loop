@@ -25,4 +25,8 @@ enum LP_MSG_ID
     N_ACK_SELF_ROLE_INFO        = 10015;
     N_ACK_OPERATION_SIZE        = 10016;
     N_ACK_OBJECT_SIZE           = 10017;
+    N_ACK_OLD_BATTLE_INFO       = 10018;
+
+    N_REQ_FIX_FRAME             = 10019;
+    M_ACK_FIX_FRAME             = 10020;
 }

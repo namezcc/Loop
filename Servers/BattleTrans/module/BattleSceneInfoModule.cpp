@@ -46,6 +46,7 @@ void BattleSceneInfoModule::Init()
 	m_msgModule->AddMsgCallBack(LPMsg::N_ACK_SELF_ROLE_INFO, this, &BattleSceneInfoModule::OnAckSelfRoleInfo);
 	m_msgModule->AddMsgCallBack(LPMsg::N_REQ_ENTER_BATTLE_SCENE, this, &BattleSceneInfoModule::OnReqEnterBattleScene);
 	m_msgModule->AddMsgCallBack(LPMsg::N_REQ_PLAYER_OPERATION, this, &BattleSceneInfoModule::OnReqPlayerOperation);
+	m_msgModule->AddMsgCallBack(LPMsg::N_REQ_FIX_FRAME, this, &BattleSceneInfoModule::OnReqFixFrame);
 
 
 	auto config = GetLayer()->GetLoopServer()->GetConfig();
@@ -141,32 +142,36 @@ void BattleSceneInfoModule::OnReqAddPlayer(NetServerMsg * msg)
 	TRY_PARSEPB(LPMsg::BatPlayerInfo, msg);
 	auto pnode = pbMsg.pnode();
 
-	bool res = false;
-	ExitCall call([this,&res,&msg,&pnode]() {
-		LPMsg::PlayerNode ackmsg;
+	int64_t key = 0;
+	ExitCall call([this,&msg,&pnode,&key]() {
+		LPMsg::BatPlayerRes ackmsg;
 		ackmsg.set_playerid(pnode.playerid());
-		ackmsg.set_proxyid(res ? 1 : 0);
+		ackmsg.set_key(key);
 		m_transModule->SendBackServer(msg->path, N_ACK_BATTLE_ADD_PLAYER, ackmsg);
 	});
-
-	auto itply = m_runingPlayer.find(pnode.playerid());
-	if (itply != m_runingPlayer.end())
-		return;
 
 	auto it = m_runingScene.find(pbMsg.sceneid());
 	if (it == m_runingScene.end() || !it->second->AbleAddPlayer())
 		return;
 
+	int32_t hval = std::hash<int64_t>()(pnode.playerid());
+	key |= it->second->GetSceneId();
+	key <<= 32;
+	key |= hval;
+
+	auto itp = m_runingPlayer.find(key);
+	if (itp != m_runingPlayer.end())
+		return;
+
 	auto forply = GET_SHARE(ForwardPlayer);
 	forply->m_playerId = pnode.playerid();
 	forply->m_proxyId = pnode.proxyid();
-	forply->m_roomSerId = pnode.serid();
-	
+	forply->m_roomSerId = pnode.serid();	
 	it->second->AddPlayer(forply);
-	m_runingPlayer[pnode.playerid()] = forply;
+
+	m_runingPlayer[key] = forply;
 
 	m_transModule->SendToServer(m_sceneServer, N_REQ_BATTLE_ADD_PLAYER, pbMsg);
-	res = true;
 }
 
 void BattleSceneInfoModule::OnAckObjectInfoEnterView(NetMsg * msg)
@@ -252,6 +257,20 @@ void BattleSceneInfoModule::OnReqPlayerOperation(NetMsg * msg)
 		return;
 	}
 	ply->CollectOpt(pbMsg);
+}
+
+void BattleSceneInfoModule::OnReqFixFrame(NetMsg * msg)
+{
+	TRY_PARSEPB(LPMsg::FixFrame, msg);
+	auto it = m_sockPlayer.find(msg->socket);
+	if (it == m_sockPlayer.end())
+	{
+		m_udpSockModule->CloseNetObject(msg->socket);
+		return;
+	}
+	auto diff = pbMsg.frame() - it->second->m_scene->GetFrame();
+	pbMsg.set_frame(diff);
+	m_udpSockModule->SendNetMsg(msg->socket, LPMsg::M_ACK_FIX_FRAME, pbMsg);
 }
 
 void BattleSceneInfoModule::SendFreeSceneToMatch()

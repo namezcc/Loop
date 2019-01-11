@@ -80,8 +80,8 @@ function AoiBlock:UpdateEntity(eid)
         return
     end
     local ent = eaoi._ent
-    local nxid = math.ceil(ent._x/self._bsize)
-    local nyid = math.ceil(ent._y/self._bsize)
+    local nxid = math.floor(ent._x/self._bsize) + 1
+    local nyid = math.floor(ent._y/self._bsize) + 1
 
     local oxid = eaoi._xid
     local oyid = eaoi._yid
@@ -99,7 +99,7 @@ function AoiBlock:UpdateEntity(eid)
         end
         
         if leaveblock then
-            for i=oyid - self.vsize,oyid + self._vsize,1 do
+            for i=oyid - self._vsize,oyid + self._vsize,1 do
                 local block = leaveblock[i]
                 if block then
                     for k,v in pairs(block) do
@@ -155,8 +155,12 @@ function AoiBlock:UpdateEntity(eid)
     end
 
     if nxid ~= oxid or nyid ~= oyid then
-        self._xBlock[oxid][oyid] = nil
-        self._xBlock[nxid][nyid] = eaoi
+        if self._xBlock[oxid] then
+            self._xBlock[oxid][oyid] = nil
+        end
+        if self._xBlock[nxid] then
+            self._xBlock[nxid][nyid] = eaoi
+        end
     end
 end
 
@@ -222,8 +226,25 @@ function AoiBlock:GetViewEntityPB(pid)
         print("nil eaoi")
         return list
     end
-    
-    table.insert(list,eaoi._ent:GetInfoPB())
+    --table.insert(list,eaoi._ent:GetInfoPB())
+    for i = eaoi._xid - self._vsize,eaoi._xid + self._vsize,1 do
+        local xblock = self._xBlock[i]
+        if xblock then
+            for j= eaoi._yid - self._vsize ,eaoi._yid + self._vsize,1 do
+                local yblock = xblock[j]
+                if yblock then
+                    for k,v in pairs(yblock) do
+                        table.insert(list,v._ent:GetInfoPB())
+                    end
+                end
+            end
+        end
+    end
+
+    if #list == 0 then
+        table.insert(list,eaoi._ent:GetInfoPB())
+    end
+
     return list
 end
 

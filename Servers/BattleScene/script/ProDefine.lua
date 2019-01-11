@@ -10,5 +10,8 @@ end
 
 PROP_TYPE = {
     PT_HP = N(),
-    PT_POS = N(),
+    PT_POS_X = N(),
+    PT_POS_Y = N(),
+    PT_V_X = N(),
+    PT_V_Y = N(),
 }

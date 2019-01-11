@@ -10,7 +10,7 @@ struct {0}:public BaseTable
         auto& m = *{0}::m_map;
         auto it = m.find(key);
         if (it == m.end())
-            return nullptr;
+            return NULL;
         return it->second;
     }}
     static BaseTable* CreateTable(int key) 

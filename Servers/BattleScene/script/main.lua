@@ -19,6 +19,7 @@ pbparse:ParseFile("server/sbattle.proto")
 pbparse:ParseFile("client/battle.proto")
 
 require "GameDefine"
+require "Math"
 require "NetModule"
 require "SceneModule"
 

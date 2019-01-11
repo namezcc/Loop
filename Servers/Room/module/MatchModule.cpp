@@ -55,10 +55,11 @@ void MatchModule::OnPlayerBeginBattle(NetMsg * msg)
 	if (!player)
 		return;
 
-	if (player->m_matchInfo->m_state != PlayerState::PS_NONE)
+	if (player->m_matchInfo->m_state == PlayerState::PS_IN_MATCH)
 		return;
 
 	player->m_matchInfo->m_state = PlayerState::PS_IN_MATCH;
+	player->m_matchInfo->m_key = 0;
 
 	LPMsg::ReqGetMatchServer reqmsg;
 	reqmsg.set_playerid(player->m_player->id);
@@ -133,12 +134,12 @@ void MatchModule::OnAckMatchBattle(NetMsg * msg)
 
 void MatchModule::OnAckBattleAddPlayer(NetMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::PlayerNode, msg);
+	TRY_PARSEPB(LPMsg::BatPlayerRes, msg);
 	auto player = m_playerModule->GetRoomPlayer(pbMsg.playerid());
 	if (!player)
 		return;
 
-	if (pbMsg.proxyid() == 0)
+	if (pbMsg.key() == 0)
 	{
 		//add player fail
 		player->m_matchInfo->m_state = PlayerState::PS_NONE;
@@ -147,9 +148,11 @@ void MatchModule::OnAckBattleAddPlayer(NetMsg * msg)
 
 	auto match = player->m_matchInfo;
 	LPMsg::AckEnterBattle ackmsg;
+	match->m_key = pbMsg.key();
 
 	ackmsg.set_ip(match->m_battleIp);
 	ackmsg.set_port(match->m_battlePort);
 	ackmsg.set_sceneid(match->m_sceneId);
+	ackmsg.set_key(pbMsg.key());
 	m_netObjModule->SendNetMsg(player->sock, LPMsg::N_ACK_ENTER_BATTLE, ackmsg);
 }

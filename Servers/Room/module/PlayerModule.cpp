@@ -205,6 +205,7 @@ void PlayerModule::OnClientClose(const int32_t & sock)
 
 	LP_INFO << "player offLine id:" << it->second->m_player->id << " name:" << it->second->m_player->Get_name();
 
+	it->second->sock = -1;
 	if(it->second->m_matchInfo->m_state == PlayerState::PS_NONE)
 		m_playerTable.erase(it->second->m_player->Get_id());
 	m_sockPlayer.erase(it);
@@ -215,6 +216,20 @@ void PlayerModule::SendPlayerInfo(SHARE<RoomPlayer>& player)
 	LPMsg::GameObject msg;
 	player->m_player->ParsePB(msg);
 	m_netobjModule->SendNetMsg(player->sock, LPMsg::N_ACK_ENTER_ROOM, msg);
+
+	if (player->m_matchInfo->m_key > 0)
+	{
+		//send reEnter scene
+
+		LPMsg::AckEnterBattle ackmsg;
+		auto match = player->m_matchInfo;
+
+		ackmsg.set_ip(match->m_battleIp);
+		ackmsg.set_port(match->m_battlePort);
+		ackmsg.set_sceneid(match->m_sceneId);
+		ackmsg.set_key(match->m_key);
+		m_netobjModule->SendNetMsg(player->sock, LPMsg::N_ACK_OLD_BATTLE_INFO, ackmsg);
+	}
 }
 
 SHARE<RoomPlayer> PlayerModule::AddPlayer(const int32_t & sock, SHARE<Player>& player)
@@ -224,6 +239,7 @@ SHARE<RoomPlayer> PlayerModule::AddPlayer(const int32_t & sock, SHARE<Player>& p
 	rmplayer->sock = sock;
 	rmplayer->m_matchInfo = GET_SHARE(MatchInfo);
 	rmplayer->m_matchInfo->m_state = PlayerState::PS_NONE;
+	rmplayer->m_matchInfo->m_key = 0;
 
 	m_playerTable[player->Get_id()] = rmplayer;
 	m_sockPlayer[sock] = rmplayer;

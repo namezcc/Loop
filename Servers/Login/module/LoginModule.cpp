@@ -49,6 +49,12 @@ void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Base
 	auto msg = (NetMsg*)comsg->m_data;
 	TRY_PARSEPB(LPMsg::ReqLogin, msg);
 
+	if (pbMsg.account().empty())
+	{
+		LP_INFO << "Empty Account Name";
+		return;
+	}
+
 	auto itc = m_tmpClient.find(pbMsg.account());
 	if (itc != m_tmpClient.end())
 	{

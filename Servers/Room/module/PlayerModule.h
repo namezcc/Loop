@@ -43,6 +43,7 @@ struct MatchInfo
 	int32_t m_sceneId;
 	std::string	m_battleIp;
 	int32_t m_battlePort;
+	int64_t m_key;
 };
 
 struct RoomPlayer:public LoopObject

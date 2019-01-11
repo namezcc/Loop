@@ -7,13 +7,14 @@ local MAX_PLAYER_INDEX = 40
 
 function Scene:ctor(sid)
     self._sceneId = sid
-    self._aoi = AoiBlock.new(1000,1000,100,100)
+    self._aoi = AoiBlock.new(100000,100000,10000,10000)
 end
 
 function Scene:Init()
     self._frame = 0
     self._playerIndex = 0
     self._player = {}
+    self._aoiUpdate = {}
 end
 
 function Scene:Update(dt)
@@ -59,7 +60,7 @@ end
 
 function Scene:RunFrame(opts)
     if opts.list then
-       for i,opt in ipairs(opts.list) do
+        for i,opt in ipairs(opts.list) do
             local ply = self._player[opt.objId]
             if ply then
                 ply:DoOperation(opt.list)
@@ -67,7 +68,11 @@ function Scene:RunFrame(opts)
         end
     end
     self:Update(NOW_TIME_DT)
+    self:UpdateAoi()
     self._frame = self._frame + 1
+    -- if self._frame % 60 == 0 then
+    --     print("frame:",self._frame)
+    -- end
 end
 
 function Scene:GetEntityInfo()
@@ -108,6 +113,19 @@ function Scene:GetEntityInfo()
         }
         self._entpb = nil
         return info
+    end
+end
+
+function Scene:AddUpdateAoi(pid)
+    table.insert(self._aoiUpdate,pid)
+end
+
+function Scene:UpdateAoi()
+    for i,v in ipairs(self._aoiUpdate) do
+        self._aoi:UpdateEntity(v)
+    end
+    if #self._aoiUpdate > 0 then
+        self._aoiUpdate = {}
     end
 end
 

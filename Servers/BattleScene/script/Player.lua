@@ -6,7 +6,17 @@ function Player:ctor(pdata)
     self._name = pdata.name
     self._optbuff = {}
     self._broad = false
+    self._moveKeepFrame = 0
+    self._speed = 10
+    self:initAttr()
+end
+
+function Player:initAttr()
     self:SetProp(PROP_TYPE.PT_HP,100)
+    self:SetProp(PROP_TYPE.PT_POS_X,0)
+    self:SetProp(PROP_TYPE.PT_POS_Y,0)
+    self:SetProp(PROP_TYPE.PT_V_X,0)
+    self:SetProp(PROP_TYPE.PT_V_Y,0)
 end
 
 function Player:GetBroad()
@@ -21,11 +31,29 @@ function Player:Update(dt)
             self:DoCmd(v)
         end
     end
-
     -- ...
+    self:UpdateMove()
 
+end
 
+function Player:UpdateMove()
+    if self._moveKeepFrame <= 0 then
+        return
+    end
 
+    self._moveKeepFrame = self._moveKeepFrame - 1
+
+    self._x = self._x + self:GetProp(PROP_TYPE.PT_V_X)
+    self._y = self._y + self:GetProp(PROP_TYPE.PT_V_Y)
+
+    self:SetProp(PROP_TYPE.PT_POS_X,self._x)
+    self:SetProp(PROP_TYPE.PT_POS_Y,self._y)
+
+    self._scene:AddUpdateAoi(self._id)
+
+    self._broad = true
+
+    print(string.format("move frame:%d x:%d y:%d",self._scene._frame,self._x,self._y))
 end
 
 function Player:DoOperation(opts)
@@ -38,9 +66,10 @@ function Player:DoOperation(opts)
 end
 
 function Player:DoCmd(cmd)
-    if cmd.type == OPT_TYPE.OPT_TEST then
-        self:SetProp(PROP_TYPE.PT_HP,cmd.value[1])
-        self._broad = true
+    self._broad = true
+    local func = OPT_FUNC[cmd.type]
+    if func then
+        func(self,cmd)
     end
 end
 
