@@ -8,13 +8,21 @@ function ReCmake()
 {
     rm -rf ./*
     cmake -DCMAKE_BUILD_TYPE=${1} ..
-    echo "press any key to make"
-    read -n 1
-    make
+    echo -n "make[y/n]?"
+    while read ans
+    do
+			case $ans in
+				Y|y) make
+				break
+				;;
+				N|n) break;;
+				*) echo -n "make[y/n]?";;
+			esac
+    done
     echo "finish"
 }
 
-while getopts "DRBC" VAR
+while getopts "DRB" VAR
 do
     case $VAR in
         D) ReCmake "Debug"
