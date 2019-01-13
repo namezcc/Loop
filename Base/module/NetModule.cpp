@@ -73,7 +73,7 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 		return;
 	}
 	
-	if (!server->ReadPack(conn,buf->base, nread))
+	if (!server->ReadPack(conn,buf->base, (int)nread))
 	{
 		uv_close((uv_handle_t*)client, client->close_cb);
 	}
@@ -122,7 +122,7 @@ bool NetModule::ReadPack(Conn* conn, char* buf, int len)
 			break;
 		}
 
-		if (head.size <= oldbuf.use - read)
+		if (head.size <= (int)oldbuf.use - read)
 		{//cpm pack
 			auto msg = GetLayer()->GetLayerMsg<NetMsg>();
 			auto len = head.size - MsgHead::HEAD_SIZE;

@@ -1,6 +1,5 @@
 #include "UdpServerModule.h"
 #include "ScheduleModule.h"
-
 thread_local int32_t UdpConn::SOCKET = 0;
 
 UdpServerModule::UdpServerModule(BaseLayer * l):BaseModule(l), m_tmpcash(NULL),
@@ -82,7 +81,7 @@ void UdpServerModule::SendData(int32_t sock, const char * data, const int32_t & 
 	if (it == m_clients.end())
 		return;
 
-	int8_t pn = ceil(size / float(UDP_DATA_SIZE));
+	int8_t pn = static_cast<int8_t>(std::ceil(size / float(UDP_DATA_SIZE)));
 	int8_t idx = 0;
 	int32_t sendsize = 0;
 	while (sendsize < size)

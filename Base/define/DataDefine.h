@@ -60,9 +60,9 @@ enum LAYER_TYPE
 struct NetBuffer
 {
 	char* buf;
-	int len;
-	int use;
-	int scan;
+	uint32_t len;
+	uint32_t use;
+	uint32_t scan;
 
 	NetBuffer():buf(NULL),len(0),use(0),scan(0)
 	{}
@@ -102,7 +102,7 @@ struct NetBuffer
 		len = use = scan = 0;
 	}
 
-	void MakeRoome(const int& size)
+	void MakeRoome(const uint32_t& size)
 	{
 		if (len>=size)
 			return;
@@ -114,7 +114,7 @@ struct NetBuffer
 		len = size;
 	}
 
-	void combin(char* newbuf, int nlen)
+	void combin(char* newbuf, uint32_t nlen)
 	{
 		if (nlen <= 0)
 			return;
@@ -150,7 +150,7 @@ struct NetBuffer
 		scan = 0;
 	}
 
-	NetBuffer& append(char* p, int len)
+	NetBuffer& append(char* p, uint32_t len)
 	{
 		combin(p, len);
 		return *this;
@@ -158,13 +158,13 @@ struct NetBuffer
 
 	NetBuffer& append(char* p)
 	{
-		combin(p, strlen(p));
+		combin(p, (uint32_t)strlen(p));
 		return *this;
 	}
 
 	NetBuffer& append(const string& s)
 	{
-		combin(const_cast<char*>(s.c_str()), s.size());
+		combin(const_cast<char*>(s.c_str()), (uint32_t)s.size());
 		return *this;
 	}
 };

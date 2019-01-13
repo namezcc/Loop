@@ -106,7 +106,7 @@ public:
 		{
 			if (tryWrite())
 			{
-				int32_t idx = IncIndex(m_widx);
+				size_t idx = IncIndex(m_widx);
 				recycleCash(idx);
 				LPList* lw = &m_data[idx];
 				auto n = getNode();
@@ -117,7 +117,7 @@ public:
 			}
 			else
 			{
-				m_lockindex = m_widx;
+				m_lockindex = static_cast<int32_t>(m_widx);
 				if (tryWrite())
 					m_lockindex = -1;
 				else
@@ -168,7 +168,7 @@ protected:
 		return true;
 	}
 
-	void recycleCash(int32_t index)
+	void recycleCash(size_t index)
 	{
 		m_pool.combin(m_cash[index]);
 	}

@@ -8,7 +8,7 @@ void IOCP::SendOVSData(void * ovs)
 		m_sendIndex = 0;
 }
 
-void IOCP::DoRecv(const int & tidx)
+void IOCP::DoRecv(const uint32_t & tidx)
 {
 	OVERLAPPED_ENTRY* _entry = &m_entry[LP_ENTRY_SIZE*tidx];
 	while (true)
@@ -35,7 +35,7 @@ void IOCP::DoRecv(const int & tidx)
 	}
 }
 
-void IOCP::DoSend(const int & tidx)
+void IOCP::DoSend(const uint32_t & tidx)
 {
 	OVS* sdata = NULL;
 	UdpSocket* usock = NULL;

@@ -109,7 +109,7 @@ namespace Loop{
 	static void Spliteach(const string& str, const char* delimiter, std::vector<std::string>& res)
 	{
 		auto p = str.c_str();
-		auto last = 0;
+		size_t last = 0;
 		for (size_t i = 0; i < str.size(); i++)
 		{
 			auto c = delimiter;

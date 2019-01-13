@@ -126,7 +126,7 @@ void HttpNetModule::After_read_CGI(uv_stream_t* client, ssize_t nread, const uv_
 		return;
 	}
 
-	if (!server->ReadPackMid(sc, buf->base, nread, N_RECV_PHP_CGI_MSG))
+	if (!server->ReadPackMid(sc, buf->base, (int)nread, N_RECV_PHP_CGI_MSG))
 	{
 		uv_close((uv_handle_t*)client, client->close_cb);
 	}

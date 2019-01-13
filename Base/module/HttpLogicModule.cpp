@@ -64,7 +64,7 @@ int HttpRequest::TryDecode()
 	{
 		if (buff.use < 2)
 			return HTTP_STATE::NOT_FINISH;
-		for (size_t i = scanned; i <= buff.use - 2; i++)
+		for (uint32_t i = scanned; i <= buff.use - 2; i++)
 		{
 			if (buff.buf[i] == '\r' && buff.buf[i + 1] == '\n')
 			{
@@ -96,7 +96,7 @@ int HttpRequest::TryDecode()
 	case HTTP_POINT::HEADS:
 	{
 		char* p = buff.buf;
-		for (size_t i = scanned; i <= buff.use - 4; i++)
+		for (uint32_t i = scanned; i <= buff.use - 4; i++)
 		{
 			if (p[i] == '\r' && memcmp(p + i, "\r\n\r\n", 4)==0)
 			{
@@ -180,8 +180,8 @@ void HttpResponse::EncodePHP(NetBuffer& nbuff)
 
 	nbuff.append("Connection: Keep-Alive\r\n");
 
-	int len=0;
-	for (size_t i = 0; i <= buff.use-4; i++)
+	uint32_t len=0;
+	for (uint32_t i = 0; i <= buff.use-4; i++)
 	{
 		if (buff.buf[i] == '\r' && memcmp(buff.buf + i, "\r\n\r\n", 4) == 0)
 		{
@@ -234,7 +234,7 @@ void HttpLogicModule::Init()
 
 	m_index = {"/index.html","/index.htm","/index.php"};
 
-	m_cashIndex = m_lastCheck = 0;
+	m_lastCheck = m_cashIndex = 0;
 	m_useCash = false;
 }
 

@@ -39,10 +39,14 @@ void LoadServerConf(map<int,string>& conf)
 		cout << e.what() <<endl;
 	}
 
-	Json::Reader reader;
+	//Json::Reader reader;
 	Json::Value root;
-	if (!reader.parse(ifs, root, false))
-		cout << reader.getFormattedErrorMessages();
+	/*if (!reader.parse(ifs, root, false))
+		cout << reader.getFormattedErrorMessages();*/
+	Json::CharReaderBuilder readerBuilder;
+	std::string err;
+	if (!Json::parseFromStream(readerBuilder, ifs, &root, &err))
+		cout << err << endl;
 
 	for (auto& v : root)
 		conf[v["type"].asInt()] = v["name"].asString();
@@ -78,7 +82,7 @@ int main(int argc, char* args[])
 	vector<thread> thrs;
 	int num = argc / ARG_USE_NUM;
 
-	for (size_t i = 0; i < num; i++)
+	for (int i = 0; i < num; i++)
 	{
 		int idx = i*ARG_USE_NUM;
 		char* nargs[ARG_NUM];

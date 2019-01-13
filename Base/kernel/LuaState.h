@@ -113,7 +113,7 @@ public:
 		}
 		if (sizeof...(Args)>0)
 			PushLuaArgs::PushVal(m_L, std::forward<Args>(args)...);
-		auto es = -2 - (sizeof...(Args));
+		int es = -2 - (int)(sizeof...(Args));
 		if (lua_pcall(m_L, sizeof...(Args), 0, es) != LUA_OK)
 			PrintError();
 	}

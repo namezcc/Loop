@@ -34,7 +34,7 @@
 #if PLATFORM == PLATFORM_WIN
   #ifdef LOOP_MAKE_DLL
     #define LOOP_EXPORT __declspec(dllexport)
-  #elif define LOOP_STATIC
+  #elif LOOP_STATIC
     #define LOOP_EXPORT
   #else
     #define LOOP_EXPORT __declspec(dllimport)

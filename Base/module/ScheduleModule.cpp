@@ -41,12 +41,12 @@ void ScheduleModule::Execute()
 	}
 }
 
-void ScheduleModule::RemoveTimePointTask(const size_t& mid)
+void ScheduleModule::RemoveTimePointTask(const uint32_t& mid)
 {
 	m_plate.RemoveTask(mid);
 }
 
-size_t ScheduleModule::GetTimerIndex()
+uint32_t ScheduleModule::GetTimerIndex()
 {
 	return ++m_timerIndex;
 }

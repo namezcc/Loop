@@ -58,12 +58,17 @@ void LoopServer::InitConfig()
 	{
 		cout << e.what() << endl;
 	}
-	
-	Json::Reader reader;
+
+	//Json::Reader reader;
 	Json::Value root;
 
-	if (!reader.parse(ifs, root, false))
-		cout << reader.getFormattedErrorMessages() << endl;
+	/*if (!reader.parse(ifs, root, false))
+		cout << reader.getFormattedErrorMessages() << endl;*/
+
+	Json::CharReaderBuilder readerBuilder;
+	std::string err;
+	if (!Json::parseFromStream(readerBuilder, ifs, &root, &err))
+		cout << err << endl;
 
 	Json::Value config;
 	if (m_server.type == SERVER_TYPE::LOOP_MASTER || m_server.type == SERVER_TYPE::LOOP_CONSOLE)

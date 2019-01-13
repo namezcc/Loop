@@ -146,13 +146,13 @@ bool MysqlModule::Select(const string & str, MultRow & res, SqlRow & files)
 		auto result = query.store();
 		if (result)
 		{
-			for (size_t i = 0; i < result.num_fields(); i++)
+			for (int i = 0; i < result.num_fields(); i++)
 				files.push_back(result.field_name(i));
 
-			for (size_t i = 0; i < result.num_rows(); i++)
+			for (int i = 0; i < result.num_rows(); i++)
 			{
 				SqlRow row;
-				for (size_t j = 0; j < result.num_fields(); j++)
+				for (int j = 0; j < result.num_fields(); j++)
 				{
 					row.push_back(result[i][j].data());
 				}
@@ -229,10 +229,10 @@ bool MysqlModule::Select(SqlParam & p)
 		if (res)
 		{
 			if(p.field.size()==0)
-				for (size_t i = 0; i < res.num_fields(); i++)
+				for (int i = 0; i < res.num_fields(); i++)
 					p.field.push_back(res.field_name(i));
-			for (size_t i = 0; i < res.num_rows(); i++)
-				for (size_t j = 0; j < res.num_fields(); j++)
+			for (int i = 0; i < res.num_rows(); i++)
+				for (int j = 0; j < res.num_fields(); j++)
 					p.value.push_back(res[i][j].data());
 		}
 	MYSQL_CATCH("")
@@ -254,7 +254,7 @@ void MysqlModule::Qupdate(mysqlpp::Query & q, const string & tab, SqlRow & field
 void MysqlModule::Qinsert(mysqlpp::Query & q, const string & tab, SqlRow & fields, SqlRow & vals)
 {
 	q << "INSERT INTO " << tab << "(";
-	for (int i = 0; i < fields.size(); ++i)
+	for (size_t i = 0; i < fields.size(); ++i)
 	{
 		if (i == 0)
 			q << fields[i];
@@ -263,7 +263,7 @@ void MysqlModule::Qinsert(mysqlpp::Query & q, const string & tab, SqlRow & field
 	}
 	q << ") VALUES(";
 
-	int row = vals.size() / fields.size();
+	size_t row = vals.size() / fields.size();
 
 	for (size_t r = 0; r < row; r++)
 	{

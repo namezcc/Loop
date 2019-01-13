@@ -155,7 +155,7 @@ void HttpCgiModule::BuildRecord(NetBuffer & buff, HeadData & header, const strin
 
 void HttpCgiModule::BuildPacket(NetBuffer & buff, const int & type, const string & content, const int & requestId)
 {
-	int contentLength = content.size();
+	int contentLength = (int)content.size();
 	assert(contentLength >= 0 && contentLength <= CGI_MAX_LENGTH);
 
 	std::string record;
@@ -172,7 +172,7 @@ void HttpCgiModule::BuildPacket(NetBuffer & buff, const int & type, const string
 
 void HttpCgiModule::BuildKVPair(string& res, const string & key, const string & val)
 {
-	int nlen = key.size();
+	size_t nlen = key.size();
 	if (nlen < 128) {
 		res.push_back((unsigned char)nlen);                     // name LengthB0
 	}
@@ -183,7 +183,7 @@ void HttpCgiModule::BuildKVPair(string& res, const string & key, const string & 
 		res.push_back((unsigned char)(nlen & 0xff));            // name LengthB0
 	}
 
-	int vlen = val.size();
+	size_t vlen = val.size();
 	if (vlen < 128) {
 		res.push_back((unsigned char)vlen);                     // value LengthB0
 	}

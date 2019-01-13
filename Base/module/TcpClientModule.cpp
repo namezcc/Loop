@@ -49,7 +49,6 @@ void TcpClientModule::OnConnectServer(NetServer* ser)
 
 void TcpClientModule::Connect_cb(uv_connect_t* req, int status) 
 {
-	int r;
 	ASSERT(req != NULL);
 
 	auto md = (TcpClientModule*)req->data;

@@ -23,7 +23,7 @@ int LoopFile::GetContent(const string& file, NetBuffer & context)
 		ifs.open(file.c_str(), ifstream::in | ifstream::binary | ifstream::ate);
 		if (ifs.is_open())
 		{
-			auto len = ifs.tellg();
+			uint32_t len = static_cast<uint32_t>(ifs.tellg());
 			ifs.seekg(0, ios::beg);
 			context.MakeRoome(len);
 			ifs.read(context.buf, len);
@@ -117,9 +117,10 @@ void LoopFile::ReadJson(Json::Value& root,const std::string& file)
 		cout << e.what() << endl;
 		return;
 	}
-	Json::Reader reader;
-	if (!reader.parse(ifs, root, false))
-		cout << reader.getFormattedErrorMessages() << endl;
+	Json::CharReaderBuilder readerBuilder;
+	std::string err;
+	if (!Json::parseFromStream(readerBuilder, ifs, &root, &err))
+		cout << err << endl;
 }
 
 void LoopFile::ReadJsonInRoot(Json::Value& root,const std::string& file)

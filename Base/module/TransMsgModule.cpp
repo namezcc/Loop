@@ -42,7 +42,7 @@ void TransMsgModule::Execute()
 
 void TransMsgModule::InitServerNet()
 {
-	string file;
+	/*string file;
 	LoopFile::GetRootPath(file);
 	file.append("commonconf/serverPath.json");
 
@@ -104,7 +104,7 @@ void TransMsgModule::InitServerNet()
 			m_serverPath[p2.str()] = m_serverPath[stream.str()];
 			std::reverse(m_serverPath[p2.str()].begin(), m_serverPath[p2.str()].end());
 		}
-	}
+	}*/
 }
 
 void TransMsgModule::OnServerConnect(SHARE<NetServer>& ser)
@@ -237,7 +237,7 @@ void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int
 	{
 		if (sers[i]->serid == myser->serid && sers[i]->type == myser->type)
 		{
-			toindex = i+1;
+			toindex = (int32_t)i+1;
 			break;
 		}
 	}
@@ -273,7 +273,7 @@ void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int
 
 int32_t TransMsgModule::GetPathSize(vector<SHARE<ServerNode>>& sers)
 {
-	return TransHead::SIZE+sers.size()*ServerNode::SIZE+4;
+	return static_cast<int32_t>(TransHead::SIZE + sers.size()*ServerNode::SIZE + 4);
 }
 
 void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
@@ -382,79 +382,79 @@ NetServer* TransMsgModule::GetServer(const int32_t& type, const int32_t& serid)
 		return NULL;
 	return its->second.get();
 }
-
-void TransMsgModule::GetTransPath(ServerNode& beg, ServerNode& end, vector<SHARE<ServerNode>>& path)
-{
-	stringstream stream;
-	stream << beg.type << "-" << end.type;
-	auto it = m_serverPath.find(stream.str());
-	if (it == m_serverPath.end())
-		return;
-
-	for (auto& itv:it->second)
-	{
-		path.clear();
-		for (auto& t:itv)
-		{
-			auto sn = GetLayer()->GetSharedLoop<ServerNode>();
-			sn->type = t;
-			sn->serid = -1;
-			path.push_back(sn);
-		}
-		(*path.begin())->serid = beg.serid;
-		(*path.rbegin())->serid = end.serid;
-		if (GetToPath(path))
-			return;
-	}
-}
-
-bool TransMsgModule::GetToPath(vector<SHARE<ServerNode>>& path)
-{
-	int32_t idx = path.size();
-	for (size_t i = 0; i < path.size()-1; i++)
-	{
-		auto firn = path[i].get();
-		auto senn = path[i + 1].get();
-		auto lftos = m_serverLink[firn->type][senn->type];
-		if (lftos == 1)
-		{
-			auto lstof = m_serverLink[senn->type][firn->type];
-			senn->serid = ceil(float(firn->serid)/ lstof);
-		}
-		else if (lftos < 0)
-			senn->serid = 0;
-		else
-		{
-			idx = i;
-			break;
-		}
-	}
-	if (idx == path.size())
-		return true;
-
-	for (int32_t i = path.size() - 1; i > idx; i--)
-	{
-		auto firn = path[i].get();
-		auto senn = path[i - 1].get();
-
-		auto lftos = m_serverLink[firn->type][senn->type];
-		if (lftos == 1)
-		{
-			auto lstof = m_serverLink[senn->type][firn->type];
-			int32_t id = ceil(float(firn->serid) / lstof);
-			if (senn->serid >= 0 && id != senn->serid)
-				return false;
-			else
-				senn->serid = id;
-		}
-		else if (lftos < 0)
-			senn->serid = 0;
-		else
-			if (senn->serid < 0)
-				return false;
-	}
-	return true;
-}
+//
+//void TransMsgModule::GetTransPath(ServerNode& beg, ServerNode& end, vector<SHARE<ServerNode>>& path)
+//{
+//	stringstream stream;
+//	stream << beg.type << "-" << end.type;
+//	auto it = m_serverPath.find(stream.str());
+//	if (it == m_serverPath.end())
+//		return;
+//
+//	for (auto& itv:it->second)
+//	{
+//		path.clear();
+//		for (auto& t:itv)
+//		{
+//			auto sn = GetLayer()->GetSharedLoop<ServerNode>();
+//			sn->type = t;
+//			sn->serid = -1;
+//			path.push_back(sn);
+//		}
+//		(*path.begin())->serid = beg.serid;
+//		(*path.rbegin())->serid = end.serid;
+//		if (GetToPath(path))
+//			return;
+//	}
+//}
+//
+//bool TransMsgModule::GetToPath(vector<SHARE<ServerNode>>& path)
+//{
+//	int32_t idx = path.size();
+//	for (size_t i = 0; i < path.size()-1; i++)
+//	{
+//		auto firn = path[i].get();
+//		auto senn = path[i + 1].get();
+//		auto lftos = m_serverLink[firn->type][senn->type];
+//		if (lftos == 1)
+//		{
+//			auto lstof = m_serverLink[senn->type][firn->type];
+//			senn->serid = ceil(float(firn->serid)/ lstof);
+//		}
+//		else if (lftos < 0)
+//			senn->serid = 0;
+//		else
+//		{
+//			idx = i;
+//			break;
+//		}
+//	}
+//	if (idx == path.size())
+//		return true;
+//
+//	for (int32_t i = path.size() - 1; i > idx; i--)
+//	{
+//		auto firn = path[i].get();
+//		auto senn = path[i - 1].get();
+//
+//		auto lftos = m_serverLink[firn->type][senn->type];
+//		if (lftos == 1)
+//		{
+//			auto lstof = m_serverLink[senn->type][firn->type];
+//			int32_t id = ceil(float(firn->serid) / lstof);
+//			if (senn->serid >= 0 && id != senn->serid)
+//				return false;
+//			else
+//				senn->serid = id;
+//		}
+//		else if (lftos < 0)
+//			senn->serid = 0;
+//		else
+//			if (senn->serid < 0)
+//				return false;
+//	}
+//	return true;
+//}
 
 BuffBlock* TransMsgModule::PathToBuff(vector<SHARE<ServerNode>>& path,const int32_t& mid, const int32_t& toindex)
 {

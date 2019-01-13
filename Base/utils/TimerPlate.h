@@ -28,7 +28,7 @@ enum PLATE
 
 struct Plate
 {
-	size_t mid;
+	uint32_t mid;
 	char plate[P_END];
 	char rep;
 	TimeTask task;

@@ -64,8 +64,8 @@ protected:
 
 	NetServer* GetServer(const int32_t& type, const int32_t& serid);
 
-	void GetTransPath(ServerNode& beg, ServerNode& end, vector<SHARE<ServerNode>>& path);
-	bool GetToPath(vector<SHARE<ServerNode>>& path);
+	//void GetTransPath(ServerNode& beg, ServerNode& end, vector<SHARE<ServerNode>>& path);
+	//bool GetToPath(vector<SHARE<ServerNode>>& path);
 	BuffBlock* PathToBuff(vector<SHARE<ServerNode>>& path,const int32_t& mid, const int32_t& toindex=1);
 private:
 	EventModule* m_eventModule;
@@ -76,9 +76,9 @@ private:
 	std::unordered_map<int32_t, SHARE<NetServer>> m_allServer;//sock -> ser
 	std::unordered_map<int32_t, std::vector<NetServer*>> m_randServer;
 
-	map<string, int32_t> m_serverType;
-	map<string, list<vector<int32_t>>> m_serverPath;
-	map<int32_t, map<int32_t, int32_t>> m_serverLink;
+	/*map<string, int32_t> m_serverType;
+	map<string, list<vector<int32_t>>> m_serverPath;*/
+	//map<int32_t, map<int32_t, int32_t>> m_serverLink;
 };
 
 #endif

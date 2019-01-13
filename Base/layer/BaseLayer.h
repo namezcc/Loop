@@ -65,7 +65,11 @@ public:
 	T* CreateModule()
 	{
 		if (m_modules.find(typeid(T).hash_code()) != m_modules.end())
+		{
+			std::cout << "double Moudle " << typeid(T).name() << "  " << typeid(T).raw_name() << std::endl;
 			assert(0);
+			abort();
+		}
 		auto md = SHARE<T>(new T(this));
 		m_modules[typeid(T).hash_code()] = md;
 		return md.get();
@@ -77,7 +81,9 @@ public:
 		auto it = m_modules.find(typeid(T).hash_code());
 		if (it == m_modules.end())
 		{
+			std::cout << "Null module " << typeid(T).name() << "  " << typeid(T).raw_name() << std::endl;
 			assert(0);
+			abort();
 			return NULL;
 		}
 		else

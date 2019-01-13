@@ -4,6 +4,7 @@
 #include "LogicLayer.h"
 #include "TransMsgModule.h"
 #include "module/NoticeServerModule.h"
+#include "TestCallModule.h"
 
 EXPORT void DLL_START_NAME(int argc, char* args[])
 {
@@ -13,6 +14,10 @@ EXPORT void DLL_START_NAME(int argc, char* args[])
 	auto ll = ser.CreateLayer<LogicLayer>(LY_LOGIC);
 
 	ll->CreateModule<NoticeServerModule>();
+	ll->CreateModule<TestCallModule>()->setSend();
+
+	nl->CreateModule<TestCallModule>();
+
 
 	ser.BuildPipe(nl, ll);
 

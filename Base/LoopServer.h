@@ -37,7 +37,7 @@ public:
 	typename std::enable_if<std::is_base_of<BaseLayer,T>::value,T*>::type CreateLayer(Args&&... args)
 	{
 		auto l = SHARE<T>(new T(std::forward<Args>(args)...));
-		l->SetlsIndex(m_layers.size());
+		l->SetlsIndex((int32_t)m_layers.size());
 		m_layers.push_back(l);
 		return l.get();
 	}

@@ -27,7 +27,7 @@ int32_t LuaModule::CreateLuaState()
 	auto state = GET_SHARE(LuaState);
 	state->Init(this);
 	m_stats.push_back(state);
-	return m_stats.size()-1;
+	return (int32_t)m_stats.size()-1;
 }
 
 SHARE<LuaState> LuaModule::GetLuaState(const int32_t & index)

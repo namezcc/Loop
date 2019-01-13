@@ -100,14 +100,14 @@ private:
 
 	void InitThread()
 	{
-		for (size_t i = 0; i < IO_WORK_THREAD_NUM; i++)
+		for (uint32_t i = 0; i < IO_WORK_THREAD_NUM; i++)
 		{
 			m_worker.emplace_back([this, i]() {
 				DoRecv(i);
 			});
 		}
 
-		for (size_t i = 0; i < IO_SEND_THREAD_NUM; i++)
+		for (uint32_t i = 0; i < IO_SEND_THREAD_NUM; i++)
 		{
 			m_sender.emplace_back([this, i]() {
 				DoSend(i);
@@ -115,8 +115,8 @@ private:
 		}
 	}
 
-	void DoRecv(const int& tidx);
-	void DoSend(const int& tidx);
+	void DoRecv(const uint32_t& tidx);
+	void DoSend(const uint32_t& tidx);
 
 private:
 	HANDLE m_iocp;

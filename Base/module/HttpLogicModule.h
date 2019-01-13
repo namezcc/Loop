@@ -52,8 +52,8 @@ struct HttpBase
 
 struct HttpRequest :public HttpBase
 {
-	int bodySize;
-	int scanned;
+	uint32_t bodySize;
+	uint32_t scanned;
 	string math;
 	string url;
 	map<string, string> uvals;

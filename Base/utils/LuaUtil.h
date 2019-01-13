@@ -103,7 +103,7 @@ struct LuaPullType;
 #define SET_PULL_FUNC(T,F) \
 template<>	\
 struct LuaPullType<T>{		\
-	static T PullVal(lua_State* L,const int32_t& idx){ return F(L, idx); }	\
+	static T PullVal(lua_State* L,const int32_t& idx){ return static_cast<T>(F(L, idx)); }	\
 };	\
 
 SET_PULL_FUNC(int16_t, LuaPush::LuaToInt)

@@ -23,14 +23,14 @@ public:
 	void insert(const T& t)
 	{
 		m_arr.push_back(t);
-		AddCall(m_arr.size() - 1);
-		filterUp(m_arr.size() - 1);
+		AddCall(static_cast<uint32_t>(m_arr.size()) - 1);
+		filterUp(static_cast<uint32_t>(m_arr.size()) - 1);
 		ChangeCall();
 	}
 
-	void deleten(const int32_t& _index)
+	void deleten(const uint32_t& _index)
 	{
-		if (_index < 0 || _index >= m_arr.size())
+		if (_index >= m_arr.size())
 			throw std::exception("error range");
 		if (_index == m_arr.size() - 1)
 		{
@@ -43,24 +43,24 @@ public:
 		ChangeCall();
 	}
 
-	void change(const int32_t& _index, const T& t)
+	void change(const uint32_t& _index, const T& t)
 	{
-		if (_index < 0 || _index >= m_arr.size())
+		if (_index >= m_arr.size())
 			throw std::exception("error range");
 		m_arr[_index] = t;
 		filter(_index);
 		ChangeCall();
 	}
 
-	void update(const int32_t& _index)
+	void update(const uint32_t& _index)
 	{
-		if (_index < 0 || _index >= m_arr.size())
+		if (_index >= m_arr.size())
 			throw std::exception("error range");
 		filter(_index);
 		ChangeCall();
 	}
 
-	int32_t getSize()
+	size_t getSize()
 	{
 		return m_arr.size();
 	}
@@ -101,15 +101,15 @@ public:
 	}
 
 protected:
-	void filterUp(const int32_t& _index)
+	void filterUp(const uint32_t& _index)
 	{
-		if (m_arr.size() <= 1)
+		if (m_arr.size() <= 1 || _index == 0)
 			return;
 		auto index = _index;
 		while (true)
 		{
 			auto f = (index - 1) / 2;
-			if (f < 0 || index == f)
+			if (index == f)
 				return;
 			if (m_less(m_arr[f], m_arr[index]))
 			{
@@ -122,7 +122,7 @@ protected:
 		}
 	}
 
-	void filterDown(const int32_t& _index)
+	void filterDown(const uint32_t& _index)
 	{
 		auto size = m_arr.size();
 		if (size <= 1)
@@ -130,7 +130,7 @@ protected:
 		auto index = _index;
 		while (true)
 		{
-			int32_t l = 2 * index + 1;
+			uint32_t l = 2 * index + 1;
 			if (l >= size)
 				return;
 			if (l + 1 < size && m_less(m_arr[l], m_arr[l + 1]))
@@ -148,7 +148,7 @@ protected:
 			AddCall(_index);
 	}
 
-	void filter(const int32_t& _index)
+	void filter(const uint32_t& _index)
 	{
 		if (_index == 0)
 			filterDown(_index);
@@ -156,7 +156,7 @@ protected:
 			return;
 		else
 		{
-			int32_t fi = (_index - 1) / 2;
+			uint32_t fi = (_index - 1) / 2;
 			if (m_less(m_arr[fi], m_arr[_index]))
 			{
 				AddCall(_index);
@@ -212,14 +212,14 @@ public:
 	void insert(const T& t)
 	{
 		m_arr.push_back(t);
-		AddCall(m_arr.size() - 1);
-		filterUp(m_arr.size() - 1);
+		AddCall(static_cast<uint32_t>(m_arr.size()) - 1);
+		filterUp(static_cast<uint32_t>(m_arr.size()) - 1);
 		ChangeCall();
 	}
 
-	void deleten(const int32_t& _index)
+	void deleten(const uint32_t& _index)
 	{
-		if (_index < 0 || _index >= m_arr.size())
+		if (_index >= m_arr.size())
 			throw std::exception("error range");
 		if (_index == m_arr.size() - 1)
 		{
@@ -233,24 +233,24 @@ public:
 		ChangeCall();
 	}
 
-	void change(const int32_t& _index, const T& t)
+	void change(const uint32_t& _index, const T& t)
 	{
-		if (_index < 0 || _index >= m_arr.size())
+		if (_index >= m_arr.size())
 			throw std::exception("error range");
 		m_arr[_index] = t;
 		filter(_index);
 		ChangeCall();
 	}
 
-	void update(const int32_t& _index)
+	void update(const uint32_t& _index)
 	{
-		if (_index < 0 || _index >= m_arr.size())
+		if (_index >= m_arr.size())
 			throw std::exception("error range");
 		filter(_index);
 		ChangeCall();
 	}
 
-	int32_t getSize()
+	size_t getSize()
 	{
 		return m_arr.size();
 	}
@@ -262,9 +262,9 @@ public:
 		return m_arr.front();
 	}
 
-	T& getIndex(const int32_t& _index)
+	T& getIndex(const uint32_t& _index)
 	{
-		if (_index < 0 || _index >= m_arr.size())
+		if (_index >= m_arr.size())
 			throw std::exception("error range");
 		return m_arr[_index];
 	}
@@ -291,15 +291,15 @@ public:
 	}
 
 protected:
-	void filterUp(const int32_t& _index)
+	void filterUp(const uint32_t& _index)
 	{
-		if (m_arr.size() <= 1)
+		if (m_arr.size() <= 1 || _index == 0)
 			return;
 		auto index = _index;
 		while (true)
 		{
 			auto f = (index - 1) / 2;
-			if (f < 0 || index == f)
+			if (index == f)
 				return;
 			if (m_less(m_arr[index], m_arr[f]))
 			{
@@ -312,7 +312,7 @@ protected:
 		}
 	}
 
-	void filterDown(const int32_t& _index)
+	void filterDown(const uint32_t& _index)
 	{
 		auto size = m_arr.size();
 		if (size <= 1)
@@ -320,7 +320,7 @@ protected:
 		auto index = _index;
 		while (true)
 		{
-			int32_t l = 2 * index + 1;
+			uint32_t l = 2 * index + 1;
 			if (l >= size)
 				break;
 			if (l + 1 < size && m_less(m_arr[l + 1], m_arr[l]))
@@ -338,7 +338,7 @@ protected:
 			AddCall(_index);
 	}
 
-	void filter(const int32_t& _index)
+	void filter(const uint32_t& _index)
 	{
 		if (_index == 0)
 			filterDown(_index);
@@ -346,7 +346,7 @@ protected:
 			return;
 		else
 		{
-			int32_t fi = (_index - 1) / 2;
+			uint32_t fi = (_index - 1) / 2;
 			if (m_less(m_arr[_index], m_arr[fi]))
 			{
 				AddCall(_index);
@@ -369,7 +369,7 @@ protected:
 		}
 	}
 
-	void AddCall(const int32_t& index)
+	void AddCall(const uint32_t& index)
 	{
 		if (m_call)
 			m_callIndex.push_back(index);

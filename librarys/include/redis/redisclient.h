@@ -388,7 +388,7 @@ namespace redis
     ssize_t bytes_received;
     
     do
-      bytes_received = ::recv(fd, (BUFPTR)buf, n, flags);
+      bytes_received = ::recv(fd, (BUFPTR)buf, (int)n, flags);
     while(bytes_received < static_cast<ssize_t>(0) && errno == EINTR);
     
     if( bytes_received == static_cast<ssize_t>(0) )

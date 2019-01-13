@@ -26,7 +26,7 @@ void LuaState::Run(int64_t dt)
 {
 	for (auto& ref: m_loopRef)
 	{
-		CallRegistFunc(ref,std::forward<decltype(dt)>(dt));
+		CallRegistFunc(ref,dt);
 	}
 }
 
