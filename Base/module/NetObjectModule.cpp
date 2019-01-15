@@ -21,12 +21,12 @@ void NetObjectModule::Init()
 	m_eventModule = GetLayer()->GetModule<EventModule>();
 	m_transModule = GET_MODULE(TransMsgModule);
 
-	m_msgModule->AddMsgCallBack(L_SOCKET_CONNET,this,&NetObjectModule::OnSocketConnet);
-	m_msgModule->AddMsgCallBack(L_SOCKET_CLOSE, this, &NetObjectModule::OnSocketClose);
-	m_msgModule->AddMsgCallBack(L_SERVER_CONNECTED, this, &NetObjectModule::OnServerConnet);
-	m_msgModule->AddMsgCallBack(N_REGISTE_SERVER, this, &NetObjectModule::OnServerRegiste);
+	m_msgModule->AddMsgCall(L_SOCKET_CONNET, BIND_CALL(OnSocketConnet,NetSocket));
+	m_msgModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnSocketClose,NetSocket));
+	m_msgModule->AddMsgCall(L_SERVER_CONNECTED, BIND_CALL(OnServerConnet,NetServer));
+	m_msgModule->AddMsgCall(N_REGISTE_SERVER, BIND_CALL(OnServerRegiste,NetMsg));
 	
-	m_msgModule->AddMsgCallBack(L_PHP_CGI_CONNECTED, this, &NetObjectModule::OnPHPCgiConnect);
+	m_msgModule->AddMsgCall(L_PHP_CGI_CONNECTED, BIND_CALL(OnPHPCgiConnect,NetServer));
 
 	m_eventModule->AddEventCallBack(E_CLIENT_HTTP_CONNECT, this, &NetObjectModule::OnHttpClientConnect);
 	

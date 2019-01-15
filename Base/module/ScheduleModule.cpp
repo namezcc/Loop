@@ -13,7 +13,7 @@ ScheduleModule::~ScheduleModule()
 
 void ScheduleModule::Init()
 {
-	AddInterValTask(&m_plate, &TimerPlate::Run, 1000);
+	AddInterValTask([this](int64_t&dt) { m_plate.Run(dt); } , 1000);
 }
 
 void ScheduleModule::Execute()

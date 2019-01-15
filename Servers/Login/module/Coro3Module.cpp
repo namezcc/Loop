@@ -19,7 +19,7 @@ void Coro3Module::Init()
 	m_schedule = GET_MODULE(ScheduleModule);
 	m_sendProxyDb = GET_MODULE(SendProxyDbModule);
 
-	m_schedule->AddInterValTask(this, &Coro3Module::OnBeginTest, 3000, -1, 3000);
+	m_schedule->AddInterValTask(BIND_TIME(OnBeginTest), 3000, -1, 3000);
 }
 
 void Coro3Module::OnBeginTest(int64_t & dt)

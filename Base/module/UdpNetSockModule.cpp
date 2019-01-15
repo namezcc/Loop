@@ -15,8 +15,8 @@ void UdpNetSockModule::Init()
 	m_msgModule = GET_MODULE(MsgModule);
 	m_eventModule = GET_MODULE(EventModule);
 
-	m_msgModule->AddMsgCallBack(L_UDP_SOCKET_CONNECT, this, &UdpNetSockModule::OnSocketConnet);
-	m_msgModule->AddMsgCallBack(L_UDP_SOCKET_CLOSE, this, &UdpNetSockModule::OnSocketClose);
+	m_msgModule->AddMsgCall(L_UDP_SOCKET_CONNECT, BIND_CALL(OnSocketConnet,NetSocket));
+	m_msgModule->AddMsgCall(L_UDP_SOCKET_CLOSE, BIND_CALL(OnSocketClose,NetSocket));
 }
 
 void UdpNetSockModule::OnSocketConnet(NetSocket * sock)

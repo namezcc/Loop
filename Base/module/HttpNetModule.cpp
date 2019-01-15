@@ -5,10 +5,10 @@ void HttpNetModule::Init()
 {
 	m_mgsModule = GetLayer()->GetModule<MsgModule>();
 
-	m_mgsModule->AddMsgCallBack(L_SOCKET_CLOSE, this, &HttpNetModule::OnCloseSocket);
-	m_mgsModule->AddMsgCallBack(L_SOCKET_SEND_HTTP_DATA, this, &HttpNetModule::OnSendHttpMsg);
+	m_mgsModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnCloseSocket,NetSocket));
+	m_mgsModule->AddMsgCall(L_SOCKET_SEND_HTTP_DATA, BIND_CALL(OnSendHttpMsg,NetMsg));
 
-	m_mgsModule->AddMsgCallBack(L_CONNECT_PHP_CGI, this, &HttpNetModule::OnConnectPHPCgi);
+	m_mgsModule->AddMsgCall(L_CONNECT_PHP_CGI, BIND_CALL(OnConnectPHPCgi,NetServer));
 }
 
 void HttpNetModule::Execute()

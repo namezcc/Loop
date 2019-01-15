@@ -18,7 +18,7 @@ void UdpServerModule::Init()
 {
 	m_schedule = GET_MODULE(ScheduleModule);
 
-	m_schedule->AddInterValTask(this, &UdpServerModule::Loop_Once, 10);
+	m_schedule->AddInterValTask(BIND_TIME(Loop_Once), 10);
 }
 
 void UdpServerModule::Execute()

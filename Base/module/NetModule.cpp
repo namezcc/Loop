@@ -9,9 +9,9 @@ void NetModule::Init()
 {
 	m_mgsModule = GetLayer()->GetModule<MsgModule>();
 
-	m_mgsModule->AddMsgCallBack(L_SOCKET_CLOSE, this, &NetModule::OnCloseSocket);
-	m_mgsModule->AddMsgCallBack(L_SOCKET_SEND_DATA, this, &NetModule::OnSocketSendData);
-	m_mgsModule->AddMsgCallBack(L_SOCKET_BROAD_DATA, this, &NetModule::OnBroadData);
+	m_mgsModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnCloseSocket,NetSocket));
+	m_mgsModule->AddMsgCall(L_SOCKET_SEND_DATA, BIND_CALL(OnSocketSendData,NetMsg));
+	m_mgsModule->AddMsgCall(L_SOCKET_BROAD_DATA, BIND_CALL(OnBroadData,BroadMsg));
 	
 }
 

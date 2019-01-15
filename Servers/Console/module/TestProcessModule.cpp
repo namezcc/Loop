@@ -16,7 +16,7 @@ void TestProcessModule::Init()
 	m_processModule = GET_MODULE(ProcessModule);
 	m_scheduleModule = GET_MODULE(ScheduleModule);
 
-	m_scheduleModule->AddInterValTask(this, &TestProcessModule::CreateProcessTest, 5000, 1, 10000);
+	m_scheduleModule->AddInterValTask(BIND_TIME(CreateProcessTest), 5000, 1, 10000);
 }
 
 void TestProcessModule::CreateProcessTest(int64_t & dt)

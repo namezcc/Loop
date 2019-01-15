@@ -30,7 +30,7 @@ void TransMsgModule::Init()
 	m_eventModule->AddEventCallBack(E_SERVER_CONNECT, this, &TransMsgModule::OnServerConnect);
 	m_eventModule->AddEventCallBack(E_SERVER_CLOSE, this, &TransMsgModule::OnServerClose);
 
-	m_msgModule->AddMsgCallBack(N_TRANS_SERVER_MSG, this, &TransMsgModule::OnGetTransMsg);
+	m_msgModule->AddMsgCall(N_TRANS_SERVER_MSG, BIND_CALL(OnGetTransMsg,NetMsg));
 
 	//InitServerNet();
 }

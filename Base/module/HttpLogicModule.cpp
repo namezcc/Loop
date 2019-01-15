@@ -212,12 +212,12 @@ void HttpLogicModule::Init()
 	m_scheduleModule = GetLayer()->GetModule<ScheduleModule>();
 	m_httpCgiModule = GetLayer()->GetModule<HttpCgiModule>();
 
-	m_msgModule->AddMsgCallBack(N_RECV_HTTP_MSG, this, &HttpLogicModule::OnRecvHttpMsg);
+	m_msgModule->AddMsgCall(N_RECV_HTTP_MSG, BIND_CALL(OnRecvHttpMsg,NetMsg));
 	
 	m_eventModule->AddEventCallBack(E_SOCKEK_CONNECT, this, &HttpLogicModule::OnHttpClientConnect);
 	m_eventModule->AddEventCallBack(E_CLIENT_HTTP_CLOSE, this, &HttpLogicModule::OnHttpClientClose);
 
-	m_scheduleModule->AddTimePointTask(this, &HttpLogicModule::CheckCash,-1,1);
+	m_scheduleModule->AddTimePointTask(BIND_TIME(CheckCash),-1,1);
 
 	InitPath();
 

@@ -17,8 +17,8 @@ void LogModule::Init()
 	m_msgModule = GetLayer()->GetModule<MsgModule>();
 	m_schedule = GET_MODULE(ScheduleModule);
 
-	m_msgModule->AddMsgCallBack(L_LOG_INFO, this, &LogModule::OnLog);
-	m_schedule->AddTimePointTask(this, &LogModule::OnFlush, -1, 0);
+	m_msgModule->AddMsgCall(L_LOG_INFO, BIND_CALL(OnLog,LogInfo));
+	m_schedule->AddTimePointTask(BIND_TIME(OnFlush), -1, 0);
 
 	string dir = LoopFile::GetExecutePath();
 	dir.append("logs");

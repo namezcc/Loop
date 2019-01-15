@@ -21,7 +21,7 @@ void LoginLockModule::Init()
 	m_msgModule->AddMsgCallBack(N_LOGIN_LOCK, this, &LoginLockModule::OnLoginLock);
 	m_msgModule->AddMsgCallBack(N_LOGIN_UNLOCK, this, &LoginLockModule::OnLoginUnlock);
 
-	m_schedulModule->AddTimePointTask(this, &LoginLockModule::CheckOutTime, -1, 0);
+	m_schedulModule->AddTimePointTask(BIND_TIME(CheckOutTime), -1, 0);
 }
 
 void LoginLockModule::OnLoginLock(SHARE<BaseMsg>& msg)

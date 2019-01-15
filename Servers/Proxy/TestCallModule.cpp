@@ -9,12 +9,14 @@ TestCallModule::TestCallModule(BaseLayer * l):BaseModule(l), m_send(false)
 void TestCallModule::Init()
 {
 	m_msgModule = GET_MODULE(MsgModule);
-	m_msgModule->AddMsgCallBack(20001, this, &TestCallModule::OnGetData);
+	//m_msgModule->AddMsgCallBack(20001, this, &TestCallModule::OnGetData);
+
+	m_msgModule->AddMsgCall(20001, BIND_CALL(OnGetData, NetSocket));
 
 	if (m_send)
 	{
 		m_schedule = GET_MODULE(ScheduleModule);
-		m_schedule->AddInterValTask(this, &TestCallModule::startSend, 0, 1,3000);
+		m_schedule->AddInterValTask(BIND_TIME(startSend), 0, 1,3000);
 	}
 }
 
@@ -33,7 +35,7 @@ void TestCallModule::OnGetData(NetSocket * sock)
 	if (sock->socket == 0)
 		m_start = GetMilliSecend();
 
-	if (sock->socket == 10000 - 1)
+	if (sock->socket == 100000 - 1)
 	{
 		auto endtime = GetMilliSecend();
 		LP_INFO << " use tme " << endtime - m_start << " ms";

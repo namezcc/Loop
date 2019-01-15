@@ -30,11 +30,11 @@ void UdpNetModule::Init()
 	m_msgModule = GET_MODULE(MsgModule);
 	m_schedule = GET_MODULE(ScheduleModule);
 	
-	m_msgModule->AddMsgCallBack2(L_SOCKET_CLOSE, this, &UdpNetModule::OnCloseSocket);
-	m_msgModule->AddMsgCallBack2(L_SOCKET_SEND_DATA, this, &UdpNetModule::OnSocketSendData);
-	m_msgModule->AddMsgCallBack2(L_SOCKET_BROAD_DATA, this, &UdpNetModule::OnBroadData);
+	m_msgModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnCloseSocket,NetSocket));
+	m_msgModule->AddMsgCall(L_SOCKET_SEND_DATA, BIND_CALL(OnSocketSendData,NetMsg));
+	m_msgModule->AddMsgCall(L_SOCKET_BROAD_DATA, BIND_CALL(OnBroadData,BroadMsg));
 
-	m_schedule->AddInterValTask(this, &UdpNetModule::TickSendBuff, 3);
+	m_schedule->AddInterValTask(BIND_TIME(TickSendBuff), 3);
 
 	InitHandle();
 }

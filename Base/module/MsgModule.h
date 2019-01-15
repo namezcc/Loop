@@ -5,10 +5,11 @@
 #include "BaseModule.h"
 #include "spdlog/common.h"
 
-class ScheduleModule;
+//class ScheduleModule;
 
-typedef std::function<void(SHARE<BaseMsg>&)> MsgCall;
-typedef std::function<void(BaseMsg*)> MsgCall2;
+//typedef std::function<void(SHARE<BaseMsg>&)> MsgCall;
+typedef std::function<void(BaseMsg*)> MsgCall;
+//typedef std::function<void(BaseMsg*)> MsgCall2;
 
 class LOOP_EXPORT MsgModule:public BaseModule
 {
@@ -47,7 +48,27 @@ public:
 		AddMsgCallBackEx<typename FuncArgsType<F>::arg1>(mId, std::forward<T>(t), std::forward<F>(f));
 	}
 
-	template<typename T, typename F>
+#define BIND_CALL(F,T) [this](BaseMsg* msg) { this->F(dynamic_cast<T*>(msg->m_data));}
+#define BIND_SHARE_CALL(F) [this](BaseMsg* msg) { this->F(SHARE<BaseMsg>(msg,[](BaseMsg*){}));}
+
+	void AddMsgCall(const int32_t& mId, const MsgCall& call)
+	{
+		m_callBack[mId] = [this,call](BaseMsg* msg) {
+			if (msg)
+			{
+				call(msg);
+				RECYCLE_LAYER_MSG(msg);
+			}
+			else
+			{
+				assert(m_msgCash);
+				call(m_msgCash.get());
+				m_msgCash.reset();
+			}
+		};
+	}
+
+	/*template<typename T, typename F>
 	void AddMsgCallBack2(const int32_t mId, T&&t, F&&f)
 	{
 		auto call = std::move(ANY_BIND(t, f));
@@ -58,13 +79,15 @@ public:
 			else
 				LogHook(this, spdlog::level::err) << __FILE__ << __LINE__ << "Recv Msg cast Null";
 		});
-	}
+	}*/
 
 	template<typename T, typename F>
 	void AddAsynMsgCallBack(const int32_t& mid,T&&t,F&&f)
 	{
 		auto call = ANY_BIND(t,f);
-		m_callBack[mid] = [this,call](SHARE<BaseMsg>& inmsg){
+		m_callBack[mid] = [this,call](BaseMsg* inmsg){
+			SHARE<BaseMsg> comsg = GetRealMsg(inmsg);
+
 			auto baseco = GET_SHARE(BaseCoro);
 			auto coro = new c_push([call,&baseco](c_pull& pull){
 				auto msg = pull.get();	//不能用引用 防止析构
@@ -72,7 +95,7 @@ public:
 				call(msg,pull,pcoro);
 			});
 			baseco->SetCoro(coro);
-			(*coro)(inmsg);
+			(*coro)(comsg);
 		};
 	}
 
@@ -108,7 +131,7 @@ public:
 	}
 
 	void MsgCallBack(void* msg);
-	void MsgCallBack2(void* msg);
+	//void MsgCallBack2(void* msg);
 protected:
 
 	template<typename C,typename T, typename F>
@@ -116,12 +139,25 @@ protected:
 	AddMsgCallBackEx(const int32_t mId, T&&t, F&&f)
 	{
 		auto call = std::move(ANY_BIND(t, f));
-		m_callBack[mId] = move([this,call](SHARE<BaseMsg>& msg) {
-			auto mdata = dynamic_cast<C>(msg->m_data);
-			if (mdata)
-				call(mdata);
+		m_callBack[mId] = move([this,call](BaseMsg* msg) {
+			if (msg)
+			{
+				auto mdata = dynamic_cast<C>(msg->m_data);
+				if (mdata)
+					call(mdata);
+				else
+					LogHook(this, spdlog::level::err) << __FILE__ << __LINE__ << "Recv Msg cast Null";
+				RECYCLE_LAYER_MSG(msg);
+			}
 			else
-				LogHook(this, spdlog::level::err) << __FILE__ << __LINE__ << "Recv Msg cast Null";
+			{
+				auto smsg = GetRealMsg(msg);
+				auto mdata = dynamic_cast<C>(smsg->m_data);
+				if (mdata)
+					call(mdata);
+				else
+					LogHook(this, spdlog::level::err) << __FILE__ << __LINE__ << "Recv Msg cast Null";
+			}
 		});
 	}
 
@@ -130,9 +166,24 @@ protected:
 	AddMsgCallBackEx(const int32_t mId, T&&t, F&&f)
 	{
 		auto call = std::move(ANY_BIND(t, f));
-		m_callBack[mId] = move([call](SHARE<BaseMsg>& msg) {
-			call(msg);
+		m_callBack[mId] = move([this,call](BaseMsg* msg) {
+			call(GetRealMsg(msg));
 		});
+	}
+
+	SHARE<BaseMsg> GetRealMsg(BaseMsg* msg)
+	{
+		if (msg)
+		{
+			return SHARE<BaseMsg>(msg, [this](BaseMsg* nmsg) { GetLayer()->RecycleLayerMsg(nmsg);});
+		}
+		else
+		{
+			assert(m_msgCash);
+			SHARE<BaseMsg> smsg = m_msgCash;
+			m_msgCash.reset();
+			return smsg;
+		}
 	}
 
 private:
@@ -162,10 +213,12 @@ private:
 	}
 
 private:
-	ScheduleModule* m_schedule;
+	//ScheduleModule* m_schedule;
+
+	SHARE<BaseMsg> m_msgCash;
 
 	std::unordered_map<int32_t, MsgCall> m_callBack;
-	std::unordered_map<int32_t, MsgCall2> m_callBack2;
+	//std::unordered_map<int32_t, MsgCall2> m_callBack2;
 
 	int64_t m_coroCheckTime;
 	int32_t m_coroIndex;

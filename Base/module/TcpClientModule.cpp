@@ -16,7 +16,7 @@ void TcpClientModule::Init()
 	m_netmodule = GetLayer()->GetModule<NetModule>();
 	m_msgmodule = GetLayer()->GetModule<MsgModule>();
 
-	m_msgmodule->AddMsgCallBack(L_TO_CONNET_SERVER,this, &TcpClientModule::OnConnectServer);
+	m_msgmodule->AddMsgCall(L_TO_CONNET_SERVER, BIND_CALL(OnConnectServer,NetServer));
 }
 
 void TcpClientModule::Execute()

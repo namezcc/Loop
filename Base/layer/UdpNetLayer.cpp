@@ -14,7 +14,7 @@ void UdpNetLayer::init()
 
 void UdpNetLayer::afterInit()
 {
-	RegLayerMsg(&MsgModule::MsgCallBack2, m_msg);
+	//RegLayerMsg(&MsgModule::MsgCallBack2, m_msg);
 }
 
 void UdpNetLayer::loop()

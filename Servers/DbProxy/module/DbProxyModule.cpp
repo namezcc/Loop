@@ -22,7 +22,7 @@ void DBProxyModule::Init()
 	m_tranModule = GET_MODULE(TransMsgModule);
 	m_scheduleModule = GET_MODULE(ScheduleModule);
 
-	m_scheduleModule->AddInterValTask(this, &DBProxyModule::OnCheckProxy, 1000);
+	m_scheduleModule->AddInterValTask(BIND_TIME(OnCheckProxy), 1000);
 	
 	m_eventModule->AddEventCallBack(E_SERVER_CONNECT, this, &DBProxyModule::OnServerConnect);
 	m_eventModule->AddEventCallBack(E_SERVER_CLOSE, this, &DBProxyModule::OnServerClose);

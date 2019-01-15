@@ -1,7 +1,7 @@
 #include "MsgModule.h"
 #include "ScheduleModule.h"
 
-MsgModule::MsgModule(BaseLayer* l):BaseModule(l), m_coroIndex(0), m_coroCheckTime(0), m_curList(&m_coroList1)
+MsgModule::MsgModule(BaseLayer* l):BaseModule(l), m_coroIndex(0), m_coroCheckTime(0), m_curList(&m_coroList1), m_msgCash(NULL)
 {
 }
 
@@ -16,11 +16,11 @@ void MsgModule::Init()
 
 	GetLayer()->RegLayerMsg(&MsgModule::MsgCallBack, this);
 
-	AddMsgCallBack(L_REQUEST_CORO_MSG,this,&MsgModule::DoRequestMsg);
-	AddMsgCallBack(L_RESPONSE_CORO_MSG,this,&MsgModule::DoResponseMsg);
+	AddMsgCall(L_REQUEST_CORO_MSG, BIND_SHARE_CALL(DoRequestMsg));
+	AddMsgCall(L_RESPONSE_CORO_MSG, BIND_SHARE_CALL(DoResponseMsg));
 
-	AddMsgCallBack(N_REQUEST_CORO_MSG,this,&MsgModule::DoNetRequestMsg);
-	AddMsgCallBack(N_RESPONSE_CORO_MSG,this,&MsgModule::DoNetResponseMsg);
+	AddMsgCall(N_REQUEST_CORO_MSG, BIND_SHARE_CALL(DoNetRequestMsg));
+	AddMsgCall(N_RESPONSE_CORO_MSG, BIND_SHARE_CALL(DoNetResponseMsg));
 
 	//m_schedule->AddTimePointTask(this,&MsgModule::CheckCoroClear,-1);
 }
@@ -52,22 +52,25 @@ void MsgModule::SendMsg(const int32_t& ltype, const int32_t& lid, const int32_t&
 
 void MsgModule::MsgCallBack(void* msg)
 {
-	auto smsg = SHARE<BaseMsg>((BaseMsg*)msg,[this](BaseMsg* nmsg){
+	/*auto smsg = SHARE<BaseMsg>((BaseMsg*)msg,[this](BaseMsg* nmsg){
 		GetLayer()->RecycleLayerMsg(nmsg);
-	});
+	});*/
+	auto smsg = (BaseMsg*)msg;
 	auto it = m_callBack.find(smsg->msgId);
 	if (it != m_callBack.end())
 		it->second(smsg);
+	else
+		GetLayer()->RecycleLayerMsg(smsg);
 }
 
-void MsgModule::MsgCallBack2(void * msg)
-{
-	BaseMsg* smsg = (BaseMsg*)msg;
-	auto it = m_callBack2.find(smsg->msgId);
-	if (it != m_callBack2.end())
-		it->second(smsg);
-	GetLayer()->RecycleLayerMsg(smsg);
-}
+//void MsgModule::MsgCallBack2(void * msg)
+//{
+//	BaseMsg* smsg = (BaseMsg*)msg;
+//	auto it = m_callBack2.find(smsg->msgId);
+//	if (it != m_callBack2.end())
+//		it->second(smsg);
+//	GetLayer()->RecycleLayerMsg(smsg);
+//}
 
 void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
 {
@@ -79,7 +82,10 @@ void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
 	});
 	auto it = m_callBack.find(msg->mid);
 	if (it != m_callBack.end())
-		it->second(smsg);
+	{
+		m_msgCash = smsg;
+		it->second(NULL);
+	}
 }
 
 SHARE<BaseMsg> MsgModule::RequestAsynMsg(const int32_t& mid,BaseData* data,c_pull& pull,SHARE<BaseCoro>& coro,const int32_t& ltype,const int32_t& lid)
@@ -212,7 +218,10 @@ void MsgModule::DoRequestMsg(SHARE<BaseMsg>& msg)
 	CoroMsg* cmsg = (CoroMsg*)msg.get();
 	auto it = m_callBack.find(cmsg->m_subMsgId);
 	if (it != m_callBack.end())
-		it->second(msg);
+	{
+		m_msgCash = msg;
+		it->second(NULL);
+	}
 }
 
 void MsgModule::DoResponseMsg(SHARE<BaseMsg>& msg)
