@@ -5,6 +5,7 @@
 
 class ScheduleModule;
 class MsgModule;
+class EventModule;
 
 class TestCallModule:public BaseModule
 {
@@ -20,11 +21,16 @@ private:
 
 	void startSend(int64_t& dt);
 	void OnGetData(NetSocket* sock);
+	void OnEvent1(const int32_t& arg);
+	void OnEvent2(NetSocket* sock);
+	void OnEvent3(SHARE<NetSocket>& sock);
 
 	bool m_send;
 
 	ScheduleModule* m_schedule;
 	MsgModule* m_msgModule;
+	EventModule* m_eventModule;
+
 	int64_t m_start;
 };
 

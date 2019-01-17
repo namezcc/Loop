@@ -30,7 +30,7 @@ void SceneModule::Init()
 	m_scheduleModule = GET_MODULE(ScheduleModule);
 
 
-	m_eventModule->AddEventCallBack(E_SERVER_CONNECT_AFTER, this, &SceneModule::OnServerConnect);
+	m_eventModule->AddEventCall(E_SERVER_CONNECT_AFTER, BIND_EVENT(OnServerConnect,SHARE<NetServer>));
 	//m_scheduleModule->AddTimePointTask(this, &SceneModule::OnShowLuaStack, -1);
 
 	auto index = m_luaModule->CreateLuaState();

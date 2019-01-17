@@ -28,7 +28,7 @@ void NetObjectModule::Init()
 	
 	m_msgModule->AddMsgCall(L_PHP_CGI_CONNECTED, BIND_CALL(OnPHPCgiConnect,NetServer));
 
-	m_eventModule->AddEventCallBack(E_CLIENT_HTTP_CONNECT, this, &NetObjectModule::OnHttpClientConnect);
+	m_eventModule->AddEventCall(E_CLIENT_HTTP_CONNECT,BIND_EVENT(OnHttpClientConnect,int));
 	
 	m_outTime = 5;
 }

@@ -15,7 +15,7 @@ void ProxyNodeModule::Init()
 	m_eventModule = GET_MODULE(EventModule);
 	m_transModule = GET_MODULE(TransMsgModule);
 
-	m_eventModule->AddEventCallBack(E_SERVER_CONNECT, this, &ProxyNodeModule::OnServerConnect);
+	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
 
 	m_shortPath = m_transModule->GetFromSelfPath(3, 0);
 	m_shortPath[1]->type = SERVER_TYPE::LOOP_PROXY;

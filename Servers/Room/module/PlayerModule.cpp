@@ -30,7 +30,7 @@ void PlayerModule::Init()
 	m_msgModule->AddMsgCallBack(LPMsg::N_REQ_ENTER_ROOM, this, &PlayerModule::OnPlayerEnter);
 	m_msgModule->AddAsynMsgCallBack(LPMsg::N_REQ_CREATE_ROLE, this, &PlayerModule::OnCreatePlayer);
 
-	m_eventModule->AddEventCallBack(E_SOCKET_CLOSE, this, &PlayerModule::OnClientClose);
+	m_eventModule->AddEventCall(E_SOCKET_CLOSE,BIND_EVENT(OnClientClose,int32_t));
 }
 
 void PlayerModule::OnReadyTakePlayer(SHARE<BaseMsg>& comsg)

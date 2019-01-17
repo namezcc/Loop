@@ -27,8 +27,8 @@ void TransMsgModule::Init()
 	m_netObjMod = GetLayer()->GetModule<NetObjectModule>();
 	m_msgModule = GetLayer()->GetModule<MsgModule>();
 
-	m_eventModule->AddEventCallBack(E_SERVER_CONNECT, this, &TransMsgModule::OnServerConnect);
-	m_eventModule->AddEventCallBack(E_SERVER_CLOSE, this, &TransMsgModule::OnServerClose);
+	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
+	m_eventModule->AddEventCall(E_SERVER_CLOSE,BIND_EVENT(OnServerClose, SHARE<NetServer>));
 
 	m_msgModule->AddMsgCall(N_TRANS_SERVER_MSG, BIND_CALL(OnGetTransMsg,NetMsg));
 

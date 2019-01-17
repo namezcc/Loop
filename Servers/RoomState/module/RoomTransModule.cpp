@@ -24,8 +24,8 @@ void RoomTransModule::Init()
 
 	m_msgModule->AddMsgCallBack(N_REQ_ROOM_LIST, this, &RoomTransModule::OnReqRoomList);
 
-	m_eventModule->AddEventCallBack(E_SERVER_CONNECT, this, &RoomTransModule::OnServerConnect);
-	m_eventModule->AddEventCallBack(E_SERVER_CLOSE, this, &RoomTransModule::OnServerClose);
+	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
+	m_eventModule->AddEventCall(E_SERVER_CLOSE,BIND_EVENT(OnServerClose, SHARE<NetServer>));
 }
 
 void RoomTransModule::OnReqRoomList(NetMsg * msg)

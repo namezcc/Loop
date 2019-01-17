@@ -48,7 +48,7 @@ void RoomStateModule::Init()
 	m_msgModule->AddMsgCallBack(N_ROOM_STATE, this, &RoomStateModule::OnRoomState);
 	m_msgModule->AddMsgCallBack(N_ACK_ROOM_LIST, this, &RoomStateModule::OnAckRoomList);
 
-	m_eventModule->AddEventCallBack(E_SERVER_CONNECT, this, &RoomStateModule::OnServerConnect);
+	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
 
 	for (size_t i = 0; i < 3; i++)
 	{

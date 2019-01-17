@@ -33,8 +33,8 @@ void BattleSceneInfoModule::Init()
 	m_transModule = GET_MODULE(TransMsgModule);
 	m_udpSockModule = GET_MODULE(UdpNetSockModule);
 
-	m_eventModule->AddEventCallBack(E_SERVER_CONNECT, this, &BattleSceneInfoModule::OnServerConnect);
-	m_eventModule->AddEventCallBack(E_UDP_SOCKET_CLOSE, this, &BattleSceneInfoModule::OnClientClose);
+	m_eventModule->AddEventCall(E_SERVER_CONNECT, BIND_EVENT(OnServerConnect,SHARE<NetServer>));
+	m_eventModule->AddEventCall(E_UDP_SOCKET_CLOSE,BIND_EVENT(OnClientClose,int32_t));
 
 	m_msgModule->AddMsgCallBack(N_ACK_BATTLE_FREE_SCENE, this, &BattleSceneInfoModule::OnAckBattleFreeScene);
 	m_msgModule->AddMsgCallBack(N_ACK_SERVER_ONLINE, this, &BattleSceneInfoModule::OnAckMatchOnLine);

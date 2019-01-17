@@ -36,7 +36,7 @@ void LoginModule::Init()
 	m_msgModule->AddAsynMsgCallBack(LPMsg::N_REQ_LOGIN, this, &LoginModule::OnClientLogin);
 	m_msgModule->AddAsynMsgCallBack(N_ML_CREATE_ACCOUNT, this, &LoginModule::OnCreateAccount);
 
-	m_eventModule->AddEventCallBack(E_SOCKEK_CONNECT, this, &LoginModule::OnClientConnect);
+	m_eventModule->AddEventCall(E_SOCKEK_CONNECT,BIND_EVENT(OnClientConnect,int32_t));
 }
 
 void LoginModule::OnClientConnect(const int32_t& sock)

@@ -24,8 +24,8 @@ void DBProxyModule::Init()
 
 	m_scheduleModule->AddInterValTask(BIND_TIME(OnCheckProxy), 1000);
 	
-	m_eventModule->AddEventCallBack(E_SERVER_CONNECT, this, &DBProxyModule::OnServerConnect);
-	m_eventModule->AddEventCallBack(E_SERVER_CLOSE, this, &DBProxyModule::OnServerClose);
+	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
+	m_eventModule->AddEventCall(E_SERVER_CLOSE, BIND_EVENT(OnServerClose, SHARE<NetServer>));
 
 	m_msgModule->AddMsgCallBack(N_GET_MYSQL_GROUP, this, &DBProxyModule::OnGetMysqlGroup);
 	m_msgModule->AddMsgCallBack(N_FORWARD_DB_PROXY, this, &DBProxyModule::OnForwardMsgHash);

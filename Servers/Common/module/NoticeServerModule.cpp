@@ -21,8 +21,8 @@ void NoticeServerModule::Init()
 	m_transModule = GET_MODULE(TransMsgModule);
 	m_eventModule = GET_MODULE(EventModule);
 
-	m_eventModule->AddEventCallBack(E_SERVER_CONNECT, this, &NoticeServerModule::OnServerConnect);
-	m_eventModule->AddEventCallBack(E_SERVER_CLOSE, this, &NoticeServerModule::OnServerClose);
+	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
+	m_eventModule->AddEventCall(E_SERVER_CLOSE,BIND_EVENT(OnServerClose, SHARE<NetServer>));
 
 	m_msgModule->AddMsgCallBack(N_REQ_NOTICE_SERVER, this, &NoticeServerModule::OnReqNoticeServer);
 }

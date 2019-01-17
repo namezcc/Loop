@@ -214,8 +214,8 @@ void HttpLogicModule::Init()
 
 	m_msgModule->AddMsgCall(N_RECV_HTTP_MSG, BIND_CALL(OnRecvHttpMsg,NetMsg));
 	
-	m_eventModule->AddEventCallBack(E_SOCKEK_CONNECT, this, &HttpLogicModule::OnHttpClientConnect);
-	m_eventModule->AddEventCallBack(E_CLIENT_HTTP_CLOSE, this, &HttpLogicModule::OnHttpClientClose);
+	m_eventModule->AddEventCall(E_SOCKEK_CONNECT,BIND_EVENT(OnHttpClientConnect,int));
+	m_eventModule->AddEventCall(E_CLIENT_HTTP_CLOSE,BIND_EVENT(OnHttpClientClose,int));
 
 	m_scheduleModule->AddTimePointTask(BIND_TIME(CheckCash),-1,1);
 

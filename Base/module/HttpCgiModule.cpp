@@ -20,8 +20,8 @@ void HttpCgiModule::Init()
 	m_httpLogicModule = GetLayer()->GetModule<HttpLogicModule>();
 
 	m_msgModule->AddMsgCall(N_RECV_PHP_CGI_MSG, BIND_CALL(OnRecvCgiMsg,NetMsg));
-	m_eventModule->AddEventCallBack(E_PHP_CGI_CONNECT, this, &HttpCgiModule::OnCgiConnect);
-	m_eventModule->AddEventCallBack(E_PHP_CGI_CLOSE, this, &HttpCgiModule::OnCgiClose);
+	m_eventModule->AddEventCall(E_PHP_CGI_CONNECT,BIND_EVENT(OnCgiConnect,NetServer*));
+	m_eventModule->AddEventCall(E_PHP_CGI_CLOSE,BIND_EVENT(OnCgiClose,int));
 	
 }
 
