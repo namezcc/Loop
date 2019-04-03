@@ -3,11 +3,8 @@
 thread_local int32_t UdpConn::SOCKET = 0;
 
 UdpServerModule::UdpServerModule(BaseLayer * l):BaseModule(l), m_tmpcash(NULL),
-m_rSendHead({}), m_rSendTail(NULL), m_udpsock(m_loopctx)
+m_rSendHead({}), m_rSendTail(NULL)
 {
-	m_heapOutTime.setIndexCall([](const SHARE<UdpConn>& conn, const int32_t& idx) {
-		conn->heapIndex = idx;
-	});
 }
 
 UdpServerModule::~UdpServerModule()
@@ -25,8 +22,7 @@ void UdpServerModule::Execute()
 {
 	auto dt = GetMilliSecend();
 	SetTick(dt);
-	//m_context.poll();
-	m_loopctx.Loop_Once();
+	m_context.poll();
 }
 
 void UdpServerModule::Listen(const int32_t & port)
@@ -38,41 +34,13 @@ void UdpServerModule::Listen(const int32_t & port)
 	std::cout << "blocking " << sock->non_blocking() << std::endl;
 	sock->bind(udp::endpoint(udp::v4(), port));
 	m_socket.reset(sock);*/
-	//m_socket.reset(new udp::socket(m_context, udp::endpoint(udp::v4(), port)));
-
-	m_udpsock.Bind(port);
-
-	m_udpsock.BindRead([this](const int32_t& err, const int32_t& rsize, const Addr& addr,void* udpbuff) {
-		UdpBuff* tbuff = (UdpBuff*)udpbuff;
-		Do_receive();
-		if (rsize > 0)
-		{
-			m_naccept = addr;
-			if (rsize == 4)
-				OnClientConnect();
-			else
-			{
-				tbuff->size = rsize;
-				ReceiveDecode(tbuff);
-			}
-		}
-		LOOP_RECYCLE(tbuff);
-	});
-
-	m_udpsock.BindSend([this](const int32_t& err,const int32_t& ssize,void* udpbuff) {
-		if (udpbuff)
-		{
-			LOOP_RECYCLE((UdpBuff*)udpbuff);
-		}
-	});
-
+	m_socket.reset(new udp::socket(m_context, udp::endpoint(udp::v4(), port)));
 	Do_receive();
 }
 
 void UdpServerModule::Loop_Once(int64_t& dt)
 {
 	CheckReSend();
-	//CheckOutTime();
 }
 
 void UdpServerModule::SendData(int32_t sock, const char * data, const int32_t & size, bool _ack)
@@ -98,8 +66,6 @@ void UdpServerModule::CloseSocket(int32_t sock, bool call)
 	auto it = m_clients.find(sock);
 	if (it == m_clients.end())
 		return;
-	if (it->second->heapIndex >= 0)
-		m_heapOutTime.deleten(it->second->heapIndex);
 	m_clients.erase(sock);
 	if (call && m_onClose)
 		m_onClose(sock);
@@ -107,26 +73,24 @@ void UdpServerModule::CloseSocket(int32_t sock, bool call)
 
 void UdpServerModule::Do_receive()
 {
-	//if (!m_tmpcash)
-		//m_tmpcash = GET_LOOP(UdpBuff);
-	//m_socket->async_receive_from(as::buffer(m_tmpcash->buf, UDP_MUT_SIZE), m_accept,
-	//[this](boost::system::error_code ec, std::size_t size) {
-	//	if (!ec && size > 0)
-	//	{
-	//		if (size == 4)
-	//			OnClientConnect();
-	//		/*else
-	//		{
-	//			m_tmpcash->size = size;
-	//			auto buff = m_tmpcash;
-	//			m_tmpcash = NULL;
-	//			ReceiveDecode(buff);
-	//		}*/
-	//	}
-	//	Do_receive();
-	//});
-	auto buff = GET_LOOP(UdpBuff);
-	m_udpsock.RecvFrom(buff->buf, UDP_MUT_SIZE, buff);
+	if (!m_tmpcash)
+		m_tmpcash = GET_LOOP(UdpBuff);
+	m_socket->async_receive_from(as::buffer(m_tmpcash->buf, UDP_MUT_SIZE), m_accept,
+	[this](boost::system::error_code ec, std::size_t size) {
+		if (!ec && size > 0)
+		{
+			if (size == 4)
+				OnClientConnect();
+			else
+			{
+				m_tmpcash->size = (int32_t)size;
+				auto buff = m_tmpcash;
+				m_tmpcash = NULL;
+				ReceiveDecode(buff);
+			}
+		}
+		Do_receive();
+	});
 }
 
 void UdpServerModule::ReceiveDecode(UdpBuff * buf)
@@ -184,7 +148,6 @@ void UdpServerModule::ReceiveAckPack(const int32_t& sock, SHARE<UdpConn>& conn, 
 void UdpServerModule::ReceivePingPack(SHARE<UdpConn>& conn)
 {
 	conn->outTime = m_nowTick + UDP_OUT_TIME_LINK;
-	m_heapOutTime.update(conn->heapIndex);
 
 	auto ub = GET_LOOP(UdpBuff);
 	ub->write(static_cast<int8_t>(1));
@@ -196,10 +159,8 @@ void UdpServerModule::OnClientConnect()
 	auto conn = GET_SHARE(UdpConn);
 	auto nsock = conn->socket;
 	m_clients[nsock] = conn;
-	//conn->addr = m_accept;
-	conn->m_naddr = m_naccept;
+	conn->addr = m_accept;
 	conn->outTime = m_nowTick + UDP_OUT_TIME_LINK;
-	m_heapOutTime.insert(conn);
 
 	char bufsock[4];
 	PB::WriteInt(bufsock, nsock);
@@ -228,41 +189,30 @@ UdpBuff * UdpServerModule::DecodeSendBuff(SHARE<UdpConn>& conn, const char * buf
 void UdpServerModule::SendData(SHARE<UdpConn>& conn, UdpBuff * buff)
 {
 	if (buff->m_rsendNode)
-		RealSendData(buff->buf, buff->size, conn->m_naddr);
-	else
-		SendDataRecycle(conn, buff);
-	//²âÊÔ 50% ¶ª°ü
-	/*auto randSend = rand() % 2;
-	if (randSend)
 		RealSendData(buff->buf, buff->size, conn->addr);
 	else
-		std::cout << "rand Lost Pack id:" << buff->packId << std::endl;*/
+		SendDataRecycle(conn, buff);
 }
 
 void UdpServerModule::SendData(UdpConn* conn, UdpBuff * buff)
 {
 	if (buff->m_rsendNode)
-		RealSendData(buff->buf, buff->size, conn->m_naddr);
-	else
-		m_udpsock.SendTo(buff->buf, buff->size, conn->m_naddr, buff);
+		RealSendData(buff->buf, buff->size, conn->addr);
+	/*else
+		SendDataRecycle(conn,buff);*/
 }
 
 void UdpServerModule::SendDataRecycle(SHARE<UdpConn>& conn, UdpBuff * buff)
 {
-	/*m_socket->async_send_to(as::buffer(buff->buf, buff->size), conn->addr, [buff,this](boost::system::error_code, std::size_t) {
+	m_socket->async_send_to(as::buffer(buff->buf, buff->size), conn->addr, 
+	[buff](boost::system::error_code, std::size_t) {
 		LOOP_RECYCLE(buff);
-	});*/
-	m_udpsock.SendTo(buff->buf, buff->size, conn->m_naddr, buff);
+	});
 }
 
-//void UdpServerModule::RealSendData(const char * data, const int32_t & len, as::ip::udp::endpoint & addr)
-//{
-//	m_socket->async_send_to(as::buffer(data, len), addr, [](boost::system::error_code, std::size_t) {});
-//}
-
-void UdpServerModule::RealSendData(const char * data, const int32_t & len, const Addr & addr)
+void UdpServerModule::RealSendData(const char * data, const int32_t & len, as::ip::udp::endpoint & addr)
 {
-	m_udpsock.SendTo(data, len, addr,NULL);
+	m_socket->async_send_to(as::buffer(data, len), addr, [](boost::system::error_code, std::size_t) {});
 }
 
 void UdpServerModule::CheckReSend()
@@ -299,22 +249,11 @@ void UdpServerModule::CheckReSend()
 	}
 }
 
-void UdpServerModule::CheckOutTime()
-{
-	if (m_heapOutTime.getSize() <= 0)
-		return;
-	if (m_heapOutTime.getTop()->outTime <= m_nowTick)
-	{
-		CloseSocket(m_heapOutTime.getTop()->socket);
-	}
-}
-
 void UdpServerModule::PushBack(UdpConn* conn,UdpBuff** buff)
 {
 	auto node = GET_LOOP(RsendNode);
 	node->next = NULL;
 	node->packId = (*buff)->packId;
-	//node->sock = sock;
 	node->point = UDP_OUT_TIME_RESEND + m_nowTick;
 	node->m_buff = buff;
 	node->m_conn = conn;

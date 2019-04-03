@@ -29,7 +29,7 @@ void HServerInfoModule::OnReqGetMachineList(HttpMsg * msg)
 
 void HServerInfoModule::OnGetMachineList(NetMsg * msg)
 {
-	auto buff = msg->getCombinBuff(GetLayer());
+	auto buff = msg->getCombinBuff();
 	m_httpModule->SendHttpMsg(msg->socket, [buff](HttpMsg* hmsg) {
 		hmsg->response.buff.append(buff->m_buff, buff->m_size);
 		hmsg->opration = HttpMsg::SEND;

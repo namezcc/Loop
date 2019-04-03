@@ -104,7 +104,8 @@ public:
 	template<typename T>
 	bool Insert(T&t,const string& newName="")
 	{
-		auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		//auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		auto param = GET_SHARE(SqlParam);
 		if (!newName.empty())
 			param->tab = newName;
 		else
@@ -121,7 +122,8 @@ public:
 	template<typename T>
 	bool Insert(Reflect<T>& rf, const string& newName = "")
 	{
-		auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		//auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		auto param = GET_SHARE(SqlParam);
 		if (!newName.empty())
 			param->tab = newName;
 		else
@@ -142,7 +144,8 @@ public:
 	template<typename T>
 	bool Update(Reflect<T>& rf, const string& newName = "")
 	{
-		auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		//auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		auto param = GET_SHARE(SqlParam);
 		if (!newName.empty())
 			param->tab = newName;
 		else
@@ -168,7 +171,8 @@ public:
 	template<typename T>
 	bool Delete(T&t, const string& newName = "")
 	{
-		auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		//auto param = GetLayer()->GetSharedLoop<SqlParam>();
+		auto param = GET_SHARE(SqlParam);
 		if (!newName.empty())
 			param->tab = newName;
 		else
@@ -224,7 +228,8 @@ public:
 			return false;
 		for (size_t i = 0; i < tmp.size(); i++)
 		{
-			SHARE<T> t = GetLayer()->GetSharedLoop<T>();
+			//SHARE<T> t = GetLayer()->GetSharedLoop<T>();
+			SHARE<T> t = GET_SHARE(SqlParam);
 			for (size_t j = 0; j < files.size(); j++)
 			{
 				Reflect<T>::SetFieldValue(*t, files[j], tmp[i][j]);

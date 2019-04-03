@@ -1,16 +1,14 @@
 #ifndef TCP_NET_LAYER_H
 #define TCP_NET_LAYER_H
-#include "BaseLayer.h"
-#include "TcpServerModule.h"
+#include "TcpBaseLayer.h"
 #include "MsgModule.h"
 #include "NetModule.h"
-#include "TcpClientModule.h"
 #include <iostream>
 
-class LOOP_EXPORT TcpNetLayer:public BaseLayer
+class LOOP_EXPORT TcpNetLayer:public TcpBaseLayer
 {
 public:
-	TcpNetLayer(const int& port) :BaseLayer(LY_NET),m_port(port)
+	TcpNetLayer(const int& port,ProtoType _ptype=PT_MY_PROTO) :TcpBaseLayer(port, _ptype)
 	{
 		m_uvloop = (uv_loop_t*)malloc(sizeof(uv_loop_t));
 		uv_loop_init(m_uvloop);
@@ -22,11 +20,9 @@ public:
 
 protected:
 	virtual void init() {
-		auto msgmd = CreateModule<MsgModule>();
-
-		CreateModule<TcpServer>()->SetBind(m_port,m_uvloop);
-		CreateModule<TcpClientModule>()->Setuvloop(m_uvloop);
-		CreateModule<NetModule>()->Setuvloop(m_uvloop);
+		auto netmod = CreateModule<NetModule>();
+		netmod->SetProtoType(m_protoType);
+		netmod->SetBind(m_port, m_uvloop);
 	};
 	void loop() {
 		//std::cout << "TcpNetLayer loop..." << endl;
@@ -35,16 +31,8 @@ protected:
 	void close() {
 		
 	};
-
-	virtual void GetDefaultTrans(int32_t & ltype, int32_t & lid)
-	{
-		auto it = m_pipes.begin();
-		ltype = it->first;
-		lid = 0;
-	}
 	
 protected:
-	int m_port;
 	uv_loop_t* m_uvloop;
 };
 

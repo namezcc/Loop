@@ -45,8 +45,8 @@ void RoomStateModule::Init()
 	m_eventModule = GET_MODULE(EventModule);
 	m_netobjModule = GET_MODULE(NetObjectModule);
 
-	m_msgModule->AddMsgCallBack(N_ROOM_STATE, this, &RoomStateModule::OnRoomState);
-	m_msgModule->AddMsgCallBack(N_ACK_ROOM_LIST, this, &RoomStateModule::OnAckRoomList);
+	m_msgModule->AddMsgCall(N_ROOM_STATE,BIND_CALL(OnRoomState,NetMsg));
+	m_msgModule->AddMsgCall(N_ACK_ROOM_LIST, BIND_CALL(OnAckRoomList,NetMsg));
 
 	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
 
@@ -75,7 +75,7 @@ void RoomStateModule::OnRoomState(NetMsg * msg)
 		room->id = pbMsg.id();
 		room->ip = pbMsg.ip();
 		room->port = pbMsg.port();
-		room->index = m_roomArray.size();
+		room->index = static_cast<int32_t>(m_roomArray.size());
 
 		m_roomTable[room->id] = room;
 		m_roomArray.push_back(room.get());
@@ -95,7 +95,7 @@ void RoomStateModule::OnAckRoomList(NetMsg * msg)
 		room->id = rm.id();
 		room->ip = rm.ip();
 		room->port = rm.port();
-		room->index = m_roomArray.size();
+		room->index = static_cast<int32_t>(m_roomArray.size());
 
 		m_roomTable[room->id] = room;
 		m_roomArray.push_back(room.get());
@@ -107,7 +107,7 @@ void RoomStateModule::OnServerConnect(SHARE<NetServer>& ser)
 	if (ser->type == SERVER_TYPE::LOOP_ROOM_STATE)
 	{
 		LPMsg::EmptyPB msg;
-		ServerNode toser{ ser->type ,ser->serid};
+		ServerNode toser{ static_cast<int8_t>(ser->type),static_cast<int16_t>(ser->serid)};
 		
 		//m_transModule->SendToServer(toser, N_REQ_ROOM_LIST, msg);
 		m_netobjModule->SendNetMsg(ser->socket, N_REQ_ROOM_LIST, msg);

@@ -19,8 +19,6 @@ void HttpCgiModule::Init()
 	m_netObjModule = GetLayer()->GetModule<NetObjectModule>();
 	m_httpLogicModule = GetLayer()->GetModule<HttpLogicModule>();
 
-	m_msgModule->AddMsgCall(N_RECV_PHP_CGI_MSG, BIND_CALL(OnRecvCgiMsg,NetMsg));
-	m_eventModule->AddEventCall(E_PHP_CGI_CONNECT,BIND_EVENT(OnCgiConnect,NetServer*));
 	m_eventModule->AddEventCall(E_PHP_CGI_CLOSE,BIND_EVENT(OnCgiClose,int));
 	
 }
@@ -34,12 +32,6 @@ void HttpCgiModule::Execute()
 {
 }
 
-void HttpCgiModule::OnCgiConnect(NetServer* ser)
-{
-	m_phpcgi.state = CONN_STATE::CONNECT;
-	m_phpcgi.socket = ser->socket;
-}
-
 void HttpCgiModule::OnCgiClose(const int& sock)
 {
 	m_phpcgi.state = CONN_STATE::CLOSE;
@@ -48,6 +40,9 @@ void HttpCgiModule::OnCgiClose(const int& sock)
 
 void HttpCgiModule::OnRecvCgiMsg(NetMsg* msg)
 {
+	if (msg->socket != m_phpcgi.socket)
+		return;
+
 	auto buff = msg->m_buff;
 	while(buff){
 		m_recvPack.combin(buff->m_buff, buff->m_size);
@@ -111,7 +106,15 @@ int HttpCgiModule::ReadPacket(int& reqid)
 
 void HttpCgiModule::ReconnectCgi()
 {
-	m_netObjModule->ConnectPHPCgi(m_phpcgi);
+	m_netObjModule->ConnectServer(m_phpcgi, [this](bool res, NetServer& ser) {
+		if (res)
+		{
+			m_phpcgi.state = CONN_STATE::CONNECT;
+			m_phpcgi.socket = ser.socket;
+			m_netObjModule->AcceptConn(ser.socket,CONN_PHP_CGI);
+		}else
+			LP_ERROR << "PHP CGI not run on host:" << ser.ip << " port:" << ser.port;
+	});
 }
 
 void HttpCgiModule::ConnectCgi(const string & ip, const int & port)

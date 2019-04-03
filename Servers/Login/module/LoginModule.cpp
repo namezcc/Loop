@@ -33,8 +33,10 @@ void LoginModule::Init()
 	m_transModule = GET_MODULE(TransMsgModule);
 	m_eventModule = GET_MODULE(EventModule);
 
-	m_msgModule->AddAsynMsgCallBack(LPMsg::N_REQ_LOGIN, this, &LoginModule::OnClientLogin);
-	m_msgModule->AddAsynMsgCallBack(N_ML_CREATE_ACCOUNT, this, &LoginModule::OnCreateAccount);
+	m_msgModule->AddAsynMsgCall(LPMsg::N_REQ_LOGIN,BIND_ASYN_CALL(OnClientLogin));
+	m_msgModule->AddAsynMsgCall(N_ML_CREATE_ACCOUNT, BIND_ASYN_CALL(OnCreateAccount));
+
+	m_msgModule->AddMsgCall(LPMsg::N_REQ_PLAYER_OPERATION, BIND_CALL(OnTestPing, NetMsg));
 
 	m_eventModule->AddEventCall(E_SOCKEK_CONNECT,BIND_EVENT(OnClientConnect,int32_t));
 }
@@ -42,6 +44,14 @@ void LoginModule::Init()
 void LoginModule::OnClientConnect(const int32_t& sock)
 {
 	m_netModule->AcceptConn(sock);
+}
+
+void LoginModule::OnTestPing(NetMsg * msg)
+{
+	TRY_PARSEPB(LPMsg::propertyInt32, msg);
+	LPMsg::propertyInt32 pong;
+	pong.set_data(pbMsg.data() + 1);
+	m_netModule->SendNetMsg(msg->socket, LPMsg::N_ACK_OPERATION_SIZE, pong);
 }
 
 void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro)

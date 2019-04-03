@@ -33,9 +33,15 @@ private:
 };
 
 #define GET_MODULE(M) GetLayer()->GetModule<M>()
-#define GET_SHARE(T) GetLayer()->GetSharedLoop<T>()
-#define GET_LOOP(T) GetLayer()->GetLoopObj<T>()
-#define LOOP_RECYCLE(t) GetLayer()->Recycle(t)
+
+//#define GET_SHARE(T) GetLayer()->GetSharedLoop<T>()
+//#define GET_LOOP(T) GetLayer()->GetLoopObj<T>()
+//#define LOOP_RECYCLE(t) GetLayer()->Recycle(t)
+
+//#define GET_SHARE(T) FactorManager::GetSharedLoop<T>()
+//#define GET_LOOP(T) FactorManager::getLoopObj<T>()
+//#define LOOP_RECYCLE(t) FactorManager::recycle(t)
+
 #define GET_LAYER_MSG(T) GetLayer()->GetLayerMsg<T>()
 #define RECYCLE_LAYER_MSG(t) GetLayer()->RecycleLayerMsg(t)
 

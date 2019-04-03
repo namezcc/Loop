@@ -23,6 +23,7 @@ Crypto.lib
 clientpb.lib
 serverpb.lib
 libprotobufd.lib
+anet.lib
 )
 endif()
 

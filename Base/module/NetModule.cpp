@@ -1,7 +1,7 @@
 #include "NetModule.h"
-#include "TcpServerModule.h"
 #include "MsgModule.h"
 #include "BuffPool.h"
+#include "Protocol.h"
 
 thread_local int32_t Conn::SOCKET = 0;
 
@@ -20,33 +20,85 @@ void NetModule::Execute()
 
 }
 
+void NetModule::AfterInit()
+{
+	StartListen();
+}
+
+void NetModule::SetProtoType(ProtoType ptype)
+{
+	m_proto = new Protocol(ptype);
+}
+
+void NetModule::SetBind(const int & port, uv_loop_t * loop)
+{
+	m_uvloop = loop;
+	m_port = port;
+}
+
+void NetModule::StartListen()
+{
+	struct sockaddr_in addr;
+	ASSERT(0 == uv_ip4_addr("0.0.0.0", m_port, &addr));
+	int r;
+	r = uv_tcp_init(m_uvloop, &m_hand);
+	ASSERT(r == 0);
+	r = uv_tcp_bind(&m_hand, (const struct sockaddr*) &addr, 0);
+	ASSERT(r == 0);
+	m_hand.data = this;
+	r = uv_listen((uv_stream_t*)&m_hand, SOMAXCONN, Connection_cb);
+	ASSERT(r == 0);
+	LP_WARN << "start listen port:" << m_port;
+}
+
+void NetModule::Connection_cb(uv_stream_t * serhand, int status)
+{
+	if (status == 0)
+		return;
+
+	auto netmod = (NetModule*)serhand->data;
+	uv_tcp_t* client = GET_LOOP(uv_tcp_t);
+	int r = uv_tcp_init(netmod->m_uvloop, client);
+	if (r == 0)
+	{
+		LOOP_RECYCLE(client);
+		return;
+	}
+	r = uv_accept(serhand, (uv_stream_t*)client);
+	if (r == 0)
+	{
+		LOOP_RECYCLE(client);
+		return;
+	}
+	netmod->Connected(client);
+}
+
 void NetModule::Connected(uv_tcp_t* conn, bool client)
 {
 	conn->close_cb = &NetModule::on_close_client;
-	auto ser = (NetModule*)conn->data;
 
-	auto cn = ser->GetLayer()->GetSharedLoop<Conn>();
+	auto cn = GET_SHARE(Conn);
 	cn->conn = conn;
-	cn->netmodule = ser;
+	cn->netmodule = this;
 	auto uvsocket = cn->socket;
 	m_conns[uvsocket] = cn;
 	conn->data = cn.get();
 
 	if (client)
 	{
-		auto sock = ser->GetLayer()->GetLayerMsg<NetSocket>();
+		auto sock = GET_LAYER_MSG(NetSocket);
 		sock->socket = uvsocket;
 		m_mgsModule->SendMsg(L_SOCKET_CONNET, sock);
 	}
 
-	int r = uv_read_start((uv_stream_t*)conn, read_alloc, conn->read_cb);
+	int r = uv_read_start((uv_stream_t*)conn, read_alloc, after_read);
 	ASSERT(r == 0);
 }
 
 void NetModule::read_alloc(uv_handle_t * client, size_t suggested_size, uv_buf_t * buf)
 {
 	int32_t gsize;
-	buf->base = GET_LOCAL_BUFF(4096, gsize);
+	buf->base = GET_LOCAL_BUFF(static_cast<int32_t>(suggested_size), gsize);
 	buf->len = gsize;
 }
 
@@ -88,7 +140,7 @@ void NetModule::on_close_client(uv_handle_t* client) {
 	auto sock = server->GetLayer()->GetLayerMsg<NetSocket>();
 	sock->socket = conn->socket;
 	server->m_mgsModule->SendMsg(L_SOCKET_CLOSE, sock);
-	server->RemoveConn(conn->socket);
+	server->m_conns.erase(conn->socket);
 }
 
 void NetModule::OnActiveClose(uv_handle_t * client)
@@ -99,47 +151,21 @@ void NetModule::OnActiveClose(uv_handle_t * client)
 	server->m_waitClose.erase(conn->socket);
 }
 
-void NetModule::RemoveConn(const int& socket)
-{
-	m_conns.erase(socket);
-}
-
 bool NetModule::ReadPack(Conn* conn, char* buf, int len)
 {
-	auto socket = conn->socket;
+	conn->buffer.combin(buf, len);
 
-	NetBuffer& oldbuf = conn->buffer;
-	oldbuf.combin(buf, len);
-
-	bool res = true;
-	int read = 0;
-	while (oldbuf.use - read >= MsgHead::HEAD_SIZE)
-	{
-		MsgHead head;
-		if (!MsgHead::Decode(head, oldbuf.buf + read))
-		{
-			res = false;
-			break;
-		}
-
-		if (head.size <= (int)oldbuf.use - read)
-		{//cpm pack
-			auto msg = GetLayer()->GetLayerMsg<NetMsg>();
-			auto len = head.size - MsgHead::HEAD_SIZE;
-			msg->mid = head.mid;
-			msg->socket = socket;
-			msg->push_front(GetLayer(),oldbuf.buf + read + MsgHead::HEAD_SIZE,len);
-			m_mgsModule->SendMsg(head.mid,msg);
-
-			read += head.size;
-		}
-		else
-		{//half
-			break;
-		}
+	if (m_proto->DecodeReadData(conn->buffer, [this,conn](int32_t mid, char* buff, int32_t rlength) {
+		auto msg = GetLayer()->GetLayerMsg<NetMsg>();
+		msg->mid = mid;
+		msg->socket = conn->socket;
+		msg->push_front(GetLayer(), buff, rlength);
+		m_mgsModule->SendMsg(mid, msg);
+	})) {
+		return true;
 	}
-	oldbuf.moveHalf(read);
-	return res;
+	else
+		return false;
 }
 
 void NetModule::OnCloseSocket(NetSocket* msg)
@@ -155,36 +181,17 @@ void NetModule::OnCloseSocket(NetSocket* msg)
 
 void NetModule::OnSocketSendData(NetMsg* nMsg)
 {
+	assert(nMsg != NULL);
 	auto it = m_conns.find(nMsg->socket);
 	if (it != m_conns.end())
 	{
-		char encode[MsgHead::HEAD_SIZE];
-		MsgHead::Encode(encode, nMsg->mid, nMsg->getLen());
-		auto head = GET_LOOP(LocalBuffBlock);
-		head->write(encode, MsgHead::HEAD_SIZE);
-
-		uv_write_t* whand = GetLayer()->GetLoopObj<uv_write_t>();
-		Write_t* buf = GetLayer()->GetLoopObj<Write_t>();
-		buf->baseModule = this;
-		buf->SetBlock(head);
+		auto buff = GET_LOOP(LocalBuffBlock);
+		m_proto->EncodeSendData(*buff, nMsg);
+		uv_write_t* whand = GET_LOOP(uv_write_t);
+		Write_t* buf = GET_LOOP(Write_t);
+		buf->SetBlock(buff);
 		whand->data = buf;
 		uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
-
-		BuffBlock* buff = NULL;
-		while (buff = nMsg->popBuffBlock())
-		{
-			if (buff->m_size == 0)
-			{
-				RECYCLE_LAYER_MSG(buff);
-				continue;
-			}
-			whand = GetLayer()->GetLoopObj<uv_write_t>();
-			buf = GetLayer()->GetLoopObj<Write_t>();
-			buf->baseModule = this;
-			buf->SetBlock(buff);
-			whand->data = buf;
-			uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
-		}
 	}
 }
 
@@ -193,21 +200,8 @@ void NetModule::OnBroadData(BroadMsg * nMsg)
 	if (nMsg->m_socks.size() == 0)
 		return;
 
-	char encode[MsgHead::HEAD_SIZE];
-	MsgHead::Encode(encode, nMsg->mid, nMsg->getLen());
-	auto head = GET_LOOP(LocalBuffBlock);
-	head->write(encode, MsgHead::HEAD_SIZE);
-	m_broadBuff.push_back(head);
-	BuffBlock* buff = NULL;
-	while (buff = nMsg->popBuffBlock())
-	{
-		if (buff->m_size == 0)
-		{
-			RECYCLE_LAYER_MSG(buff);
-			continue;
-		}
-		m_broadBuff.push_back(buff);
-	}
+	auto buff = GET_LOOP(LocalBuffBlock);
+	m_proto->EncodeSendData(*buff, nMsg);
 
 	for (size_t i = 0; i < nMsg->m_socks.size(); i++)
 	{
@@ -215,35 +209,64 @@ void NetModule::OnBroadData(BroadMsg * nMsg)
 		if (it == m_conns.end())
 			continue;
 
-		for (size_t j = 0; j < m_broadBuff.size(); j++)
-		{
-			uv_write_t* whand = GetLayer()->GetLoopObj<uv_write_t>();
-			Write_t* buf = GetLayer()->GetLoopObj<Write_t>();
-			buf->baseModule = this;
-			buf->SetBlock(m_broadBuff[j]);
-			whand->data = buf;
-			uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
-		}
+		uv_write_t* whand = GET_LOOP(uv_write_t);
+		Write_t* buf = GET_LOOP(Write_t);
+		buf->SetBlock(buff);
+		whand->data = buf;
+		uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
 	}
-	if (m_broadBuff.front()->m_ref == 0)
-	{//no one send need recycle
-		for (size_t i = 0; i < m_broadBuff.size(); i++)
-		{
-			if (m_broadBuff[i]->m_looplist)
-				RECYCLE_LAYER_MSG(m_broadBuff[i]);
-			else
-				LOOP_RECYCLE((LocalBuffBlock*)m_broadBuff[i]);		//回收要指明子类型,否则不会调回收函数
-		}
+	if (buff->m_ref == 0)
+		LOOP_RECYCLE(buff);
+}
+
+void NetModule::OnConnectServer(NetServer * ser)
+{
+	struct sockaddr_in addr;
+	uv_tcp_t* client = GET_LOOP(uv_tcp_t);
+	uv_connect_t* connect_req = GET_LOOP(uv_connect_t);
+	connect_req->data = this;
+	int r;
+
+	ASSERT(0 == uv_ip4_addr(ser->ip.c_str(), ser->port, &addr));
+
+	r = uv_tcp_init(m_uvloop, client);
+	ASSERT(r == 0);
+
+	auto tmpser = GET_LAYER_MSG(NetServer);
+	*tmpser = *ser;
+	client->data = tmpser;
+
+	r = uv_tcp_connect(connect_req, client, (const struct sockaddr*) &addr, ConnectServerBack);
+	ASSERT(r == 0);
+}
+
+void NetModule::ConnectServerBack(uv_connect_t * req, int status)
+{
+	auto md = (NetModule*)req->data;
+	auto cli = (uv_tcp_t*)req->handle;
+	auto ser = (NetServer*)cli->data;
+	if (status == 0)
+	{
+		md->Connected(cli, false);
+		Conn* conn = (Conn*)cli->data;
+		ser->socket = conn->socket;
+		ser->state = CONN_STATE::CONNECT;
 	}
-	m_broadBuff.clear();
+	else {
+		ser->socket = -1;
+		ser->state = CONN_STATE::CLOSE;
+		LOOP_RECYCLE(cli);
+	}
+	md->m_mgsModule->SendMsg(L_SERVER_CONNECTED, ser);
+	LOOP_RECYCLE(req);
 }
 
 void NetModule::After_write(uv_write_t* req, int status) {
 
 	Write_t* buf = (Write_t*)req->data;
 
-	buf->baseModule->GetLayer()->Recycle(buf);
-	buf->baseModule->GetLayer()->Recycle(req);
+	LOOP_RECYCLE(buf);
+	LOOP_RECYCLE(req);
 
 	if (status == 0)
 		return;

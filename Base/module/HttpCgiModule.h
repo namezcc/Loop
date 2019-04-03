@@ -71,10 +71,9 @@ public:
 	void ConnectCgi(const string& ip, const int& port);
 	void Request(const int& sock, HeadData& header,const string& content="");
 
-protected:
-	void OnCgiConnect(NetServer* ser);
-	void OnCgiClose(const int& sock);
 	void OnRecvCgiMsg(NetMsg* msg);
+protected:
+	void OnCgiClose(const int& sock);
 
 	int ReadPacket(int& reqid);
 

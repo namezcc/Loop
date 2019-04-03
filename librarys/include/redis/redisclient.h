@@ -1272,7 +1272,7 @@ namespace redis
       {
         recv_multi_bulk_reply_(socket, sv);
       }
-      catch(key_error & e)
+      catch(key_error &)
       {
         assert(timeout_seconds > 0);
         return missing_value(); // should we throw a timeout_error?
@@ -1324,7 +1324,7 @@ namespace redis
       {
         recv_multi_bulk_reply_(socket, sv);
       }
-      catch(key_error & e)
+      catch(key_error &)
       {
         assert(timeout_seconds > 0);
         return missing_value(); // should we throw a timeout_error?
@@ -2271,7 +2271,7 @@ namespace redis
       //output_proto_debug(msg, false);
 #endif
       
-      if (anetWrite(socket, const_cast<char *>(msg.data()), msg.size()) == -1)
+      if (anetWrite(socket, const_cast<char *>(msg.data()),static_cast<int>(msg.size())) == -1)
         throw connection_error(strerror(errno));
     }
     
@@ -2417,7 +2417,7 @@ namespace redis
     void recv_int_ok_reply_(int socket)
     {
       if (recv_int_reply_(socket) != 1)
-        /*throw protocol_error("expecting int reply of 1")*/;
+        /*throw protocol_error("expecting int reply of 1")*/return;
     }
     
     inline int get_socket(const string_type & key)

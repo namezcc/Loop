@@ -2,11 +2,11 @@
 #define TIMER_PLATE_H
 
 #include <functional>
-#include <list>
 #include <map>
 #include <time.h>
 #include <memory>
 #include "Define.h"
+#include <vector>
 
 using namespace std;
 
@@ -51,17 +51,17 @@ protected:
 	void AddTimer(SHARE<Plate>& t);
 	void AddNextTimer(SHARE<Plate>& t);
 
-	list<SHARE<Plate>>& GetPlate(int pt, int n);
+	std::vector<SHARE<Plate>>* GetPlate(int pt, int n);
 	void AddToPlate(int pt, SHARE<Plate>& tn);
 	void RunPlate(int pt, int n,int64_t& nt);
-	void RunTask(list<SHARE<Plate>>& tl,int64_t& nt);
+	void RunTask(std::vector<SHARE<Plate>>& tl,int64_t& nt);
 	
 private:
-	list<SHARE<Plate>> m_sec[60];
-	list<SHARE<Plate>> m_min[60];
-	list<SHARE<Plate>> m_hour[24];
-	list<SHARE<Plate>> m_week[7];
-	list<SHARE<Plate>> m_day[31];
+	std::vector<SHARE<Plate>> m_sec[60];
+	std::vector<SHARE<Plate>> m_min[60];
+	std::vector<SHARE<Plate>> m_hour[24];
+	std::vector<SHARE<Plate>> m_week[7];
+	std::vector<SHARE<Plate>> m_day[31];
 	tm m_date;
 
 	map<size_t, SHARE<Plate>> m_timers;

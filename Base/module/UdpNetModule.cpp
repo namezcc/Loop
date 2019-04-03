@@ -80,7 +80,7 @@ void UdpNetModule::OnSocketSendData(NetMsg * nMsg)
 	char encode[MsgHead::HEAD_SIZE];
 	MsgHead::Encode(encode, nMsg->mid, nMsg->getLen());
 	nMsg->push_front(GetLayer(), encode, MsgHead::HEAD_SIZE);
-	auto buff = nMsg->getCombinBuff(GetLayer());
+	auto buff = nMsg->getCombinBuff();
 	bool canCombin = buff->m_size < UDP_DATA_SIZE - MsgHead::HEAD_SIZE;
 
 	auto& ls = m_cashSendBuff[nMsg->socket];
@@ -114,7 +114,7 @@ void UdpNetModule::OnBroadData(BroadMsg * nMsg)
 	char encode[MsgHead::HEAD_SIZE];
 	MsgHead::Encode(encode, nMsg->mid, nMsg->getLen());
 	nMsg->push_front(GetLayer(), encode, MsgHead::HEAD_SIZE);
-	auto buff = nMsg->getCombinBuff(GetLayer());
+	auto buff = nMsg->getCombinBuff();
 	bool canCombin = buff->m_size < UDP_DATA_SIZE - MsgHead::HEAD_SIZE;
 
 	for (auto& sock:nMsg->m_socks)

@@ -65,23 +65,6 @@ void BuffBlock::recycleCheck()
 	assert(m_recylist);
 }
 
-//void BuffBlock::init(FactorManager * fm)
-//{
-//	SAFE_FREE(m_buff);
-//}
-//
-//void BuffBlock::recycle(FactorManager * fm)
-//{
-//	SAFE_FREE(m_buff);
-//	while (m_next)
-//	{
-//		auto tmp = m_next;
-//		m_next = tmp->m_next;
-//		tmp->m_next = NULL;
-//		fm->recycle(tmp);
-//	}
-//}
-
 LocalBuffBlock::LocalBuffBlock():BuffBlock()
 {
 }
@@ -89,7 +72,12 @@ LocalBuffBlock::LocalBuffBlock():BuffBlock()
 void LocalBuffBlock::makeRoom(const int32_t & size)
 {
 	if (m_buff)
-		assert(0);
+	{
+		if (size > m_allsize)
+			RCY_LOCAL_BUFF(m_buff, m_allsize);
+		else
+			return;
+	}
 	m_buff = GET_LOCAL_BUFF(size, m_allsize);
 }
 
@@ -151,9 +139,10 @@ char * NetMsg::getNetBuff()
 	return NULL;
 }
 
-SHARE<LocalBuffBlock> NetMsg::getCombinBuff(BaseLayer * l)
+SHARE<LocalBuffBlock> NetMsg::getCombinBuff()
 {
-	auto buff = l->GetSharedLoop<LocalBuffBlock>();
+	//auto buff = l->GetSharedLoop<LocalBuffBlock>();
+	auto buff = GET_SHARE(LocalBuffBlock);
 	if (len == 0)
 		return buff;
 	buff->makeRoom(len);
@@ -164,6 +153,16 @@ SHARE<LocalBuffBlock> NetMsg::getCombinBuff(BaseLayer * l)
 		mbf = mbf->m_next;
 	}
 	return buff;
+}
+
+void NetMsg::getCombinBuff(LocalBuffBlock* buff)
+{
+	auto mbf = m_buff;
+	while (mbf) {
+		if (mbf->m_buff)
+			buff->write(mbf->m_buff, mbf->m_size);
+		mbf = mbf->m_next;
+	}
 }
 
 BuffBlock * NetMsg::popBuffBlock()
@@ -204,14 +203,16 @@ void NetServerMsg::recycle(FactorManager * fm)
 {
 	if(m_buff)
 	{
-		fm->recycle(dynamic_cast<LocalBuffBlock*>(m_buff));
+		//fm->recycle(dynamic_cast<LocalBuffBlock*>(m_buff));
+		LOOP_RECYCLE(m_buff);
 		m_buff = NULL;
 	}
 }
 
 void NetServerMsg::push_front(BaseLayer * l, const char * buf, const int32_t & size)
 {
-	auto buff = l->GetLoopObj<LocalBuffBlock>();
+	//auto buff = l->GetLoopObj<LocalBuffBlock>();
+	auto buff = GET_LOOP(LocalBuffBlock);
 	buff->write(const_cast<char*>(buf), size);
 	NetMsg::push_front(buff);
 }

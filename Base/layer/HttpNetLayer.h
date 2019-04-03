@@ -5,7 +5,7 @@
 class LOOP_EXPORT HttpNetLayer:public TcpNetLayer
 {
 public:
-	HttpNetLayer(const int& port):TcpNetLayer(port)
+	HttpNetLayer(const int32_t& port):TcpNetLayer(port, PT_HTTP)
 	{
 	};
 	~HttpNetLayer() 

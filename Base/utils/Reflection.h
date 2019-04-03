@@ -303,7 +303,7 @@ struct ReflectField
 {
 	T* ptr;
 	int64_t flag;
-	typedef map<string, int> FieldMap;
+	typedef std::map<std::string, int> FieldMap;
 
 	ReflectField(T* p) :ptr(p),flag(0)
 	{};
@@ -382,7 +382,7 @@ void Set_##f(const ClassMember<decltype(&T::f)>::type& v)\
 
 #define MAKE_REFLECT(T,N,...) \
 template<> struct Reflect<T>:public ReflectField<T>{ \
-	static constexpr int Size(){return N;} \
+	static constexpr size_t Size(){return N;} \
 	static constexpr char const* Name(){return CONCATSTR(TABLE_FLAG,T);};	\
 	static constexpr array<const char*,N> arr_fields = {MAKE_STR_LIST(__VA_ARGS__)}; \
 	static constexpr array<int, N> arr_offset = { MAKE_ARG_LISTS(N,offsetof,T,__VA_ARGS__) }; \
@@ -395,7 +395,7 @@ template<> struct Reflect<T>:public ReflectField<T>{ \
 		auto& m = GetFieldMap();\
 		if (m.size() == 0) \
 			for (size_t i = 0; i < Reflect<T>::arr_fields.size(); i++) \
-				m[string(Reflect<T>::arr_fields[i])] = i; \
+				m[string(Reflect<T>::arr_fields[i])] = static_cast<int>(i); \
 		return m[f]; \
 	}	\
 	static void SetFieldValue(T& t,const string& f,const string& v) \

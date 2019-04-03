@@ -15,12 +15,6 @@ void LogicLayer::init() {
 	CreateModule<EventModule>();
 	CreateModule<TransMsgModule>();
 
-	if (m_type != LY_LOGIC)
-		return;
-
-	// auto config = GetLoopServer()->GetConfig();
-	// for (auto& ser:config.connect)
-	// 	netmod->AddServerConn(ser.type, ser.serid, ser.ip, ser.port);
 
 };
 void LogicLayer::loop() {

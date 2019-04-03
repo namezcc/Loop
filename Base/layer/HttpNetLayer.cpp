@@ -1,11 +1,10 @@
 #include "HttpNetLayer.h"
-#include "HttpNetModule.h"
-#include "HttpServerModule.h"
+#include "NetModule.h"
 
 void HttpNetLayer::init()
 {
-	auto msgmd = CreateModule<MsgModule>();
-
-	CreateModule<HttpServerModule>()->SetBind(m_port, m_uvloop);
-	CreateModule<HttpNetModule>()->Setuvloop(m_uvloop);
+	CreateModule<MsgModule>();
+	auto netmod = CreateModule<NetModule>();
+	netmod->SetProtoType(m_protoType);
+	netmod->SetBind(m_port, m_uvloop);
 }

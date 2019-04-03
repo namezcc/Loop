@@ -3,7 +3,7 @@
 #include "BaseModule.h"
 
 namespace redis {
-	class default_hasher;
+	struct default_hasher;
 	
 	template<typename HS>
 	class base_client;

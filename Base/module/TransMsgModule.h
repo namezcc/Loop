@@ -5,6 +5,7 @@
 class EventModule;
 class NetObjectModule;
 class MsgModule;
+class ScheduleModule;
 
 class LOOP_EXPORT TransMsgModule:public BaseModule
 {
@@ -47,12 +48,13 @@ public:
 	VecPath GetFromSelfPath(const int32_t& allSize, const int32_t& stype, const int32_t& sid = 0);
 protected:
 	virtual void Init() override;
+	virtual void BeforExecute() override;
 	virtual void Execute() override;
-	//gen server net struct
-	void InitServerNet();
 
+	void AddServerConn(const NetServer& ser);
 	void OnServerConnect(SHARE<NetServer>& ser);
-	void OnServerClose(SHARE<NetServer>& ser);
+	void OnServerRegiste(NetMsg* msg);
+	void OnServerClose(int32_t sock);
 	void RemoveRand(const int32_t& stype, const int32_t& sid);
 
 	void TransMsgToServer(vector<SHARE<ServerNode>>& sers,const int32_t& mid, google::protobuf::Message& pbmsg);
@@ -64,21 +66,17 @@ protected:
 
 	NetServer* GetServer(const int32_t& type, const int32_t& serid);
 
-	//void GetTransPath(ServerNode& beg, ServerNode& end, vector<SHARE<ServerNode>>& path);
-	//bool GetToPath(vector<SHARE<ServerNode>>& path);
 	BuffBlock* PathToBuff(vector<SHARE<ServerNode>>& path,const int32_t& mid, const int32_t& toindex=1);
 private:
 	EventModule* m_eventModule;
 	NetObjectModule* m_netObjMod;
 	MsgModule* m_msgModule;
+	ScheduleModule* m_schedule;
 
 	std::unordered_map<int32_t, std::unordered_map<int32_t, SHARE<NetServer>>> m_serverList;
 	std::unordered_map<int32_t, SHARE<NetServer>> m_allServer;//sock -> ser
 	std::unordered_map<int32_t, std::vector<NetServer*>> m_randServer;
 
-	/*map<string, int32_t> m_serverType;
-	map<string, list<vector<int32_t>>> m_serverPath;*/
-	//map<int32_t, map<int32_t, int32_t>> m_serverLink;
 };
 
 #endif

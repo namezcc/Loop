@@ -113,7 +113,8 @@ void SessionModule::OnHttpLogin(HttpMsg * msg)
 	if (it != m_user.end())
 		m_session.erase(it->second->id);
 
-	auto s = GetLayer()->GetSharedLoop<Session>();
+	//auto s = GetLayer()->GetSharedLoop<Session>();
+	auto s = GET_SHARE(Session);
 	s->loseTime = GetSecend() + SESSION_LOSE_TIME;
 	auto key = rand();
 	s->id = (s->loseTime << 32) | key;

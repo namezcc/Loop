@@ -5,6 +5,8 @@ class MsgModule;
 class EventModule;
 class TransMsgModule;
 
+typedef std::function<void(bool, NetServer&)> ConnectServerRes;
+
 class LOOP_EXPORT NetObjectModule:public BaseModule
 {
 public:
@@ -28,27 +30,19 @@ public:
 	void ResponseMsg(const int32_t& socket, SHARE<BaseMsg>& comsg, BuffBlock* buff);
 
 	void SendHttpMsg(const int& socket,NetBuffer& buf);
-	void AddServerConn(const int& sType,const int& sid, const std::string& ip, const int& port);
-	void ConnectPHPCgi(NetServer& cgi);
+	//void AddServerConn(const int& sType,const int& sid, const std::string& ip, const int& port);
+	void ConnectServer(const NetServer& ser, const ConnectServerRes& call); //can not in ConnectServerRes Call ConnectServer again !!!
 	void CloseNetObject(const int& socket);
-	inline void SetAccept(bool _accept) { m_acceptNoCheck = _accept; };
+	inline void SetAccept(bool _accept, int32_t _type) { m_acceptNoCheck = _accept; m_noCheckType = _type; };
 protected:
 
 	void OnSocketConnet(NetSocket* sock);
 	void OnSocketClose(NetSocket* sock);
 	void OnServerConnet(NetServer* ser);
-	void OnServerRegiste(NetMsg* msg);
-
-	void OnPHPCgiConnect(NetServer* ser);
-
-	void OnHttpClientConnect(const int& socket);
 
 	void NoticeSocketClose(NetObject* obj);
-	void ServerClose(const int& socket);
 
 	void CheckOutTime();
-	void CheckReconnect();
-	int64_t GetSerTypeId64(const int32_t& stype, const int32_t& sid);
 
 private:
 	MsgModule* m_msgModule;
@@ -58,12 +52,12 @@ private:
 	std::unordered_map<int, SHARE<NetObject>> m_objects_tmp;
 	std::unordered_map<int, SHARE<NetObject>> m_objects;
 
-	std::unordered_map<int64_t, SHARE<NetServer>> m_serverTmp;//stype|sid ->
-	std::unordered_map<int, SHARE<NetServer>> m_serverConn;//sock->
 	int64_t m_lastTime;
 	int64_t m_tmpObjTime;
 	int m_outTime;
 	bool m_acceptNoCheck;
+	int32_t m_noCheckType;
+	std::map<std::string, ConnectServerRes> m_tempServer;
 };
 
 #endif

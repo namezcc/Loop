@@ -23,7 +23,7 @@ void MatchStateModule::Init()
 	m_transModule = GET_MODULE(TransMsgModule);
 
 
-	m_eventModule->AddEventCall(E_SERVER_CONNECT_AFTER,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
+	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
 	m_eventModule->AddEventCall(E_SERVER_CLOSE,BIND_EVENT(OnServerClose, SHARE<NetServer>));
 
 	m_msgModule->AddMsgCallBack(N_ACK_NOTICE_SERVER, this, &MatchStateModule::OnAckNoticeServer);

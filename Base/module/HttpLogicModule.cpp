@@ -169,7 +169,7 @@ void HttpResponse::Encode(NetBuffer& nbuff)
 	nbuff.append("Content-Length: ").append(loop_cast<string>(buff.use)).append("\r\n\r\n");
 	nbuff.append(buff.buf,buff.use);
 }
-
+// need fix
 void HttpResponse::EncodePHP(NetBuffer& nbuff)
 {
 	stringstream hline;
@@ -245,16 +245,16 @@ void HttpLogicModule::Execute()
 void HttpLogicModule::SetWebRoot(const string & root)
 {
 	m_webRoot.append(root);
-	//���Ŀ¼�Ƿ����
+	//
 
 }
 
 void HttpLogicModule::OnHttpClientConnect(const int & sock)
 {
-	auto obj = GetLayer()->GetSharedLoop<HttpMsg>();
+	auto obj = GET_SHARE(HttpMsg);
 	obj->socket = sock;
 	m_cliens[sock] = obj;
-	m_eventModule->SendEvent(E_CLIENT_HTTP_CONNECT, sock);
+	m_netObjModule->AcceptConn(sock, CONN_HTTP_CLIENT);
 }
 
 void HttpLogicModule::OnHttpClientClose(const int & sock)
@@ -266,7 +266,10 @@ void HttpLogicModule::OnRecvHttpMsg(NetMsg * msg)
 {
 	auto it = m_cliens.find(msg->socket);
 	if (it == m_cliens.end())
+	{
+		m_httpCgiModule->OnRecvCgiMsg(msg);
 		return;
+	}
 
 	auto buff = msg->m_buff;
 	while(buff){
@@ -446,7 +449,8 @@ bool HttpLogicModule::GetFromCash(const string& file, NetBuffer& buff)
 
 void HttpLogicModule::AddCashFile(const string& file, NetBuffer& buff)
 {
-	auto cash = GetLayer()->GetSharedLoop<FileCash>();
+	//auto cash = GetLayer()->GetSharedLoop<FileCash>();
+	auto cash = GET_SHARE(FileCash);
 	cash->cashTime = GetMilliSecend() + CHECK_TIME;
 	cash->file = file;
 	cash->buff.append(buff.buf,buff.use);

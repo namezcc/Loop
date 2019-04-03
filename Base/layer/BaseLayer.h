@@ -24,7 +24,7 @@ typedef struct RWPipe
 class LOOP_EXPORT BaseLayer
 {
 public:
-	BaseLayer(const int32_t& ltype):m_msgCall(NULL),m_type(ltype)
+	BaseLayer(const int32_t& ltype):m_type(ltype)
 	{
 	};
 	virtual ~BaseLayer();
@@ -55,10 +55,9 @@ public:
 		it->second[lid].wpipe->write(msg);
 	}
 
-	template<typename F,typename T>
-	void RegLayerMsg(F&&f,T&&t)
+	void RegLayerMsg(const LayerMsg&f)
 	{
-		m_msgCall = SHARE<LayerMsg>(new LayerMsg(std::bind(std::forward<F>(f), std::forward<T>(t), std::placeholders::_1)));
+		m_msgCall = f;
 	}
 
 	template<typename T>
@@ -90,7 +89,7 @@ public:
 			return dynamic_cast<T*>(it->second.get());
 	}
 
-	template<typename T>
+	/*template<typename T>
 	T* GetLoopObj()
 	{
 		return Single::LocalInstance<FactorManager>()->getLoopObj<T>();
@@ -106,7 +105,7 @@ public:
 	void Recycle(T* t)
 	{
 		Single::LocalInstance<FactorManager>()->recycle(t);
-	}
+	}*/
 
 	template<typename T>
 	T* GetLayerMsg()
@@ -125,7 +124,7 @@ protected:
 	{
 		void* msg = NULL;
 		while (pipe.rpipe->pop(msg)) {
-			m_msgCall.get()->operator()(msg);
+			m_msgCall(msg);
 		}
 	}
 
@@ -139,7 +138,7 @@ protected:
 	int32_t m_defltype, m_deflid;
 	int32_t m_type;
 	int32_t m_lsindex;	//在server的下标
-	SHARE<LayerMsg> m_msgCall;
+	LayerMsg m_msgCall;
 	std::unordered_map<int32_t,std::vector<RWPipe>> m_pipes;
 	std::unordered_map<size_t, SHARE<BaseModule>> m_modules;
 	ServerNode* m_serNode;

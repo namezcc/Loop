@@ -26,7 +26,7 @@ void MysqlManagerModule::Init()
 	
 	m_msgmodule->AddMsgCallBack(N_GET_MYSQL_GROUP, this, &MysqlManagerModule::OnGetGroupId);
 	m_msgmodule->AddMsgCallBack(N_MYSQL_MSG, this, &MysqlManagerModule::OnGetMysqlMsg);
-	m_msgmodule->AddAsynMsgCallBack(N_MYSQL_CORO_MSG, this, &MysqlManagerModule::OnRequestMysqlMsg);
+	m_msgmodule->AddAsynMsgCall(N_MYSQL_CORO_MSG,BIND_ASYN_CALL(OnRequestMysqlMsg));
 
 	m_msgmodule->AddMsgCallBack(L_MYSQL_MSG, this, &MysqlManagerModule::OnGetMysqlRes);
 	m_msgmodule->AddMsgCallBack(N_UPDATE_TABLE_GROUP, this, &MysqlManagerModule::OnUpdateTableGroup);
@@ -107,7 +107,8 @@ void MysqlManagerModule::OnCreateAccount(NetServerMsg * msg)
 		return;
 	}
 
-	auto reply = GetLayer()->GetSharedLoop<SqlReply>();
+	//auto reply = GetLayer()->GetSharedLoop<SqlReply>();
+	auto reply = GET_SHARE(SqlReply);
 	if (!reply->pbMsg.ParseFromArray(msg->getNetBuff(), msg->getLen()))
 	{
 		LP_ERROR << "parse PBSqlParam error";
@@ -134,7 +135,8 @@ void MysqlManagerModule::OnGetMysqlMsg(NetServerMsg * msg)
 		return;
 	}
 
-	auto reply = GetLayer()->GetSharedLoop<SqlReply>();
+	//auto reply = GetLayer()->GetSharedLoop<SqlReply>();
+	auto reply = GET_SHARE(SqlReply);
 	if (!reply->pbMsg.ParseFromArray(msg->getNetBuff(), msg->getLen()))
 	{
 		LP_ERROR << "parse PBSqlParam error";

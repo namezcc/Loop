@@ -36,7 +36,8 @@ void DBProxyModule::Init()
 	auto myser = GetLayer()->GetServer();
 	for (size_t i = 0; i < 4; i++)
 	{
-		auto node = GetLayer()->GetSharedLoop<ServerNode>();
+		//auto node = GetLayer()->GetSharedLoop<ServerNode>();
+		auto node = GET_SHARE(ServerNode);
 		m_path.push_back(node);
 	}
 	//self
@@ -47,7 +48,8 @@ void DBProxyModule::Init()
 
 	for (size_t i = 0; i < 3; i++)
 	{
-		auto node = GetLayer()->GetSharedLoop<ServerNode>();
+		//auto node = GetLayer()->GetSharedLoop<ServerNode>();
+		auto node = GET_SHARE(ServerNode);
 		m_getGrouppath.push_back(node);
 	}
 	*m_getGrouppath[0] = *myser;
@@ -119,7 +121,8 @@ void DBProxyModule::OnGetMysqlGroup(NetMsg * msg)
 		return;
 	m_tmpProxy.erase(msg->socket);
 
-	auto snode = GetLayer()->GetSharedLoop<ServerNode>();
+	//auto snode = GetLayer()->GetSharedLoop<ServerNode>();
+	auto snode = GET_SHARE(ServerNode);
 	snode->serid = ser->serid;
 	snode->type = ser->type;
 

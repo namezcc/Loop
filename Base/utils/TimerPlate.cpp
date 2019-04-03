@@ -38,73 +38,75 @@ void TimerPlate::AddNextTimer(SHARE<Plate>& t)
 		AddToPlate(P_SEC, t);
 }
 
-list<SHARE<Plate>>& TimerPlate::GetPlate(int pt, int n)
+std::vector<SHARE<Plate>>* TimerPlate::GetPlate(int pt, int n)
 {
 	if (pt == P_SEC)
-		return m_sec[n];
+		return &m_sec[n];
 	else if(pt == P_MIN)
-		return m_min[n];
+		return &m_min[n];
 	else if (pt == P_HOUR)
-		return m_hour[n];
+		return &m_hour[n];
 	else if (pt == P_WEEK)
-		return m_week[n];
+		return &m_week[n];
 	else
-		return m_day[n-1];
+		return &m_day[n-1];
 }
 
 void TimerPlate::AddToPlate(int pt, SHARE<Plate>& tn)
 {
-	auto& pl = GetPlate(pt, tn->plate[pt]);
-	pl.push_back(tn);
+	auto pl = GetPlate(pt, tn->plate[pt]);
+	pl->push_back(tn);
 }
 
 void TimerPlate::RunPlate(int pt, int n, int64_t& nt)
 {
-	auto& pl = GetPlate(pt, n);
-	if (pl.size() <= 0)
+	auto pl = GetPlate(pt, n);
+	if (pl->size() <= 0)
 		return;
 	switch (pt)
 	{
 	case P_SEC:
 	{
-		auto tml = std::move(pl);
-		RunTask(tml,nt);
+		//auto tml = std::move(pl);
+		std::vector<SHARE<Plate>> tmp = *pl;
+		pl->clear();
+		RunTask(tmp,nt);
 		return;
 	}
 		break;
 	case P_MIN:
-		for (auto& t:pl)
+		for (auto& t:*pl)
 		{
 			if (t->plate[P_SEC] >= 0)
 				AddToPlate(P_SEC, t);
 		}
 		break;
 	case P_HOUR:
-		for (auto& t : pl)
+		for (auto& t : *pl)
 		{
 			if (t->plate[P_MIN] >= 0)
 				AddToPlate(P_MIN, t);
 		}
 		break;
 	case P_WEEK:
-		for (auto& t : pl)
+		for (auto& t : *pl)
 		{
 			if (t->plate[P_HOUR] >= 0)
 				AddToPlate(P_HOUR, t);
 		}
 		break;
 	case P_MDAY:
-		for (auto& t : pl)
+		for (auto& t : *pl)
 		{
 			if (t->plate[P_HOUR] >= 0)
 				AddToPlate(P_HOUR, t);
 		}
 		break;
 	}
-	pl.clear();
+	pl->clear();
 }
 
-void TimerPlate::RunTask(list<SHARE<Plate>>& tl, int64_t& nt)
+void TimerPlate::RunTask(std::vector<SHARE<Plate>>& tl, int64_t& nt)
 {
 	for (auto& t:tl)
 	{

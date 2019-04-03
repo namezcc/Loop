@@ -126,7 +126,7 @@ public:
 		MakeSelectSqlParam(rf, uid, param,usefield);
 		auto acksql = RequestToProxyDbGroup(param, uid >> 56, N_MYSQL_CORO_MSG, pull, coro);
 		auto sqlmsg = (NetMsg*)acksql->m_data;
-		PARSEPB_IF_FALSE(LPMsg::PBSqlParam, sqlmsg, m_msgModule)
+		PARSEPB_IF_FALSE(LPMsg::PBSqlParam, sqlmsg)
 		{
 			LP_ERROR << "parse PBSqlParam Error";
 			return false;
@@ -152,7 +152,7 @@ public:
 		MakeInsertSelectSqlParam(rf, uid, param, usefield);
 		auto acksql = RequestToProxyDbGroup(param, uid >> 56, N_MYSQL_CORO_MSG, pull, coro);
 		auto sqlmsg = (NetMsg*)acksql->m_data;
-		PARSEPB_IF_FALSE(LPMsg::PBSqlParam, sqlmsg, m_msgModule)
+		PARSEPB_IF_FALSE(LPMsg::PBSqlParam, sqlmsg)
 		{
 			LP_ERROR << "parse PBSqlParam Error";
 			return false;
@@ -177,7 +177,8 @@ public:
 		if (field.size() != val.size())
 			return nullptr;
 
-		SHARE<T> t = GetLayer()->GetSharedLoop<T>();
+		//SHARE<T> t = GetLayer()->GetSharedLoop<T>();
+		SHARE<T> t = GET_SHARE(T);
 		for (size_t i = 0; i < field.size(); i++)
 		{
 			Reflect<T>::SetFieldValue(*t.get(),field[i],val[i]);

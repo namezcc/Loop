@@ -3,13 +3,14 @@
 #include "LoopFactor.h"
 #include <unordered_map>
 #include <memory>
+#include "Block2.h"
 
 class FactorManager;
 
 typedef struct LoopObject
 {
-	virtual void init(FactorManager* fm) = 0;
-	virtual void recycle(FactorManager* fm) = 0;
+	virtual void init(FactorManager*) = 0;
+	virtual void recycle(FactorManager*) = 0;
 }LoopObject;
 
 class FactorManager
@@ -17,68 +18,86 @@ class FactorManager
 public:
 	friend class Single;
 
+	//template<typename T>
+	//static typename std::enable_if<!std::is_base_of<LoopObject,T>::value,T*>::type getLoopObj() {
+	//	//auto lf = GetFactor<T>();
+	//	return Single::LocalInstance<LoopFactor<T>>()->get();
+	//}
+
+	//template<typename T>
+	//static typename std::enable_if<std::is_base_of<LoopObject, T>::value, T*>::type getLoopObj() {
+	//	//auto lf = GetFactor<T>();
+	//	auto t = Single::LocalInstance<LoopFactor<T>>()->get();
+	//	t->init(NULL);
+	//	return t;
+	//}
+
+	//template<typename T>
+	//static typename std::enable_if<!std::is_base_of<LoopObject,T>::value>::type recycle(T* t)
+	//{
+	//	//auto lf = GetFactor<T>();
+	//	Single::LocalInstance<LoopFactor<T>>()->recycle(t);
+	//}
+
+	//template<typename T>
+	//static typename std::enable_if<std::is_base_of<LoopObject, T>::value>::type recycle(T* t)
+	//{
+	//	//auto lf = GetFactor<T>();
+	//	t->recycle(NULL);
+	//	Single::LocalInstance<LoopFactor<T>>()->recycle(t);
+	//}
+
+	//template<typename T>
+	//static std::shared_ptr<T> GetSharedLoop()
+	//{
+	//	std::shared_ptr<T> p(FactorManager::getLoopObj<T>(), [](T* ptr) {
+	//		FactorManager::recycle(ptr);
+	//	});
+	//	return p;
+	//}
+	//-----------------------
 	template<typename T>
-	typename std::enable_if<!std::is_base_of<LoopObject,T>::value,T*>::type getLoopObj() {
-		auto lf = GetFactor<T>();
-		return lf->get();
+	static typename std::enable_if<!std::is_base_of<LoopObject, T>::value, T*>::type getLoopObj_2() {
+		return Single::LocalInstance<Block2<T>>()->allocateNewOnce();
 	}
 
 	template<typename T>
-	typename std::enable_if<std::is_base_of<LoopObject, T>::value, T*>::type getLoopObj() {
-		auto lf = GetFactor<T>();
-		auto t = lf->get();
-		t->init(this);
+	static typename std::enable_if<std::is_base_of<LoopObject, T>::value, T*>::type getLoopObj_2() {
+		auto t = Single::LocalInstance<Block2<T>>()->allocateNewOnce();
+		t->init(NULL);
 		return t;
 	}
 
 	template<typename T>
-	typename std::enable_if<!std::is_base_of<LoopObject,T>::value>::type recycle(T* t)
+	static typename std::enable_if<!std::is_base_of<LoopObject, T>::value>::type recycle_2(T* t)
 	{
-		auto lf = GetFactor<T>();
-		lf->recycle(t);
+		Single::LocalInstance<Block2<T>>()->deallcate(t);
 	}
 
 	template<typename T>
-	typename std::enable_if<std::is_base_of<LoopObject, T>::value>::type recycle(T* t)
+	static typename std::enable_if<std::is_base_of<LoopObject, T>::value>::type recycle_2(T* t)
 	{
-		auto lf = GetFactor<T>();
-		t->recycle(this);
-		lf->recycle(t);
+		t->recycle(NULL);
+		Single::LocalInstance<Block2<T>>()->deallcate(t);
 	}
 
 	template<typename T>
-	std::shared_ptr<T> GetSharedLoop()
+	static std::shared_ptr<T> GetSharedLoop_2()
 	{
-		std::shared_ptr<T> p(getLoopObj<T>(), [this](T* ptr) {
-			recycle(ptr);
+		std::shared_ptr<T> p(FactorManager::getLoopObj_2<T>(), [](T* ptr) {
+			FactorManager::recycle_2(ptr);
 		});
 		return p;
 	}
-
-	~FactorManager() {
-		// for (auto& it : m_factors)
-		// 	delete it.second;
-	};
-private:
-	template<typename T>
-	LoopFactor<T>* GetFactor()
-	{
-		// auto it = m_factors.find(typeid(T).hash_code());
-		// if (it == m_factors.end())
-		// {
-		// 	auto lf = Single::NewLocal<LoopFactor<T>>();
-		// 	m_factors[typeid(T).hash_code()] = lf;
-		// 	return lf;
-		// }
-		//return static_cast<LoopFactor<T>*>(it->second);
-		return Single::LocalInstance<LoopFactor<T>>();
-	}
-
-	FactorManager() {
-		//std::cout << "new FactorManager "<< std::endl;
-	};
-
-	//std::unordered_map<size_t, void*> m_factors;
+	//-----------------------------
 };
+
+//#define GET_SHARE(T) FactorManager::GetSharedLoop<T>()
+//#define GET_LOOP(T) FactorManager::getLoopObj<T>()
+//#define LOOP_RECYCLE(t) FactorManager::recycle(t)
+
+#define GET_SHARE(T) FactorManager::GetSharedLoop_2<T>()
+#define GET_LOOP(T) FactorManager::getLoopObj_2<T>()
+#define LOOP_RECYCLE(t) FactorManager::recycle_2(t)
 
 #endif

@@ -17,5 +17,4 @@ struct CoroTool
 	}
 };
 
-
 #endif

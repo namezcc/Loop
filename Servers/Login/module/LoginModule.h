@@ -32,6 +32,7 @@ private:
 	virtual void Init() override;
 
 	void OnClientConnect(const int32_t& sock);
+	void OnTestPing(NetMsg* msg);
 	void OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro);
 	void OnGetAccountInfo(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro);
 

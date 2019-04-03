@@ -5,6 +5,7 @@
 #include "BaseMsg.h"
 #include <cstring>
 #include <boost/coroutine2/all.hpp>
+#include "BuffPool.h"
 
 enum CONN_TYPE
 {
@@ -70,7 +71,8 @@ struct NetBuffer
 	~NetBuffer()
 	{
 		if (buf)
-			free(buf);
+			RCY_LOCAL_BUFF(buf, len);
+		//free(buf);
 	}
 
 	NetBuffer(NetBuffer&& b):buf(b.buf),len(b.len),use(b.use),scan(b.scan)
@@ -97,7 +99,8 @@ struct NetBuffer
 	void Clear()
 	{
 		if (buf)
-			free(buf);
+			RCY_LOCAL_BUFF(buf, len);
+		//free(buf);
 		buf = NULL;
 		len = use = scan = 0;
 	}
@@ -106,12 +109,16 @@ struct NetBuffer
 	{
 		if (len>=size)
 			return;
-		auto room = (char*)malloc(size);
-		if (use > 0)
+		//auto room = (char*)malloc(size);
+		int32_t newlen = 0;
+		auto room = GET_LOCAL_BUFF(size, newlen);
+		if (use > 0 && buf)
+		{
 			memcpy(room, buf, use);
-		free(buf);
+			RCY_LOCAL_BUFF(buf, len);
+		}
 		buf = room;
-		len = size;
+		len = static_cast<uint32_t>(newlen);
 	}
 
 	void combin(char* newbuf, uint32_t nlen)
@@ -125,15 +132,15 @@ struct NetBuffer
 		}
 		else
 		{
-			char* room = (char*)malloc(use + nlen);
+			/*char* room = (char*)malloc(use + nlen);
 			if (buf)
 			{
 				if (use>0)
 					memcpy(room, buf, use);
 				free(buf);
-			}
-			memcpy(room + use, newbuf, nlen);
-			buf = room;
+			}*/
+			MakeRoome(use + nlen);
+			memcpy(buf + use, newbuf, nlen);
 			len = use + nlen;
 			use = len;
 		}

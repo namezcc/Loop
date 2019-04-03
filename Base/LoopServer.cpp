@@ -135,8 +135,10 @@ void LoopServer::InitMsgPool()
 
 void LoopServer::BuildPipe(BaseLayer * l1, BaseLayer * l2)
 {
-	auto p1 = Single::LocalInstance<FactorManager>()->getLoopObj<PIPE>();
-	auto p2 = Single::LocalInstance<FactorManager>()->getLoopObj<PIPE>();
+	//auto p1 = Single::LocalInstance<FactorManager>()->getLoopObj<PIPE>();
+	//auto p2 = Single::LocalInstance<FactorManager>()->getLoopObj<PIPE>();
+	auto p1 = GET_LOOP(PIPE);
+	auto p2 = GET_LOOP(PIPE);
 	l1->regPipe(l2->GetType(), p1, p2);
 	l2->regPipe(l1->GetType(), p2, p1);
 }
@@ -168,9 +170,13 @@ void LoopServer::Loop()
 	for (size_t i = 0; i < m_layers.size(); i++)
 	{
 		BaseData* msg = NULL;
-		while (msg=m_recycle[i].pop())
+		auto pool = m_recycle + i;
+		int num = 0;
+		while (msg= pool->pop())
 		{
 			msg->recycleMsg();
+			if (++num >= 5000)
+				break;
 		}
 	}
 }

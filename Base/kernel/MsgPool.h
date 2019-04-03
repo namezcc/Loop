@@ -3,6 +3,7 @@
 #include "BaseMsg.h"
 #include "LoopArray.h"
 #include "FactorManager.h"
+#include "Block2.h"
 
 struct MsgPool
 {
@@ -13,9 +14,11 @@ struct MsgPool
 		T* msg = NULL;
 		if (!llist->pop(msg))
 		{
-			msg = Single::LocalInstance<LoopFactor<T>>()->get();
+			//msg = Single::LocalInstance<LoopFactor<T>>()->get();
+			msg = Single::LocalInstance<Block2<T,1000>>()->allocateNewOnce();
 			msg->m_looplist = (void*)llist;
 		}
+			
 		msg->initMsg();
 		return msg;
 	}

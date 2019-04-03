@@ -2,12 +2,10 @@
 #define UDP_SERVER_MODULE_H
 
 #include "BaseModule.h"
-//#include <boost/asio.hpp>
-#include "LoopHeap.h"
-#include "LoopIO.h"
+#include <boost/asio.hpp>
 
-//namespace as = boost::asio;
-//using as::ip::udp;
+namespace as = boost::asio;
+using as::ip::udp;
 
 
 #define UDP_CASH_SIZE 256
@@ -118,12 +116,10 @@ struct UdpConn :public LoopObject
 	uint16_t maxPackId;
 	uint8_t maxIndex;
 	int64_t outTime;
-	int32_t heapIndex;
 	UdpBuff* hestory[UDP_CASH_SIZE];
-	//as::ip::udp::endpoint addr;
-	Addr m_naddr;
+	as::ip::udp::endpoint addr;
 
-	FactorManager* m_fm;
+	//FactorManager* m_fm;
 	static thread_local int32_t SOCKET;
 
 	UdpConn()
@@ -148,7 +144,7 @@ struct UdpConn :public LoopObject
 		++maxIndex;
 		if (hestory[maxIndex])
 		{
-			m_fm->recycle(hestory[maxIndex]);
+			LOOP_RECYCLE(hestory[maxIndex]);
 			hestory[maxIndex] = NULL;
 		}
 	}
@@ -157,15 +153,13 @@ struct UdpConn :public LoopObject
 	virtual void init(FactorManager * fm) {
 		maxPackId = 0;
 		maxIndex = 0;
-		heapIndex = -1;
-		m_fm = fm;
 	};
 	virtual void recycle(FactorManager * fm) {
 		for (size_t i = 0; i < UDP_CASH_SIZE; i++)
 		{
 			if (hestory[i])
 			{
-				fm->recycle(hestory[i]);
+				LOOP_RECYCLE(hestory[i]);
 				hestory[i] = NULL;
 			}
 		}
@@ -177,13 +171,6 @@ class ScheduleModule;
 class LOOP_EXPORT UdpServerModule:public BaseModule
 {
 public:
-	struct UdpConnLess
-	{
-		bool operator()(const SHARE<UdpConn>& l, const SHARE<UdpConn>& r)
-		{
-			return l->outTime < r->outTime;
-		}
-	};
 
 	UdpServerModule(BaseLayer* l);
 	~UdpServerModule();
@@ -213,11 +200,9 @@ protected:
 	void SendData(SHARE<UdpConn>& conn, UdpBuff* buff);
 	void SendData(UdpConn* conn, UdpBuff* buff);
 	void SendDataRecycle(SHARE<UdpConn>& conn, UdpBuff* buff);
-	//void RealSendData(const char* data, const int32_t& len,udp::endpoint& addr);
-	void RealSendData(const char* data, const int32_t& len,const Addr& addr);
+	void RealSendData(const char* data, const int32_t& len,udp::endpoint& addr);
 
 	void CheckReSend();
-	void CheckOutTime();
 	void PushBack(UdpConn* conn,UdpBuff** buff);
 	void PushBack(RsendNode* node);
 	RsendNode* PopHead();
@@ -225,19 +210,13 @@ private:
 
 	int64_t m_nowTick;
 
-	//as::io_context m_context;
-	//SHARE<udp::socket> m_socket;
-
-	LoopUDPIO m_loopctx;
-	UdpSocket m_udpsock;
+	as::io_context m_context;
+	SHARE<udp::socket> m_socket;
 
 	std::unordered_map<int32_t, SHARE<UdpConn>> m_clients;
 	//std::map<int32_t, SHARE<UdpConn>> m_clients;
-
-	MinHeap<std::shared_ptr<UdpConn>, UdpConnLess> m_heapOutTime;
 	
-	//udp::endpoint m_accept;
-	Addr m_naccept;
+	udp::endpoint m_accept;
 
 	UdpBuff* m_tmpcash;
 

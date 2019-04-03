@@ -99,11 +99,33 @@ function genCode(n)
     -- print(codestr)
 end
 
-local n = 0
+-- local n = 0
 
-for i=1,GEN_COUNT do
-    genCode(i)
+-- for i=1,GEN_COUNT do
+--     genCode(i)
+-- end
+
+-- outfile:close()
+-- print("gen down")
+
+local numTab = {}
+local nline = 16
+for i=1,256/nline do
+    numTab[i] = {}
 end
 
-outfile:close()
-print("gen down")
+local begidx = 0
+local begcmp = 1
+
+for i=0,255 do
+    local idx = math.floor(i/nline) + 1
+    if i >= begcmp then
+        begidx = begidx + 1
+        begcmp = begcmp*2
+    end
+    table.insert(numTab[idx],begidx-1)
+end
+
+for i,v in ipairs(numTab) do
+    print(table.concat( v, ","))
+end

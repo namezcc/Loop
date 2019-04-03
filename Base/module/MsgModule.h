@@ -7,9 +7,8 @@
 
 //class ScheduleModule;
 
-//typedef std::function<void(SHARE<BaseMsg>&)> MsgCall;
 typedef std::function<void(BaseMsg*)> MsgCall;
-//typedef std::function<void(BaseMsg*)> MsgCall2;
+typedef std::function<void(SHARE<BaseMsg>&, c_pull&, SHARE<BaseCoro>&)> AsynMsgCall;
 
 class LOOP_EXPORT MsgModule:public BaseModule
 {
@@ -53,7 +52,7 @@ public:
 
 	void AddMsgCall(const int32_t& mId, const MsgCall& call)
 	{
-		m_callBack[mId] = [this,call](BaseMsg* msg) {
+		PushMsgCall(mId,[this,call](BaseMsg* msg) {
 			if (msg)
 			{
 				call(msg);
@@ -65,7 +64,7 @@ public:
 				call(m_msgCash.get());
 				m_msgCash.reset();
 			}
-		};
+		});
 	}
 
 	/*template<typename T, typename F>
@@ -81,11 +80,29 @@ public:
 		});
 	}*/
 
+#define BIND_ASYN_CALL(F) [this](SHARE<BaseMsg>&m, c_pull&p, SHARE<BaseCoro>&c){F(m,p,c);}
+
+	void AddAsynMsgCall(const int32_t& mid,const AsynMsgCall& call)
+	{
+		PushMsgCall(mid,[this, call](BaseMsg* inmsg) {
+			SHARE<BaseMsg> comsg = GetRealMsg(inmsg);
+
+			auto baseco = GET_SHARE(BaseCoro);
+			auto coro = new c_push([call, &baseco](c_pull& pull) {
+				auto msg = pull.get();	//不能用引用 防止析构
+				auto pcoro = baseco;	//copy 防止跳出后析构
+				call(msg, pull, pcoro);
+			});
+			baseco->SetCoro(coro);
+			(*coro)(comsg);
+		});
+	}
+
 	template<typename T, typename F>
 	void AddAsynMsgCallBack(const int32_t& mid,T&&t,F&&f)
 	{
 		auto call = ANY_BIND(t,f);
-		m_callBack[mid] = [this,call](BaseMsg* inmsg){
+		PushMsgCall(mid, [this,call](BaseMsg* inmsg){
 			SHARE<BaseMsg> comsg = GetRealMsg(inmsg);
 
 			auto baseco = GET_SHARE(BaseCoro);
@@ -96,7 +113,7 @@ public:
 			});
 			baseco->SetCoro(coro);
 			(*coro)(comsg);
-		};
+		});
 	}
 
 	void DoCoroFunc(const std::function<void(c_pull&,SHARE<BaseCoro>& coro )>& func)
@@ -139,7 +156,7 @@ protected:
 	AddMsgCallBackEx(const int32_t mId, T&&t, F&&f)
 	{
 		auto call = std::move(ANY_BIND(t, f));
-		m_callBack[mId] = move([this,call](BaseMsg* msg) {
+		PushMsgCall(mId, [this,call](BaseMsg* msg) {
 			if (msg)
 			{
 				auto mdata = dynamic_cast<C>(msg->m_data);
@@ -166,7 +183,7 @@ protected:
 	AddMsgCallBackEx(const int32_t mId, T&&t, F&&f)
 	{
 		auto call = std::move(ANY_BIND(t, f));
-		m_callBack[mId] = move([this,call](BaseMsg* msg) {
+		PushMsgCall(mId, [this,call](BaseMsg* msg) {
 			call(GetRealMsg(msg));
 		});
 	}
@@ -191,6 +208,14 @@ private:
 
 	void Init();
 	void Execute();
+
+	void PushMsgCall(const int32_t& mid, const MsgCall& call)
+	{
+		if (mid > L_FAST_BEGAN && mid < N_FAST_END)
+			m_arrayCall[mid] = call;
+		else
+			m_callBack[mid] = call;
+	}
 
 	void CheckCoroClear(const int64_t& dt);
 	void RequestCoroMsg(const int32_t& mid, BaseData* data,const int32_t& coid);
@@ -218,6 +243,7 @@ private:
 	SHARE<BaseMsg> m_msgCash;
 
 	std::unordered_map<int32_t, MsgCall> m_callBack;
+	MsgCall m_arrayCall[N_FAST_END];
 	//std::unordered_map<int32_t, MsgCall2> m_callBack2;
 
 	int64_t m_coroCheckTime;
@@ -232,7 +258,6 @@ private:
 #define LP_INFO MsgModule::LogHook(this,spdlog::level::info)
 #define LP_WARN MsgModule::LogHook(this,spdlog::level::warn)
 #define LP_ERROR MsgModule::LogHook(this,spdlog::level::err)<<__FILE__<<__LINE__<<"\t"
-#define LP_ERROR_2(M) MsgModule::LogHook(M,spdlog::level::err)<<__FILE__<<__LINE__<<"\t"
 
 #define PARSEPB_NAME_IF_FALSE(name,T,msg)\
 	T name; \

@@ -2,7 +2,8 @@
 #define LOOP_ARRAY_H
 
 #define DEF_LOOP_SIZE 1000
-#include "FactorManager.h"
+#include "Block2.h"
+//#include "Single.h"
 
 template<typename T>
 class LoopList
@@ -64,16 +65,14 @@ public:
 			{
 				tail->next = lp.head;
 				tail = lp.tail;
-				lp.head = NULL;
-				lp.tail = NULL;
 			}
 			else
 			{
 				head = lp.head;
 				tail = lp.tail;
-				lp.head = NULL;
-				lp.tail = NULL;
 			}
+			lp.head = NULL;
+			lp.tail = NULL;
 		}
 
 		LPNode* getHead()
@@ -86,12 +85,14 @@ public:
 	{
 		m_data = new LPList[DEF_LOOP_SIZE];
 		m_cash = new LPList[DEF_LOOP_SIZE];
+		m_nodePool = new Block2<LPNode>();
 	}
 
 	LoopList(size_t size):m_size(size),m_widx(0),m_ridx(0), m_lockindex(-1)
 	{
 		m_data = new LPList[size];
 		m_cash = new LPList[size];
+		m_nodePool = new Block2<LPNode>();
 	}
 
 	~LoopList()
@@ -179,7 +180,8 @@ protected:
 		if (n)
 			return n;
 		else
-			return Single::LocalInstance<FactorManager>()->getLoopObj<LPNode>();
+			return m_nodePool->allocateNewOnce();
+		//return GET_LOOP(LPNode);	//this well 2 thread call can not use LocalIncetance
 	}
 
 	void recycleNode(LPNode* n)
@@ -207,6 +209,7 @@ private:
 	volatile int32_t m_lockindex;
 	LPList* m_cash;
 	LPList m_pool;
+	Block2<LPNode>* m_nodePool;
 };
 
 #endif

@@ -1,0 +1,9 @@
+diff a/Base/module/UdpServerModule.h b/Base/module/UdpServerModule.h	(rejected hunks)
+@@ -155,6 +155,7 @@
+ 	}
+ 
+ 	// ͨ�� LoopObject �̳�
++	virtual void init(/*FactorManager * fm*/) {
+ 		maxPackId = 0;
+ 		maxIndex = 0;
+ 		heapIndex = -1;

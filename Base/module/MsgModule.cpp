@@ -14,7 +14,9 @@ void MsgModule::Init()
 {
 	//m_schedule = GET_MODULE(ScheduleModule);
 
-	GetLayer()->RegLayerMsg(&MsgModule::MsgCallBack, this);
+	GetLayer()->RegLayerMsg([this](void*msg) {
+		this->MsgCallBack(msg);
+	});
 
 	AddMsgCall(L_REQUEST_CORO_MSG, BIND_SHARE_CALL(DoRequestMsg));
 	AddMsgCall(L_RESPONSE_CORO_MSG, BIND_SHARE_CALL(DoResponseMsg));
@@ -52,39 +54,49 @@ void MsgModule::SendMsg(const int32_t& ltype, const int32_t& lid, const int32_t&
 
 void MsgModule::MsgCallBack(void* msg)
 {
-	/*auto smsg = SHARE<BaseMsg>((BaseMsg*)msg,[this](BaseMsg* nmsg){
-		GetLayer()->RecycleLayerMsg(nmsg);
-	});*/
 	auto smsg = (BaseMsg*)msg;
-	auto it = m_callBack.find(smsg->msgId);
-	if (it != m_callBack.end())
-		it->second(smsg);
-	else
-		GetLayer()->RecycleLayerMsg(smsg);
-}
 
-//void MsgModule::MsgCallBack2(void * msg)
-//{
-//	BaseMsg* smsg = (BaseMsg*)msg;
-//	auto it = m_callBack2.find(smsg->msgId);
-//	if (it != m_callBack2.end())
-//		it->second(smsg);
-//	GetLayer()->RecycleLayerMsg(smsg);
-//}
+	if (smsg->msgId > L_FAST_BEGAN && smsg->msgId < N_FAST_END)
+	{
+		if (m_arrayCall[smsg->msgId])
+			m_arrayCall[smsg->msgId](smsg);
+		else
+			LOOP_RECYCLE(smsg);
+	}
+	else
+	{
+		auto it = m_callBack.find(smsg->msgId);
+		if (it != m_callBack.end())
+			it->second(smsg);
+		else
+			LOOP_RECYCLE(smsg);
+	}
+}
 
 void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
 {
-	auto base = GetLayer()->GetLoopObj<BaseMsg>();
+	auto base = GET_LOOP(BaseMsg);
 	base->m_data = msg.get();
 	auto smsg = SHARE<BaseMsg>(base,[this,msg](BaseMsg* nmsg){
 		nmsg->m_data = NULL;
-		GetLayer()->Recycle(nmsg);
+		LOOP_RECYCLE(nmsg);
 	});
-	auto it = m_callBack.find(msg->mid);
-	if (it != m_callBack.end())
+	if (smsg->msgId > L_FAST_BEGAN && smsg->msgId < N_FAST_END)
 	{
-		m_msgCash = smsg;
-		it->second(NULL);
+		if (m_arrayCall[smsg->msgId])
+		{
+			m_msgCash = smsg;
+			m_arrayCall[smsg->msgId](NULL);
+		}
+	}
+	else
+	{
+		auto it = m_callBack.find(msg->mid);
+		if (it != m_callBack.end())
+		{
+			m_msgCash = smsg;
+			it->second(NULL);
+		}
 	}
 }
 
@@ -216,11 +228,22 @@ void MsgModule::ResponseAndWait(BaseData* data, const int32_t& coid,const int32_
 void MsgModule::DoRequestMsg(SHARE<BaseMsg>& msg)
 {
 	CoroMsg* cmsg = (CoroMsg*)msg.get();
-	auto it = m_callBack.find(cmsg->m_subMsgId);
-	if (it != m_callBack.end())
+	if (cmsg->m_subMsgId > L_FAST_BEGAN && cmsg->m_subMsgId < N_FAST_END)
 	{
-		m_msgCash = msg;
-		it->second(NULL);
+		if (m_arrayCall[cmsg->m_subMsgId])
+		{
+			m_msgCash = msg;
+			m_arrayCall[cmsg->m_subMsgId](NULL);
+		}
+	}
+	else
+	{
+		auto it = m_callBack.find(cmsg->m_subMsgId);
+		if (it != m_callBack.end())
+		{
+			m_msgCash = msg;
+			it->second(NULL);
+		}
 	}
 }
 
@@ -250,8 +273,8 @@ SHARE<CoroMsg> MsgModule::DecodeCoroMsg(SHARE<BaseMsg>& msg)
 		return NULL;
 	}
 	auto netbuff = netmsg->popBuffBlock();
-	auto coromsg = GetLayer()->GetLoopObj<CoroMsg>();
-
+	//auto coromsg = GetLayer()->GetLoopObj<CoroMsg>();
+	auto coromsg = GET_LOOP(CoroMsg);
 	coromsg->m_subMsgId = PB::GetInt(netbuff->m_buff);
 	coromsg->m_coroId = PB::GetInt(netbuff->m_buff+sizeof(int32_t));
 	coromsg->m_mycoid = PB::GetInt(netbuff->m_buff+sizeof(int32_t)*2);
@@ -268,7 +291,8 @@ SHARE<CoroMsg> MsgModule::DecodeCoroMsg(SHARE<BaseMsg>& msg)
 		netbuff->m_size += nOffset;
 		//swap back m_data
 		std::swap(ptr->m_data,msg->m_data);
-		GetLayer()->Recycle(ptr);
+		//GetLayer()->Recycle(ptr);
+		LOOP_RECYCLE(ptr);
 	});
 	return coroShar;
 }

@@ -2,19 +2,15 @@
 #include "EventModule.h"
 #include "NetObjectModule.h"
 #include "MsgModule.h"
+#include "ScheduleModule.h"
 #include "json/json.h"
 #include <fstream>
 #include <sstream>
-#include "LPFile.h"
+#include "protoPB/base/LPBase.pb.h"
 
 TransMsgModule::TransMsgModule(BaseLayer* l):BaseModule(l)
 {
-	//need fix
-	/*m_serverType["game"] = SERVER_TYPE::LOOP_GAME;
-	m_serverType["pgs"] = SERVER_TYPE::LOOP_PROXY_GS;
-	m_serverType["pg"] = SERVER_TYPE::LOOP_PROXY_G;
-	m_serverType["pp"] = SERVER_TYPE::LOOP_PROXY_PP;
-	m_serverType["sql"] = SERVER_TYPE::LOOP_MYSQL;*/
+	
 }
 
 TransMsgModule::~TransMsgModule()
@@ -23,16 +19,34 @@ TransMsgModule::~TransMsgModule()
 
 void TransMsgModule::Init()
 {
-	m_eventModule = GetLayer()->GetModule<EventModule>();
-	m_netObjMod = GetLayer()->GetModule<NetObjectModule>();
-	m_msgModule = GetLayer()->GetModule<MsgModule>();
+	m_eventModule = GET_MODULE(EventModule);
+	m_netObjMod = GET_MODULE(NetObjectModule);
+	m_msgModule = GET_MODULE(MsgModule);
+	m_schedule = GET_MODULE(ScheduleModule);
 
-	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
-	m_eventModule->AddEventCall(E_SERVER_CLOSE,BIND_EVENT(OnServerClose, SHARE<NetServer>));
-
+	m_msgModule->AddMsgCall(N_REGISTE_SERVER, BIND_CALL(OnServerRegiste, NetMsg));
 	m_msgModule->AddMsgCall(N_TRANS_SERVER_MSG, BIND_CALL(OnGetTransMsg,NetMsg));
 
-	//InitServerNet();
+	m_eventModule->AddEventCall(E_SERVER_SOCKET_CLOSE,BIND_EVENT(OnServerClose, int32_t));
+
+}
+
+void TransMsgModule::BeforExecute()
+{
+	auto& config = GetLayer()->GetLoopServer()->GetConfig();
+
+	for (auto& scfg : config.connect)
+	{
+		auto ser = GET_SHARE(NetServer);
+		ser->type = scfg.type;
+		ser->ip = scfg.ip;
+		ser->port = scfg.port;
+		ser->serid = scfg.serid;
+		ser->state = CONN_STATE::CLOSE;
+		ser->socket = -1;
+		ser->activeLink = true;
+		AddServerConn(*ser);
+	}
 }
 
 void TransMsgModule::Execute()
@@ -40,76 +54,36 @@ void TransMsgModule::Execute()
 
 }
 
-void TransMsgModule::InitServerNet()
+void TransMsgModule::AddServerConn(const NetServer & ser)
 {
-	/*string file;
-	LoopFile::GetRootPath(file);
-	file.append("commonconf/serverPath.json");
-
-	ifstream ifs;
-	ifs.open(file);
-	assert(ifs.is_open());
-
-	Json::Reader reader;
-	Json::Value root;
-	assert(reader.parse(ifs, root, false));
-	
-	auto serstruct = root["struct"];
-	auto serpath = root["path"];
-
-	for (auto it = serstruct.begin();it!=serstruct.end();it++)
-	{
-		map<int32_t, int32_t> link;
-		auto mems = it->getMemberNames();
-		for (auto& s:mems)
+	m_netObjMod->ConnectServer(ser, [this](bool res, NetServer& _ser) {
+		if (res)
 		{
-			auto stype = m_serverType[s];
-			link[stype] = (*it)[s]["ltype"].asInt();
+			auto connSer = GET_SHARE(NetServer);
+			*connSer = _ser;
+			OnServerConnect(connSer);
+			//registe server
+			auto myser = GetLayer()->GetServer();
+			auto config = GetLayer()->GetLoopServer()->GetConfig();
+			LPMsg::ServerInfo xMsg;
+			xMsg.set_id(myser->serid);
+			xMsg.set_type(myser->type);
+			xMsg.set_ip(config.addr.ip);
+			xMsg.set_port(config.addr.port);
+			m_netObjMod->SendNetMsg(_ser.socket, N_REGISTE_SERVER, xMsg);
 		}
-		auto stype = m_serverType[it.key().asString()];
-		m_serverLink[stype] = move(link);
-	}
-
-	for (auto it= serpath.begin();it!=serpath.end();it++)
-	{
-		list<vector<int32_t>> path;
-		for (int32_t i = 0; i < it->size(); i++)
+		else
 		{
-			vector<int32_t> vec;
-			int32_t n = (*it)[i].size();
-			for (int32_t j = 0; j < n; j++)
-			{
-				auto stype = m_serverType[(*it)[i][j].asString()];
-				vec.push_back(stype);
-			}
-			path.push_back(move(vec));
+			NetServer tmp = _ser;
+			m_schedule->AddInterValTask([this,tmp](int64_t&) {
+				AddServerConn(tmp);
+			},5000,1);
 		}
-
-		path.sort([](vector<int32_t>& v1, vector<int32_t>& v2) {
-			return v1.size() < v2.size();
-		});
-
-		vector<string> key;
-		Loop::Split(it.key().asString(), "-", key);
-		auto s1 = m_serverType[key[0]];
-		auto s2 = m_serverType[key[1]];
-
-		stringstream stream;
-		stream << s1 << "-" << s2;
-		m_serverPath[stream.str()] = move(path);
-		if (s1 != s2)
-		{
-			stringstream p2;
-			p2 << s2 << "-" << s1;
-			m_serverPath[p2.str()] = m_serverPath[stream.str()];
-			std::reverse(m_serverPath[p2.str()].begin(), m_serverPath[p2.str()].end());
-		}
-	}*/
+	});
 }
 
 void TransMsgModule::OnServerConnect(SHARE<NetServer>& ser)
 {
-	//�ж��������,��ص��ϵ�
 	auto its = m_serverList[ser->type].find(ser->serid);
 	if (its != m_serverList[ser->type].end())
 	{
@@ -119,13 +93,41 @@ void TransMsgModule::OnServerConnect(SHARE<NetServer>& ser)
 	m_serverList[ser->type][ser->serid] = ser;
 	m_randServer[ser->type].push_back(ser.get());
 	m_allServer[ser->socket] = ser;
+	m_netObjMod->AcceptConn(ser->socket, CONN_SERVER);
+	m_eventModule->SendEvent(E_SERVER_CONNECT, ser);
 }
 
-void TransMsgModule::OnServerClose(SHARE<NetServer>& ser)
+void TransMsgModule::OnServerRegiste(NetMsg * msg)
 {
+	TRY_PARSEPB(LPMsg::ServerInfo, msg);
+
+	auto server = GET_SHARE(NetServer);
+	server->serid = pbMsg.id();
+	server->type = pbMsg.type();
+	server->socket = msg->socket;
+	server->state = CONN_STATE::CONNECT;
+	server->ip = pbMsg.ip();
+	server->port = pbMsg.port();
+	server->activeLink = false;
+	OnServerConnect(server);
+
+	LP_WARN << "Server registe type:" << server->type << " ID:" << server->serid;
+}
+
+void TransMsgModule::OnServerClose(int32_t sock)
+{
+	auto it = m_allServer.find(sock);
+	if (it == m_allServer.end())
+		return;
+
+	auto ser = it->second;
 	m_serverList[ser->type].erase(ser->serid);
 	m_allServer.erase(ser->socket);
 	RemoveRand(ser->type, ser->serid);
+	m_eventModule->SendEvent(E_SOCKET_CLOSE, ser);
+	//reconnect server
+	if(ser->activeLink)
+		AddServerConn(*ser);
 }
 
 void TransMsgModule::RemoveRand(const int32_t & stype, const int32_t & sid)
@@ -160,10 +162,6 @@ void TransMsgModule::SendToServer(ServerNode & ser, const int32_t & mid, BuffBlo
 		return;
 	}
 	RECYCLE_LAYER_MSG(buff);
-	/*auto myser = GetLayer()->GetServer();
-	vector<SHARE<ServerNode>> path;
-	GetTransPath(*myser, ser, path);
-	SendToServer(path, mid,buff);*/
 }
 
 void TransMsgModule::SendToServer(ServerNode & ser, const int32_t & mid, google::protobuf::Message & msg)
@@ -174,10 +172,6 @@ void TransMsgModule::SendToServer(ServerNode & ser, const int32_t & mid, google:
 		m_netObjMod->SendNetMsg(toser->socket, mid, msg);
 		return;
 	}
-	/*auto myser = GetLayer()->GetServer();
-	vector<SHARE<ServerNode>> path;
-	GetTransPath(*myser, ser, path);
-	TransMsgToServer(path, mid, msg);*/
 }
 
 void TransMsgModule::SendToAllServer(const int32_t& stype, const int32_t & mid, google::protobuf::Message & msg)
@@ -187,16 +181,7 @@ void TransMsgModule::SendToAllServer(const int32_t& stype, const int32_t & mid, 
 	{
 		for (auto& s:it->second)
 			m_netObjMod->SendNetMsg(s.second->socket, mid, msg);
-		return;
 	}
-	//
-	//ServerNode ser{stype,0};
-	//auto myser = GetLayer()->GetServer();
-	//vector<SHARE<ServerNode>> path;
-	//GetTransPath(*myser, ser, path);
-	//path.back()->serid = -1;	//-1 ��ʾȫ����
-	//TransMsgToServer(path, mid, msg);
-
 }
 
 void TransMsgModule::SendToServer(vector<SHARE<ServerNode>>& path, const int32_t & mid, google::protobuf::Message & msg)
@@ -382,79 +367,6 @@ NetServer* TransMsgModule::GetServer(const int32_t& type, const int32_t& serid)
 		return NULL;
 	return its->second.get();
 }
-//
-//void TransMsgModule::GetTransPath(ServerNode& beg, ServerNode& end, vector<SHARE<ServerNode>>& path)
-//{
-//	stringstream stream;
-//	stream << beg.type << "-" << end.type;
-//	auto it = m_serverPath.find(stream.str());
-//	if (it == m_serverPath.end())
-//		return;
-//
-//	for (auto& itv:it->second)
-//	{
-//		path.clear();
-//		for (auto& t:itv)
-//		{
-//			auto sn = GetLayer()->GetSharedLoop<ServerNode>();
-//			sn->type = t;
-//			sn->serid = -1;
-//			path.push_back(sn);
-//		}
-//		(*path.begin())->serid = beg.serid;
-//		(*path.rbegin())->serid = end.serid;
-//		if (GetToPath(path))
-//			return;
-//	}
-//}
-//
-//bool TransMsgModule::GetToPath(vector<SHARE<ServerNode>>& path)
-//{
-//	int32_t idx = path.size();
-//	for (size_t i = 0; i < path.size()-1; i++)
-//	{
-//		auto firn = path[i].get();
-//		auto senn = path[i + 1].get();
-//		auto lftos = m_serverLink[firn->type][senn->type];
-//		if (lftos == 1)
-//		{
-//			auto lstof = m_serverLink[senn->type][firn->type];
-//			senn->serid = ceil(float(firn->serid)/ lstof);
-//		}
-//		else if (lftos < 0)
-//			senn->serid = 0;
-//		else
-//		{
-//			idx = i;
-//			break;
-//		}
-//	}
-//	if (idx == path.size())
-//		return true;
-//
-//	for (int32_t i = path.size() - 1; i > idx; i--)
-//	{
-//		auto firn = path[i].get();
-//		auto senn = path[i - 1].get();
-//
-//		auto lftos = m_serverLink[firn->type][senn->type];
-//		if (lftos == 1)
-//		{
-//			auto lstof = m_serverLink[senn->type][firn->type];
-//			int32_t id = ceil(float(firn->serid) / lstof);
-//			if (senn->serid >= 0 && id != senn->serid)
-//				return false;
-//			else
-//				senn->serid = id;
-//		}
-//		else if (lftos < 0)
-//			senn->serid = 0;
-//		else
-//			if (senn->serid < 0)
-//				return false;
-//	}
-//	return true;
-//}
 
 BuffBlock* TransMsgModule::PathToBuff(vector<SHARE<ServerNode>>& path,const int32_t& mid, const int32_t& toindex)
 {

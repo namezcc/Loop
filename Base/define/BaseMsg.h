@@ -91,17 +91,15 @@ struct LOOP_EXPORT BuffBlock:public BaseData
 	};
 	virtual void recycleMsg() override;
 	virtual void recycleCheck() override;
+	int32_t MaxSize() { return m_allsize; };
 	char* m_buff;
-	int32_t m_size;
+	int32_t m_size;		//used size
 	BuffBlock* m_next;
 	int16_t m_ref;
 protected:
 	int32_t m_allsize;
 	void* m_recylist;
 
-	// ͨ�� LoopObject �̳�
-	//virtual void init(FactorManager * fm) override;
-	//virtual void recycle(FactorManager * fm) override;
 };
 
 struct LOOP_EXPORT LocalBuffBlock:public BuffBlock,public LoopObject
@@ -126,7 +124,8 @@ struct LOOP_EXPORT NetMsg:public BaseData
 	void push_front(BuffBlock* buff);
 	virtual void push_front(BaseLayer* l,const char* buf,const int32_t& size);
 	char* getNetBuff();
-	SHARE<LocalBuffBlock> getCombinBuff(BaseLayer* l);
+	SHARE<LocalBuffBlock> getCombinBuff();
+	void getCombinBuff(LocalBuffBlock* buff);
 	BuffBlock* popBuffBlock();
 
 	inline int32_t getLen() { return len; };

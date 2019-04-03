@@ -28,7 +28,7 @@ void PlayerModule::Init()
 
 	m_msgModule->AddMsgCallBack(N_ROOM_READY_TAKE_PLAYER, this, &PlayerModule::OnReadyTakePlayer);
 	m_msgModule->AddMsgCallBack(LPMsg::N_REQ_ENTER_ROOM, this, &PlayerModule::OnPlayerEnter);
-	m_msgModule->AddAsynMsgCallBack(LPMsg::N_REQ_CREATE_ROLE, this, &PlayerModule::OnCreatePlayer);
+	m_msgModule->AddAsynMsgCall(LPMsg::N_REQ_CREATE_ROLE,BIND_ASYN_CALL(OnCreatePlayer));
 
 	m_eventModule->AddEventCall(E_SOCKET_CLOSE,BIND_EVENT(OnClientClose,int32_t));
 }

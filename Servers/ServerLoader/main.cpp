@@ -110,6 +110,11 @@ int main(int argc, char* args[])
 			DLL_START func = (DLL_START)dll.GetSymbol(TOSTR(DLL_START_NAME));
 			if (func)
 			{
+				if (num == 1)
+				{
+					func(ARG_NUM, args);
+				}
+
 				thrs.emplace_back([i,argc,&args,func]() {
 					int idx = i*ARG_USE_NUM;
 					char* nargs[ARG_NUM];

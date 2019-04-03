@@ -103,7 +103,7 @@ public:
 
 	void ParsePB(LPMsg::GameObject& pb)
 	{
-		for (size_t i = 0; i < m_props.size(); i++)
+		for (int32_t i = 0; i < m_props.size(); i++)
 		{
 			if (m_props[i]->UpPrivate())
 			{
@@ -131,7 +131,8 @@ protected:
 	template<typename T>
 	void AddPropery(const int32_t& flag)
 	{
-		auto pro = Single::LocalInstance<FactorManager>()->GetSharedLoop<Property<T>>();
+		//auto pro = Single::LocalInstance<FactorManager>()->GetSharedLoop<Property<T>>();
+		auto pro = GET_SHARE(Property<T>);
 		pro->SetFlag(flag);
 		m_props.push_back(pro);
 	}

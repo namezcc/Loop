@@ -20,7 +20,7 @@ void Coro1Module::Init()
 	m_transModule = GET_MODULE(TransMsgModule);
 
 	//m_schedule->AddInterValTask(this, &Coro1Module::OnBeginTest, 3000, 1, 3000);
-	m_msgModule->AddAsynMsgCallBack(N_CORO_TEST_1, this, &Coro1Module::CoroTest2);
+	m_msgModule->AddAsynMsgCall(N_CORO_TEST_1,BIND_ASYN_CALL(CoroTest2));
 }
 
 void Coro1Module::OnBeginTest(const int64_t & dt)
