@@ -1,4 +1,4 @@
-#include "MysqlManagerModule.h"
+ï»¿#include "MysqlManagerModule.h"
 #include "GameReflectData.h"
 #include "MysqlModule.h"
 #include "MsgModule.h"
@@ -36,7 +36,7 @@ void MysqlManagerModule::Init()
 
 	m_index = 0;
 	auto it = GetLayer()->GetPipes().find(LY_MYSQL);
-	m_sqlLayerNum = it->second.size();
+	m_sqlLayerNum = (int32_t)it->second.size();
 }
 
 void MysqlManagerModule::AfterInit()
@@ -69,14 +69,14 @@ void MysqlManagerModule::InitTableGroupNum()
 		}
 	}
 
-	for (size_t i = 0; i < m_sqlLayerNum; i++)
-	{//ÄÃ NetSocket ½á¹¹´úÓÃÒ»ÏÂ
+	for (int32_t i = 0; i < m_sqlLayerNum; i++)
+	{//æ‹¿ NetSocket ç»“æž„ä»£ç”¨ä¸€ä¸‹
 		auto num = GET_LAYER_MSG(NetSocket);
 		num->socket = m_tableGroup;
 		m_msgmodule->SendMsg(LY_MYSQL, i, L_UPDATE_TABLE_GROUP, num);
 	}
 
-	for (size_t i = 2; i <= m_tableGroup; i++)
+	for (int32_t i = 2; i <= m_tableGroup; i++)
 		CreateMysqlTable(i);
 }
 
@@ -118,13 +118,13 @@ void MysqlManagerModule::OnCreateAccount(NetServerMsg * msg)
 	if (reply->pbMsg.uid() == 0)
 		return;
 	
-	//hash µ½×é
+	//hash åˆ°ç»„
 	auto gid = reply->pbMsg.uid()%(m_tableGroup*2)+1;
 	if (gid > m_tableGroup)
 		gid = m_tableGroup;
 
 	reply->path = move(msg->path);
-	SendSqlReply(reply, gid);
+	SendSqlReply(reply, (int32_t)gid);
 }
 
 void MysqlManagerModule::OnGetMysqlMsg(NetServerMsg * msg)
@@ -142,13 +142,13 @@ void MysqlManagerModule::OnGetMysqlMsg(NetServerMsg * msg)
 		LP_ERROR << "parse PBSqlParam error";
 		return;
 	}
-	//¼ì²éÊÇ·ñÓÐ×éID ¸ß 16Î» 8 Êý¾Ý¿â id 8 ×éid
+	//æ£€æŸ¥æ˜¯å¦æœ‰ç»„ID é«˜ 16ä½ 8 æ•°æ®åº“ id 8 ç»„id
 	auto gid = (reply->pbMsg.uid() >> 48) & 0xff;
 	if (gid == 0)
 		return;
 
 	reply->path = move(msg->path);
-	SendSqlReply(reply, gid);
+	SendSqlReply(reply, (int32_t)gid);
 }
 
 void MysqlManagerModule::OnRequestMysqlMsg(SHARE<BaseMsg>& msg, c_pull & pull, SHARE<BaseCoro>& coro)
@@ -231,8 +231,8 @@ void MysqlManagerModule::OnUpdateTableGroup(NetMsg * msg)
 	TRY_PARSEPB(LPMsg::UpdateTableGroup, msg);
 	m_tableGroup = pbMsg.groupcount();
 
-	for (size_t i = 0; i < m_sqlLayerNum; i++)
-	{//ÄÃ NetSocket ½á¹¹´úÓÃÒ»ÏÂ
+	for (int32_t i = 0; i < m_sqlLayerNum; i++)
+	{//æ‹¿ NetSocket ç»“æž„ä»£ç”¨ä¸€ä¸‹
 		auto num = GET_LAYER_MSG(NetSocket);
 		num->socket = m_tableGroup;
 		m_msgmodule->SendMsg(LY_MYSQL, i, L_UPDATE_TABLE_GROUP, num);
@@ -246,7 +246,7 @@ void MysqlManagerModule::OnAddTableGroup(NetMsg * msg)
 	++m_tableGroup;
 	CreateMysqlTable(m_tableGroup);
 	pbMsg.set_groupcount(m_tableGroup);
-	//Ïò±¾×éserver Í¨Öª¸üÐÂ
+	//å‘æœ¬ç»„server é€šçŸ¥æ›´æ–°
 	m_transModule->SendToAllServer(LOOP_MYSQL, N_UPDATE_TABLE_GROUP, pbMsg);
 }
 

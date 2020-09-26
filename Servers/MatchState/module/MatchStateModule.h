@@ -1,4 +1,4 @@
-#ifndef MATCH_STATE_MODULE_H
+﻿#ifndef MATCH_STATE_MODULE_H
 #define MATCH_STATE_MODULE_H
 
 #include "BaseModule.h"
@@ -61,8 +61,8 @@ private:
 	void MatchRemoveBattle(const int16_t& matchid, const int16_t& battleid);
 	void AddMatchToAble(SHARE<MatchNode>& match);
 
-	void SendOffLine(const int16_t& tostype, ProxyNode& pnode, const int16_t& nserid, const int16_t& proxyId);
-	void SendOnLine(const int16_t& tostype, ProxyNode& pnode, const int16_t& nserid, const int16_t& proxyId);
+	void SendOffLine(const int8_t& tostype, ProxyNode& pnode, const int16_t& nserid, const int16_t& proxyId);
+	void SendOnLine(const int8_t& tostype, ProxyNode& pnode, const int16_t& nserid, const int16_t& proxyId);
 private:
 
 	MsgModule* m_msgModule;

@@ -1,10 +1,10 @@
-#ifndef H_SERVER_INFO_H
+ï»¿#ifndef H_SERVER_INFO_H
 #define H_SERVER_INFO_H
 #include "BaseModule.h"
 
 class HttpLogicModule;
 class MsgModule;
-class HttpMsg;
+struct HttpMsg;
 
 class HServerInfoModule:public BaseModule
 {
@@ -13,7 +13,7 @@ public:
 	~HServerInfoModule();
 
 private:
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 	void OnReqGetMachineList(HttpMsg* msg);
 	void OnGetMachineList(NetMsg* msg);

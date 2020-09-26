@@ -8,7 +8,7 @@
 struct MsgPool
 {
 	template<typename T>
-	typename std::enable_if<std::is_base_of<BaseData, T>::value, T*>::type popMsg()
+	static typename std::enable_if<std::is_base_of<BaseData, T>::value, T*>::type popMsg()
 	{
 		auto llist = Single::LocalInstance<LoopList<T*>>();
 		T* msg = NULL;

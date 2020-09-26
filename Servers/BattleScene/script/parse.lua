@@ -37,7 +37,7 @@ end
 
 function Lex:jumpcomment()
 	local p = self "^%/%/[^\n]*\n?()"
-	if p then
+	if not p then
 		if self "^%/%*" then
 			p = self "^%/%*.-%*%/()"
 			if not p then
@@ -83,7 +83,7 @@ function Lex:quote()
 	if not q then
 		self:error "error quote"
 	end
-	local w = self:test("[%w_]*")
+	local w = self:test("[%w_%.]*")
 	if not w then
 		self:error "error quote"
 	end
@@ -505,7 +505,9 @@ function Parse:SetProtoPath(path)
 end
 
 function Parse:ParseFile(filename)
-	if self.loadFile[filename] then
+	local fname = string.match(filename,"[%w_%.]*$")
+
+	if self.loadFile[fname] then
 		return
 	end
 
@@ -513,7 +515,7 @@ function Parse:ParseFile(filename)
 	local content = file:read("*a")
 	io.close(file)
 	local lex = Lex.new(content)
-	self.loadFile[file] = true
+	self.loadFile[fname] = true
 	self:ParseContent(lex)
 end
 

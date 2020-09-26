@@ -1,4 +1,4 @@
-#include "MatchStateModule.h"
+﻿#include "MatchStateModule.h"
 #include "MsgModule.h"
 #include "EventModule.h"
 #include "TransMsgModule.h"
@@ -318,7 +318,7 @@ void MatchStateModule::AddMatchToAble(SHARE<MatchNode>& match)
 	(*tab)[match->m_match.serid] = match;
 }
 
-void MatchStateModule::SendOffLine(const int16_t & tostype, ProxyNode & pnode, const int16_t & nserid, const int16_t& proxyId)
+void MatchStateModule::SendOffLine(const int8_t & tostype, ProxyNode & pnode, const int16_t & nserid, const int16_t& proxyId)
 {
 	// just one this server send
 	m_nodePath[1]->serid = pnode.proxyId;
@@ -331,7 +331,7 @@ void MatchStateModule::SendOffLine(const int16_t & tostype, ProxyNode & pnode, c
 	m_transModule->SendToServer(m_nodePath, N_ACK_SERVER_OFFLINE, msg);
 }
 
-void MatchStateModule::SendOnLine(const int16_t & tostype, ProxyNode & pnode, const int16_t & nserid, const int16_t& proxyId)
+void MatchStateModule::SendOnLine(const int8_t & tostype, ProxyNode & pnode, const int16_t & nserid, const int16_t& proxyId)
 {
 	// just one this server send
 	m_nodePath[1]->serid = pnode.proxyId;

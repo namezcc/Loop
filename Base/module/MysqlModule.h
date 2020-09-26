@@ -1,4 +1,4 @@
-#ifndef MYSQL_MODULE_H
+﻿#ifndef MYSQL_MODULE_H
 #define MYSQL_MODULE_H
 #include "BaseModule.h"
 #include "Reflection.h"
@@ -229,7 +229,7 @@ public:
 		for (size_t i = 0; i < tmp.size(); i++)
 		{
 			//SHARE<T> t = GetLayer()->GetSharedLoop<T>();
-			SHARE<T> t = GET_SHARE(SqlParam);
+			SHARE<T> t = GET_SHARE(T);
 			for (size_t j = 0; j < files.size(); j++)
 			{
 				Reflect<T>::SetFieldValue(*t, files[j], tmp[i][j]);

@@ -1,4 +1,4 @@
-#ifndef GAME_OBJECT_H
+ï»¿#ifndef GAME_OBJECT_H
 #define GAME_OBJECT_H
 #include "Utils.h"
 #include <stdint.h>
@@ -122,7 +122,7 @@ public:
 	{
 		m_change.clear();
 	}
-	// Í¨¹ý LoopObject ¼Ì³Ð
+	// é€šè¿‡ LoopObject ç»§æ‰¿
 	virtual void init(FactorManager * fm) override;
 	virtual void recycle(FactorManager * fm) override;
 protected:
@@ -219,7 +219,7 @@ struct PropertyToPB
 	SET_PB_FUNC(ToUInt64, uint64_t, LPMsg::propertyInt64);
 	SET_PB_FUNC(ToString, std::string, LPMsg::propertyString);
 	SET_PB_FUNC(ToFloat, float, LPMsg::propertyFloat);
-	SET_PB_FUNC(ToDouble, double, LPMsg::propertyFloat);
+	SET_PB_FUNC(ToDouble, double, LPMsg::propertyDouble);
 };
 
 

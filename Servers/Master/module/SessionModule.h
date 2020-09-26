@@ -1,4 +1,4 @@
-#ifndef SESSION_MODULE_H
+ï»¿#ifndef SESSION_MODULE_H
 #define SESSION_MODULE_H
 
 #include "BaseModule.h"
@@ -6,15 +6,15 @@
 class HttpLogicModule;
 class MysqlModule;
 class MsgModule;
-class HttpMsg;
-class Admin;
+struct HttpMsg;
+struct Admin;
 
 struct Session
 {
 	int64_t id;
 	int64_t loseTime;
 };
-//¹ýÆÚÊ±¼ä Ãë
+//è¿‡æœŸæ—¶é—´ ç§’
 #define SESSION_LOSE_TIME 3600
 #define COOKIE_NAME "Loop"
 
@@ -25,7 +25,7 @@ public:
 	~SessionModule();
 
 private:
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 	virtual void BeforExecute()override;
 	virtual void Execute() override;

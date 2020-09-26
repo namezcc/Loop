@@ -4,7 +4,7 @@
 #include "MsgModule.h"
 #include "ReflectData.h"
 #include "Crypto/md5.h"
-#include "json/json.h"
+#include "JsonHelp.h"
 
 SessionModule::SessionModule(BaseLayer * l):BaseModule(l)
 {
@@ -132,13 +132,18 @@ void SessionModule::OnHttpLogin(HttpMsg * msg)
 
 bool SessionModule::CheckLogin(HttpMsg * msg, string& user)
 {
-	Json::Reader reader;
-	Json::Value root;
-	if (!reader.parse(msg->request.body, root, false))
+	JsonHelp jhelp;
+
+	if (!jhelp.ParseString(msg->request.body))
 		return false;
 
-	auto name = root["user"].asString();
-	auto pass = root["pass"].asString();
+	auto nameVal = jhelp.GetMember("user");
+	auto passVal = jhelp.GetMember("pass");
+	if (nameVal == NULL || passVal == NULL || !nameVal->IsString() || !passVal->IsString())
+		return false;
+
+	auto name = nameVal->GetString();
+	auto pass = passVal->GetString();
 
 	auto it = m_admins.find(name);
 	if (it == m_admins.end())
@@ -146,7 +151,7 @@ bool SessionModule::CheckLogin(HttpMsg * msg, string& user)
 
 	user = move(name);
 	char passmd5[MD5_SIZE+1];
-	MD5_stringEx(const_cast<char*>(pass.data()), passmd5);
+	MD5_stringEx(const_cast<char*>(pass), passmd5);
 	return it->second->pass==passmd5;
 }
 

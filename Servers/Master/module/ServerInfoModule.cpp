@@ -1,8 +1,8 @@
-#include "ServerInfoModule.h"
+﻿#include "ServerInfoModule.h"
 #include "MsgModule.h"
 #include "MysqlModule.h"
 #include "ReflectData.h"
-#include "json/json.h"
+#include "JsonHelp.h"
 
 ServerInfoModule::ServerInfoModule(BaseLayer * l):BaseModule(l)
 {
@@ -37,25 +37,29 @@ void ServerInfoModule::InitServers()
 
 void ServerInfoModule::OnGetMachineList(NetSocket * sock)
 {
-	Json::Value res;
-
+	StringBuffer jbuff;
+	rapidjson::Writer<StringBuffer> jw(jbuff);
+	Document doc;
+	doc.SetArray();
+	auto& allcter = doc.GetAllocator();
 	for (auto& ser:m_console)
 	{
-		Json::Value item;
-		item["id"] = ser->id;
-		item["ip"] = ser->ip;
-		item["port"] = ser->port;
-		item["name"] = ser->name;
-		item["inline"] = ser->status == CONN_STATE::CONNECT;
-		res.append(item);
+		Value item(rapidjson::kObjectType);
+		item.AddMember("id", ser->id, allcter);
+		item.AddMember("ip", ser->ip, allcter);
+		item.AddMember("port", ser->port, allcter);
+		item.AddMember("name", ser->name, allcter);
+		item.AddMember("inline", ser->status == CONN_STATE::CONNECT, allcter);
+		doc.PushBack(item, allcter);
 	}
-	auto s = res.toStyledString();
+	doc.Accept(jw);
+	std::string s = jbuff.GetString();
 
 	auto msg = GET_LAYER_MSG(NetMsg);
 	msg->socket = sock->socket;
 	/*msg->len = s.size();
 	msg->msg = new char[msg->len+1];
 	strcpy(msg->msg, s.c_str());*/
-	msg->push_front(GetLayer(), s.c_str(), s.size());
+	msg->push_front(GetLayer(), s.c_str(), (int32_t)s.size());
 	m_msgModule->SendMsg(LY_HTTP_LOGIC, 0, L_HL_GET_MACHINE_LIST, msg);
 }

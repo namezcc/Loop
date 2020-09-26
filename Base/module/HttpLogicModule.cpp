@@ -432,7 +432,7 @@ void HttpLogicModule::OnGetPHPContent(const int& sock, NetBuffer& content)
 void HttpLogicModule::InitPath()
 {
 	auto tmp = m_webRoot;
-	LoopFile::GetRootPath(m_webRoot);
+	m_webRoot = LoopFile::GetRootPath();
 	m_webRoot.append(tmp);
 }
 

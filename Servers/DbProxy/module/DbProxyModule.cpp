@@ -1,4 +1,4 @@
-#include "DbProxyModule.h"
+﻿#include "DbProxyModule.h"
 #include "NetObjectModule.h"
 #include "MsgModule.h"
 #include "EventModule.h"
@@ -147,7 +147,7 @@ void DBProxyModule::OnForwardMsgHash(NetMsg * msg)
 	if (m_groups.size() > 1)
 	{
 		int crc = PB::GetInt(forbeg);
-		int idx = crc % (m_groups.size() * 2);
+		size_t idx = crc % (m_groups.size() * 2);
 		if (idx >= m_groups.size())
 			idx = m_groups.size() - 1;
 		group = m_groups[idx];

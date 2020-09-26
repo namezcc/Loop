@@ -19,6 +19,7 @@ if(WIN32)
 set(mysqllib
 clientpb.lib
 libprotobufd.lib
+mysqlpp_d.lib
 )
 endif()
 

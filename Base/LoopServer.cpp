@@ -1,9 +1,9 @@
 #include "LoopServer.h"
 #include "cmdline.h"
 #include "LogLayer.h"
-#include "json/json.h"
 #include "LPFile.h"
 #include "DataDefine.h"
+#include "JsonHelp.h"
 
 LoopServer::LoopServer():m_over(false)
 {
@@ -39,8 +39,7 @@ void LoopServer::Init(const int& stype, const int& serid)
 
 void LoopServer::InitConfig()
 {
-	string file;
-	LoopFile::GetRootPath(file);
+	string file = LoopFile::GetRootPath();
 	if(m_server.type== SERVER_TYPE::LOOP_MASTER)
 		file.append("commonconf/Master.json");
 	else if(m_server.type == SERVER_TYPE::LOOP_CONSOLE)
@@ -48,74 +47,57 @@ void LoopServer::InitConfig()
 	else
 		file.append("commonconf/ServerConfig.json");
 
-	ifstream ifs;
-	try
-	{
-		ifs.open(file);
-		ifs.is_open();
-	}
-	catch (const std::exception& e)
-	{
-		cout << e.what() << endl;
-	}
+	JsonHelp jhelp;
+	if (!jhelp.ParseFile(file))
+		exit(-1);
 
-	//Json::Reader reader;
-	Json::Value root;
-
-	/*if (!reader.parse(ifs, root, false))
-		cout << reader.getFormattedErrorMessages() << endl;*/
-
-	Json::CharReaderBuilder readerBuilder;
-	std::string err;
-	if (!Json::parseFromStream(readerBuilder, ifs, &root, &err))
-		cout << err << endl;
-
-	Json::Value config;
+	Value root = jhelp.GetDocument().GetObject();
+	Value config;
 	if (m_server.type == SERVER_TYPE::LOOP_MASTER || m_server.type == SERVER_TYPE::LOOP_CONSOLE)
 		config = root;
 	else
 	{
 		auto type = std::to_string(m_server.type);
 		auto id = std::to_string(m_server.serid);
-		if (root.isMember(type))
-			if (root[type].isMember(id))
-				config = root[type][id];
+		if (root.HasMember(type.c_str()))
+			if (root[type.c_str()].HasMember(id.c_str()))
+				config = root[type.c_str()][id.c_str()];
 	}
 
-	if (config.isMember("addr"))
+	if (config.HasMember("addr"))
 	{
-		m_config.addr.ip = config["addr"]["ip"].asString();
-		m_config.addr.port = config["addr"]["port"].asInt();
+		m_config.addr.ip = config["addr"]["ip"].GetString();
+		m_config.addr.port = config["addr"]["port"].GetInt();
 		m_port = m_config.addr.port;
 	}
 
-	if (config.isMember("udpaddr"))
+	if (config.HasMember("udpaddr"))
 	{
-		m_config.udpAddr.ip = config["udpaddr"]["ip"].asString();
-		m_config.udpAddr.port = config["udpaddr"]["port"].asInt();
+		m_config.udpAddr.ip = config["udpaddr"]["ip"].GetString();
+		m_config.udpAddr.port = config["udpaddr"]["port"].GetInt();
 	}
 
-	if (config.isMember("connect"))
+	if (config.HasMember("connect"))
 	{
-		for (auto& v:config["connect"])
+		for (auto& v:config["connect"].GetArray())
 		{
 			NetServer s;
-			s.ip = v["ip"].asString();
-			s.port = v["port"].asInt();
-			s.type = v["type"].asInt();
-			s.serid = v["id"].asInt();
+			s.ip = v["ip"].GetString();
+			s.port = v["port"].GetInt();
+			s.type = v["type"].GetInt();
+			s.serid = v["id"].GetInt();
 			m_config.connect.push_back(s);
 		}
 	}
 
-	if (config.isMember("sql"))
+	if (config.HasMember("sql"))
 	{
-		m_config.sql.ip = config["sql"]["ip"].asString();
-		m_config.sql.port = config["sql"]["port"].asInt();
-		m_config.sql.db = config["sql"]["database"].asString();
-		m_config.sql.user = config["sql"]["user"].asString();
-		m_config.sql.pass = config["sql"]["pass"].asString();
-		m_config.sql.dbGroup = config["sql"]["group"].asInt();
+		m_config.sql.ip = config["sql"]["ip"].GetString();
+		m_config.sql.port = config["sql"]["port"].GetInt();
+		m_config.sql.db = config["sql"]["database"].GetString();
+		m_config.sql.user = config["sql"]["user"].GetString();
+		m_config.sql.pass = config["sql"]["pass"].GetString();
+		m_config.sql.dbGroup = config["sql"]["group"].GetInt();
 	}
 }
 
@@ -129,7 +111,7 @@ void LoopServer::InitLogLayer()
 
 void LoopServer::InitMsgPool()
 {
-	m_msgPool = new MsgPool[m_layers.size()];
+	//m_msgPool = new MsgPool[m_layers.size()];
 	m_recycle = new RecyclePool[m_layers.size()];
 }
 

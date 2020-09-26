@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include "mpb.h"
 
 #define LAPI 
@@ -29,18 +29,31 @@ LAPI static bool IsLittleEndian()
 
 //-------------------------
 
+LAPI static bool WriteRawLittleEndian32(OutPutStream* stream, uint32_t v)
+{
+	if (stream->pos + sizeof(v) > stream->len)
+		return false;
+
+	memcpy(stream->buf + stream->pos, &v, sizeof(v));
+	stream->pos += sizeof(v);
+	return true;
+}
+
 LAPI static bool WriteRawLittleEndian64(OutPutStream* stream,uint64_t v)
 {
-	if (stream->pos + 8 > stream->len)
+	if (stream->pos + sizeof(v) > stream->len)
 		return false;
-	stream->buf[stream->pos++] = ((char) v);
+
+	memcpy(stream->buf + stream->pos, &v, sizeof(v));
+	stream->pos += sizeof(v);
+	/*stream->buf[stream->pos++] = ((char) v);
 	stream->buf[stream->pos++] = ((char) (v >> 8));
 	stream->buf[stream->pos++] = ((char)(v >> 16));
 	stream->buf[stream->pos++] = ((char)(v >> 24));
 	stream->buf[stream->pos++] = ((char)(v >> 32));
 	stream->buf[stream->pos++] = ((char)(v >> 40));
 	stream->buf[stream->pos++] = ((char)(v >> 48));
-	stream->buf[stream->pos++] = ((char)(v >> 56));
+	stream->buf[stream->pos++] = ((char)(v >> 56));*/
 	return true;
 }
 
@@ -52,16 +65,11 @@ LAPI static bool WriteDouble(OutPutStream* str,double v)
 
 LAPI static bool WriteFloat(OutPutStream* str, float v)
 {
-	if (str->pos + 4 > str->len)
-		return false;
+	/*if (str->pos + 4 > str->len)
+		return false;*/
 
-	char* nv = (char*)&v;
-
-	str->buf[str->pos++] = nv[0];
-	str->buf[str->pos++] = nv[1];
-	str->buf[str->pos++] = nv[2];
-	str->buf[str->pos++] = nv[3];
-	return true;
+	uint32_t* nv = (uint32_t*)&v;
+	return WriteRawLittleEndian32(str, *nv);
 }
 
 LAPI static bool WriteRawVarint64(OutPutStream* str,uint64_t v)
@@ -348,14 +356,17 @@ LAPI static int ReadTag(OutPutStream* str,uint32_t* res)
 
 LAPI static int ReadRawLittleEndian32(OutPutStream* str,uint32_t* res)
 {
-	if (str->pos + 4 > str->curLimit)
+	if (str->pos + sizeof(*res) > str->curLimit)
 		return -1;
-  uint32_t tmp;
+
+	memcpy(res, str->buf + str->pos, sizeof(*res));
+	str->pos += sizeof(*res);
+	/*uint32_t tmp;
 	tmp = str->buf[str->pos++];
 	tmp |= (str->buf[str->pos++]) << 8;
 	tmp |= (str->buf[str->pos++]) << 16;
 	tmp |= (str->buf[str->pos++]) << 24;
-	*res = tmp;
+	*res = tmp;*/
 	return 0;
 }
 
@@ -364,9 +375,11 @@ LAPI static int ReadRawLittleEndian32(OutPutStream* str,uint32_t* res)
 /// </summary>
 LAPI static int ReadRawLittleEndian64(OutPutStream* str, uint64_t* res)
 {
-	if (str->pos + 8 > str->curLimit)
+	if (str->pos + sizeof(*res) > str->curLimit)
 		return -1;
-  uint64_t tmp;
+	memcpy(res, str->buf + str->pos, sizeof(*res));
+	str->pos += sizeof(*res);
+	/*uint64_t tmp;
 	tmp = str->buf[str->pos++];
 	tmp |= (uint64_t)(str->buf[str->pos++]) << 8;
 	tmp |= (uint64_t)(str->buf[str->pos++]) << 16;
@@ -375,7 +388,7 @@ LAPI static int ReadRawLittleEndian64(OutPutStream* str, uint64_t* res)
 	tmp |= (uint64_t)(str->buf[str->pos++]) << 40;
 	tmp |= (uint64_t)(str->buf[str->pos++]) << 48;
 	tmp |= (uint64_t)(str->buf[str->pos++]) << 56;
-	*res = tmp;
+	*res = tmp;*/
 	return 0;
 }
 

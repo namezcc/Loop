@@ -1,4 +1,4 @@
-#ifndef MSG_MODULE_H
+﻿#ifndef MSG_MODULE_H
 #define MSG_MODULE_H
 #include <functional>
 #include <unordered_map>
@@ -6,6 +6,9 @@
 #include "spdlog/common.h"
 
 //class ScheduleModule;
+#define CM_MSG_BEGIN 10000
+#define CM_MSG_END 15000
+#define MAX_CM_MSG_ID 5000
 
 typedef std::function<void(BaseMsg*)> MsgCall;
 typedef std::function<void(SHARE<BaseMsg>&, c_pull&, SHARE<BaseCoro>&)> AsynMsgCall;
@@ -211,10 +214,10 @@ private:
 
 	void PushMsgCall(const int32_t& mid, const MsgCall& call)
 	{
-		if (mid > L_FAST_BEGAN && mid < N_FAST_END)
+		if (mid > L_BEGAN && mid < N_END)
 			m_arrayCall[mid] = call;
-		else
-			m_callBack[mid] = call;
+		else if(mid >= CM_MSG_BEGIN && mid < CM_MSG_END)
+			m_protoCall[mid] = call;
 	}
 
 	void CheckCoroClear(const int64_t& dt);
@@ -243,7 +246,8 @@ private:
 	SHARE<BaseMsg> m_msgCash;
 
 	std::unordered_map<int32_t, MsgCall> m_callBack;
-	MsgCall m_arrayCall[N_FAST_END];
+	MsgCall m_arrayCall[N_END];
+	MsgCall m_protoCall[MAX_CM_MSG_ID];
 	//std::unordered_map<int32_t, MsgCall2> m_callBack2;
 
 	int64_t m_coroCheckTime;

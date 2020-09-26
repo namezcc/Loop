@@ -14,7 +14,8 @@ set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/ReflectData.cpp)
 if(WIN32)
 set(Masterlib
 Crypto.lib
-jsoncpp.lib
+libprotobufd.lib
+mysqlpp_d.lib
 )
 endif()
 
@@ -32,4 +33,5 @@ add_definitions(
 -DHAVE_STRUCT_TIMESPEC
 -D_WIN32_WINNT=0x0600
 -DWIN32_LEAN_AND_MEAN
+-DRAPIDJSON_HAS_STDSTRING
 )

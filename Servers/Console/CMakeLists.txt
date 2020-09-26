@@ -6,7 +6,14 @@ file(GLOB_RECURSE CON_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE CON_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
 add_library(${ProjectName} SHARED ${CON_HEAD_FILES} ${CON_SOUCE_FILES})
-target_link_libraries(${ProjectName} ${LoopLib})
+
+if(WIN32)
+set(consollib
+libprotobufd.lib
+)
+endif()
+
+target_link_libraries(${ProjectName} ${LoopLib} ${consollib})
 
 set_target_properties(${ProjectName} PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${LPOutDir}

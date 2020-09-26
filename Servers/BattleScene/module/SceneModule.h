@@ -8,7 +8,7 @@ class MsgModule;
 class EventModule;
 class LuaModule;
 class ScheduleModule;
-class lua_State;
+struct lua_State;
 class LuaState;
 
 #define MAX_SCENE_SIZE	300

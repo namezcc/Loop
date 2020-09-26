@@ -39,27 +39,7 @@ int LoopFile::GetContent(const string& file, NetBuffer & context)
 	return -1;
 }
 
-void LoopFile::GetRootPath(string & res)
-{
-	try
-	{
-		boost::filesystem::path p = boost::filesystem::initial_path();
-		while (p.has_parent_path())
-		{
-			if (p.leaf() == "Loop")
-				break;
-			p.remove_leaf();
-		}	
-		res = move(p.string());
-		res.append("/");
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-	}
-}
-
-std::string LoopFile::GetRootPath2()
+std::string LoopFile::GetRootPath()
 {
 	try
 	{
@@ -83,8 +63,7 @@ std::string LoopFile::GetRootPath2()
 
 string LoopFile::GetExecutePath()
 {
-	std::string path;
-	GetRootPath(path);
+	std::string path = GetRootPath();
 	path.append("_out/");
 #if PLATFORM == PLATFORM_WIN
 	path.append("Debug/");
@@ -102,31 +81,4 @@ void LoopFile::MakeDir(const string & path)
 	{
 		std::cerr << e.what() << '\n';
 	}
-}
-
-void LoopFile::ReadJson(Json::Value& root,const std::string& file)
-{
-	ifstream ifs;
-	try
-	{
-		ifs.open(file);
-		ifs.is_open();
-	}
-	catch (const std::exception& e)
-	{
-		cout << e.what() << endl;
-		return;
-	}
-	Json::CharReaderBuilder readerBuilder;
-	std::string err;
-	if (!Json::parseFromStream(readerBuilder, ifs, &root, &err))
-		cout << err << endl;
-}
-
-void LoopFile::ReadJsonInRoot(Json::Value& root,const std::string& file)
-{
-	string rpath;
-	LoopFile::GetRootPath(rpath);
-	rpath.append(file);
-	ReadJson(root,rpath);
 }

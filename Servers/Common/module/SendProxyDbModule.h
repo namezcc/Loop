@@ -1,4 +1,4 @@
-#ifndef SEND_PROXY_DB_MODULE_H
+ï»¿#ifndef SEND_PROXY_DB_MODULE_H
 #define SEND_PROXY_DB_MODULE_H
 
 #include "BaseModule.h"
@@ -202,7 +202,7 @@ public:
 	{
 		if (param.field_size() != param.value_size() || param.field_size() > Reflect<T>::Size())
 			return;
-		for (size_t i = 0; i < param.field_size(); i++)
+		for (int32_t i = 0; i < param.field_size(); i++)
 		{
 			Reflect<T>::SetFieldValue(rf, param.field(i), param.value(i));
 		}
@@ -211,7 +211,7 @@ public:
 
 private:
 
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 	void SendToProxyDb(google::protobuf::Message& msg, const int32_t& hash, const int32_t& mid, const int32_t& api);
 	SHARE<BaseMsg> RequestToProxyDb(google::protobuf::Message& msg, const int32_t& hash, const int32_t& mid, c_pull& pull, SHARE<BaseCoro>& coro, const int32_t& api);

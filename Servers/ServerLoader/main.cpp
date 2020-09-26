@@ -1,5 +1,4 @@
 #include "dllhelp.h"
-#include "json/json.h"
 #include "LPFile.h"
 #include <fstream>
 #include <assert.h>
@@ -7,6 +6,7 @@
 #include <thread>
 #include "cmdline.h"
 #include "dump.h"
+#include "JsonHelp.h"
 
 #if PLATFORM != PLATFORM_WIN
 #include <errno.h>
@@ -23,33 +23,11 @@ typedef void(*DLL_START)(int, char*[]);
 
 void LoadServerConf(map<int,string>& conf)
 {
-	string file;
-	LoopFile::GetRootPath(file);
-	file.append("commonconf/Server.json");
-
-	ifstream ifs;
-	ifs.open(file);
-
-	try
-	{
-		ifs.is_open();
-	}
-	catch (const std::exception& e)
-	{
-		cout << e.what() <<endl;
-	}
-
-	//Json::Reader reader;
-	Json::Value root;
-	/*if (!reader.parse(ifs, root, false))
-		cout << reader.getFormattedErrorMessages();*/
-	Json::CharReaderBuilder readerBuilder;
-	std::string err;
-	if (!Json::parseFromStream(readerBuilder, ifs, &root, &err))
-		cout << err << endl;
-
-	for (auto& v : root)
-		conf[v["type"].asInt()] = v["name"].asString();
+	JsonHelp jhelp;
+	if (!jhelp.ParseFile(LoopFile::GetRootPath().append("commonconf/Server.json")))
+		exit(-1);
+	for (auto& v : jhelp.GetDocument().GetArray())
+		conf[v["type"].GetInt()] = v["name"].GetString();
 }
 
 void StartInitCrash(const std::string& proname,const int32_t& nid)

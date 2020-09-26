@@ -3,7 +3,6 @@
 #include <iostream>
 #include <fstream>
 #include "Define.h"
-#include "json/json.h"
 
 using namespace std;
 
@@ -17,12 +16,9 @@ public:
 
 	static bool ExistFile(string file);
 	static int GetContent(const string& file, NetBuffer& context);
-	static void GetRootPath(string& res);
-	static std::string GetRootPath2();
+	static std::string GetRootPath();
 	static string GetExecutePath();
 	static void MakeDir(const string& path);
-	static void ReadJson(Json::Value& root,const std::string& file);
-	static void ReadJsonInRoot(Json::Value& root,const std::string& file);
 private:
 
 };

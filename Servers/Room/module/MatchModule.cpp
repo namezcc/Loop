@@ -1,4 +1,4 @@
-#include "MatchModule.h"
+﻿#include "MatchModule.h"
 #include "MsgModule.h"
 #include "ProxyNodeModule.h"
 #include "TransMsgModule.h"
@@ -29,8 +29,8 @@ void MatchModule::Init()
 	m_netObjModule = GET_MODULE(NetObjectModule);
 
 
-	m_msgModule->AddMsgCallBack(LPMsg::N_REQ_BEGIN_MATCH, this, &MatchModule::OnPlayerBeginBattle);
-	m_msgModule->AddMsgCallBack(LPMsg::N_REQ_STOP_MATCH, this, &MatchModule::OnReqStopMatch);
+	m_msgModule->AddMsgCallBack(LPMsg::CM_BEGIN_MATCH, this, &MatchModule::OnPlayerBeginBattle);
+	m_msgModule->AddMsgCallBack(LPMsg::CM_STOP_MATCH, this, &MatchModule::OnReqStopMatch);
 
 	m_msgModule->AddMsgCallBack(N_ACK_GET_MATCH_SERVER, this, &MatchModule::OnAckGetMatchServer);
 	m_msgModule->AddMsgCallBack(N_ACK_MATCH_BATTLE, this, &MatchModule::OnAckMatchBattle);
@@ -70,7 +70,7 @@ void MatchModule::OnPlayerBeginBattle(NetMsg * msg)
 	LPMsg::AckMatchState ackmsg;
 	ackmsg.set_state(1);
 	
-	m_netObjModule->SendNetMsg(player->sock, LPMsg::N_ACK_MATCH_STATE, ackmsg);
+	m_netObjModule->SendNetMsg(player->sock, LPMsg::SM_MATCH_STATE, ackmsg);
 }
 
 void MatchModule::OnReqStopMatch(NetMsg * msg)
@@ -154,5 +154,5 @@ void MatchModule::OnAckBattleAddPlayer(NetMsg * msg)
 	ackmsg.set_port(match->m_battlePort);
 	ackmsg.set_sceneid(match->m_sceneId);
 	ackmsg.set_key(pbMsg.key());
-	m_netObjModule->SendNetMsg(player->sock, LPMsg::N_ACK_ENTER_BATTLE, ackmsg);
+	m_netObjModule->SendNetMsg(player->sock, LPMsg::SM_ENTER_BATTLE, ackmsg);
 }

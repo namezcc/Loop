@@ -1,4 +1,4 @@
-#include "PlayerModule.h"
+﻿#include "PlayerModule.h"
 #include "MsgModule.h"
 #include "TransMsgModule.h"
 #include "NetObjectModule.h"
@@ -27,8 +27,8 @@ void PlayerModule::Init()
 	m_eventModule = GET_MODULE(EventModule);
 
 	m_msgModule->AddMsgCallBack(N_ROOM_READY_TAKE_PLAYER, this, &PlayerModule::OnReadyTakePlayer);
-	m_msgModule->AddMsgCallBack(LPMsg::N_REQ_ENTER_ROOM, this, &PlayerModule::OnPlayerEnter);
-	m_msgModule->AddAsynMsgCall(LPMsg::N_REQ_CREATE_ROLE,BIND_ASYN_CALL(OnCreatePlayer));
+	m_msgModule->AddMsgCallBack(LPMsg::CM_ENTER_ROOM, this, &PlayerModule::OnPlayerEnter);
+	m_msgModule->AddAsynMsgCall(LPMsg::CM_CREATE_ROLE,BIND_ASYN_CALL(OnCreatePlayer));
 
 	m_eventModule->AddEventCall(E_SOCKET_CLOSE,BIND_EVENT(OnClientClose,int32_t));
 }
@@ -81,7 +81,7 @@ void PlayerModule::OnPlayerEnter(NetMsg * msg)
 	if (it->second->roleId == 0)
 	{
 		LPMsg::EmptyPB ackpb;
-		m_netobjModule->SendNetMsg(msg->socket, LPMsg::N_ACK_CREATE_ROLE, ackpb);
+		m_netobjModule->SendNetMsg(msg->socket, LPMsg::SM_CREATE_ROLE, ackpb);
 	}
 	else
 	{//yes select
@@ -215,7 +215,7 @@ void PlayerModule::SendPlayerInfo(SHARE<RoomPlayer>& player)
 {
 	LPMsg::GameObject msg;
 	player->m_player->ParsePB(msg);
-	m_netobjModule->SendNetMsg(player->sock, LPMsg::N_ACK_ENTER_ROOM, msg);
+	m_netobjModule->SendNetMsg(player->sock, LPMsg::SM_ENTER_ROOM, msg);
 
 	if (player->m_matchInfo->m_key > 0)
 	{
@@ -228,7 +228,7 @@ void PlayerModule::SendPlayerInfo(SHARE<RoomPlayer>& player)
 		ackmsg.set_port(match->m_battlePort);
 		ackmsg.set_sceneid(match->m_sceneId);
 		ackmsg.set_key(match->m_key);
-		m_netobjModule->SendNetMsg(player->sock, LPMsg::N_ACK_OLD_BATTLE_INFO, ackmsg);
+		m_netobjModule->SendNetMsg(player->sock, LPMsg::SM_OLD_BATTLE_INFO, ackmsg);
 	}
 }
 

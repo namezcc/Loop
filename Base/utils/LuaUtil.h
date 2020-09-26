@@ -138,13 +138,44 @@ template<typename T>
 struct PushTool<T, true>
 {
 	using _T = typename std::decay<T>::type;
-	static void PushVal(lua_State* L, T&& val)
+	template<typename V>
+	static void PushVal(lua_State* L, V&& val)
 	{
 		lua_newtable(L);
 		for (size_t i = 0; i < LuaReflect<_T>::SIZE; i++)
 		{
 			LuaReflect<_T>::arr_pushfunc[i]((char*)&val, LuaReflect<_T>::arr_offset[i], L);
 			lua_setfield(L, -2, LuaReflect<_T>::arr_fields[i]);
+		}
+	}
+};
+
+
+template<typename T>
+struct PushTool<std::vector<T>, false>
+{
+	static void PushVal(lua_State* L, const std::vector<T>& val)
+	{
+		lua_newtable(L);
+		for (size_t i = 0; i < val.size(); i++)
+		{
+			PushTool<T, LuaReflect<std::decay<T>::type>::have_type>::PushVal(L, val[i]);
+			lua_rawseti(L, -2, i + 1);
+		}
+	}
+};
+
+template<typename T1, typename T2>
+struct PushTool<std::map<T1, T2>, false>
+{
+	static void PushVal(lua_State* L, const std::map<T1, T2>& val)
+	{
+		lua_newtable(L);
+		for (auto& it : val)
+		{
+			PushTool<T1, LuaReflect<std::decay<T1>::type>::have_type>::PushVal(L, it.first);
+			PushTool<T2, LuaReflect<std::decay<T2>::type>::have_type>::PushVal(L, it.second);
+			lua_settable(L, -3);
 		}
 	}
 };
@@ -161,7 +192,7 @@ struct PushLuaArgs
 	template<typename T>
 	static void PushVal(lua_State* L, T&& val)
 	{
-		PushTool<T, LuaReflect<typename std::decay<T>::type>::have_type>::PushVal(L, std::forward<T>(val));
+		PushTool<std::decay<T>::type, LuaReflect<typename std::decay<T>::type>::have_type>::PushVal(L, std::forward<T>(val));
 	}
 
 	static void PushVal(lua_State* L)
@@ -260,6 +291,57 @@ struct PullLuaArgs<LuaReflect<T>>
 			lua_pop(L, 1);
 		}
 		return t;
+	}
+};
+
+template<typename T>
+struct PullLuaArgs<std::vector<T>>
+{
+	enum { P_SIZE = 1 };
+
+	static std::vector<T> PullVal(lua_State* L, const int32_t& idx = -1)
+	{
+		std::vector<T> vec;
+		if (!lua_istable(L, idx))
+			return vec;
+
+		lua_pushvalue(L, idx);
+		int index = lua_gettop(L);
+		lua_pushnil(L);
+		while (lua_next(L, index))
+		{
+			vec.push_back(PullLuaArgs<T>::PullVal(L));
+			lua_pop(L, 1);
+		}
+		lua_pop(L, 1);
+		return vec;
+	}
+};
+
+template<typename T1, typename T2>
+struct PullLuaArgs<std::map<T1, T2>>
+{
+	enum { P_SIZE = 1 };
+
+	static std::map<T1, T2> PullVal(lua_State* L, const int32_t& idx = -1)
+	{
+		std::map<T1, T2> _map;
+		if (!lua_istable(L, idx))
+			return _map;
+
+		lua_pushvalue(L, idx);
+		int index = lua_gettop(L);
+		lua_pushnil(L);
+		while (lua_next(L, index))
+		{
+			lua_pushvalue(L, -2);
+			T1 _key = PullLuaArgs<T1>::PullVal(L);
+			lua_pop(L, 1);
+			_map[_key] = PullLuaArgs<T2>::PullVal(L);
+			lua_pop(L, 1);
+		}
+		lua_pop(L, 1);
+		return _map;
 	}
 };
 

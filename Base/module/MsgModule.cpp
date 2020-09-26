@@ -1,4 +1,4 @@
-#include "MsgModule.h"
+﻿#include "MsgModule.h"
 #include "ScheduleModule.h"
 
 MsgModule::MsgModule(BaseLayer* l):BaseModule(l), m_coroIndex(0), m_coroCheckTime(0), m_curList(&m_coroList1), m_msgCash(NULL)
@@ -56,21 +56,21 @@ void MsgModule::MsgCallBack(void* msg)
 {
 	auto smsg = (BaseMsg*)msg;
 
-	if (smsg->msgId > L_FAST_BEGAN && smsg->msgId < N_FAST_END)
+	if (smsg->msgId > L_BEGAN && smsg->msgId < N_END)
 	{
 		if (m_arrayCall[smsg->msgId])
 			m_arrayCall[smsg->msgId](smsg);
 		else
 			LOOP_RECYCLE(smsg);
 	}
-	else
+	else if(smsg->msgId > CM_MSG_BEGIN && smsg->msgId < CM_MSG_END)
 	{
-		auto it = m_callBack.find(smsg->msgId);
-		if (it != m_callBack.end())
-			it->second(smsg);
+		if (m_protoCall[smsg->msgId - CM_MSG_BEGIN])
+			m_protoCall[smsg->msgId - CM_MSG_BEGIN](smsg);
 		else
 			LOOP_RECYCLE(smsg);
-	}
+	}else
+		LOOP_RECYCLE(smsg);
 }
 
 void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
@@ -81,7 +81,7 @@ void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
 		nmsg->m_data = NULL;
 		LOOP_RECYCLE(nmsg);
 	});
-	if (smsg->msgId > L_FAST_BEGAN && smsg->msgId < N_FAST_END)
+	if (smsg->msgId > L_BEGAN && smsg->msgId < N_END)
 	{
 		if (m_arrayCall[smsg->msgId])
 		{
@@ -89,13 +89,12 @@ void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
 			m_arrayCall[smsg->msgId](NULL);
 		}
 	}
-	else
+	else if(smsg->msgId > CM_MSG_BEGIN && smsg->msgId<CM_MSG_END)
 	{
-		auto it = m_callBack.find(msg->mid);
-		if (it != m_callBack.end())
+		if (m_protoCall[smsg->msgId - CM_MSG_BEGIN])
 		{
 			m_msgCash = smsg;
-			it->second(NULL);
+			m_protoCall[smsg->msgId - CM_MSG_BEGIN](NULL);
 		}
 	}
 }
@@ -228,7 +227,7 @@ void MsgModule::ResponseAndWait(BaseData* data, const int32_t& coid,const int32_
 void MsgModule::DoRequestMsg(SHARE<BaseMsg>& msg)
 {
 	CoroMsg* cmsg = (CoroMsg*)msg.get();
-	if (cmsg->m_subMsgId > L_FAST_BEGAN && cmsg->m_subMsgId < N_FAST_END)
+	if (cmsg->m_subMsgId > L_BEGAN && cmsg->m_subMsgId < N_END)
 	{
 		if (m_arrayCall[cmsg->m_subMsgId])
 		{
@@ -236,13 +235,12 @@ void MsgModule::DoRequestMsg(SHARE<BaseMsg>& msg)
 			m_arrayCall[cmsg->m_subMsgId](NULL);
 		}
 	}
-	else
+	else if(cmsg->m_subMsgId > CM_MSG_BEGIN && cmsg->m_subMsgId < CM_MSG_END)
 	{
-		auto it = m_callBack.find(cmsg->m_subMsgId);
-		if (it != m_callBack.end())
+		if (m_protoCall[cmsg->m_subMsgId - CM_MSG_BEGIN])
 		{
 			m_msgCash = msg;
-			it->second(NULL);
+			m_protoCall[cmsg->m_subMsgId - CM_MSG_BEGIN](NULL);
 		}
 	}
 }

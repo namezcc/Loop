@@ -1,13 +1,13 @@
-#ifndef MSG_DEFINE_H
+﻿#ifndef MSG_DEFINE_H
 #define MSG_DEFINE_H
 #include <string>
 #include <sstream>
 #include <vector>
 
-enum MSG_FROM_LAYER_FAST
+enum MSG_FROM_LAYER
 {
-	L_FAST_BEGAN = 0,
-	
+	L_BEGAN = 0,
+
 	L_REQUEST_CORO_MSG,
 	L_RESPONSE_CORO_MSG,
 
@@ -25,28 +25,6 @@ enum MSG_FROM_LAYER_FAST
 
 	L_MYSQL_MSG,
 	L_MYSQL_CORO_MSG,
-	
-	L_FAST_END,
-};
-
-enum MSG_FROM_NET_FAST
-{
-	N_FAST_BEGAN = MSG_FROM_LAYER_FAST::L_FAST_END,
-
-	N_REQUEST_CORO_MSG,
-	N_RESPONSE_CORO_MSG,
-
-	N_REGISTE_SERVER,
-	N_TRANS_SERVER_MSG,
-	N_RECV_HTTP_MSG,
-
-	N_FAST_END,
-};
-
-enum MSG_FROM_LAYER
-{
-	L_BEGAN = MSG_FROM_NET_FAST::N_FAST_END,
-
 	//http
 	L_HL_GET_MACHINE_LIST,	//��ȡconsole��
 
@@ -64,6 +42,12 @@ enum MSG_FROM_NET
 {
 	N_BEGAN = MSG_FROM_LAYER::L_END,
 
+	N_REQUEST_CORO_MSG,
+	N_RESPONSE_CORO_MSG,
+
+	N_REGISTE_SERVER,
+	N_TRANS_SERVER_MSG,
+	N_RECV_HTTP_MSG,
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> common ------------------
 
 	N_MYSQL_MSG,
@@ -88,8 +72,6 @@ enum MSG_FROM_NET
 
 	N_CORO_TEST_1,
 
-
-
 	N_LOGIN_LOCK,
 	N_LOGIN_UNLOCK,
 
@@ -101,7 +83,9 @@ enum MSG_FROM_NET
 
 	//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< server msg ----------------------
 
-	N_END,
+	
+	N_END_BEFOR,
+	N_END = 1000,
 };
 //�ͻ����������֮����Ϣid > 10000
 enum BASE_EVENT

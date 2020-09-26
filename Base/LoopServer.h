@@ -52,7 +52,8 @@ public:
 	template<typename T>
 	T* popMsg(int32_t index)
 	{
-		return m_msgPool[index].popMsg<T>();
+		//return m_msgPool[index].popMsg<T>();
+		return MsgPool::popMsg<T>();
 	}
 	void recycle(int32_t index, BaseData* msg);
 

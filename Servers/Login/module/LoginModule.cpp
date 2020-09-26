@@ -1,4 +1,4 @@
-#include "LoginModule.h"
+ï»¿#include "LoginModule.h"
 #include "NetObjectModule.h"
 #include "MsgModule.h"
 #include "Crypto/crchash.h"
@@ -33,10 +33,10 @@ void LoginModule::Init()
 	m_transModule = GET_MODULE(TransMsgModule);
 	m_eventModule = GET_MODULE(EventModule);
 
-	m_msgModule->AddAsynMsgCall(LPMsg::N_REQ_LOGIN,BIND_ASYN_CALL(OnClientLogin));
+	m_msgModule->AddAsynMsgCall(LPMsg::CM_LOGIN,BIND_ASYN_CALL(OnClientLogin));
 	m_msgModule->AddAsynMsgCall(N_ML_CREATE_ACCOUNT, BIND_ASYN_CALL(OnCreateAccount));
 
-	m_msgModule->AddMsgCall(LPMsg::N_REQ_PLAYER_OPERATION, BIND_CALL(OnTestPing, NetMsg));
+	m_msgModule->AddMsgCall(LPMsg::CM_PLAYER_OPERATION, BIND_CALL(OnTestPing, NetMsg));
 
 	m_eventModule->AddEventCall(E_SOCKEK_CONNECT,BIND_EVENT(OnClientConnect,int32_t));
 }
@@ -51,7 +51,7 @@ void LoginModule::OnTestPing(NetMsg * msg)
 	TRY_PARSEPB(LPMsg::propertyInt32, msg);
 	LPMsg::propertyInt32 pong;
 	pong.set_data(pbMsg.data() + 1);
-	m_netModule->SendNetMsg(msg->socket, LPMsg::N_ACK_OPERATION_SIZE, pong);
+	m_netModule->SendNetMsg(msg->socket, LPMsg::SM_OPERATION_SIZE, pong);
 }
 
 void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro)
@@ -266,7 +266,7 @@ bool LoginModule::TryPlayerLogin(SHARE<ClientObj>& client, SHARE<AccoutInfo>& ac
 	msg.set_pid(account->id);
 	ServerNode ser{ SERVER_TYPE::LOOP_LOGIN_LOCK,1 };
 
-	//ÇëÇóËø
+	//è¯·æ±‚é”
 	auto ackmsg = m_transModule->RequestServerAsynMsg(ser, N_LOGIN_LOCK, msg, pull, coro);
 	auto netmsg = (NetMsg*)ackmsg->m_data;
 	{
@@ -316,7 +316,7 @@ bool LoginModule::TryPlayerLogin(SHARE<ClientObj>& client, SHARE<AccoutInfo>& ac
 		}
 		SendRoomInfo(account, client,room,pull,coro);
 	}
-	//ÊÍ·ÅËø
+	//é‡Šæ”¾é”
 	m_transModule->SendToServer(ser, N_LOGIN_UNLOCK, msg);
 	RemoveClient(account->name);
 	return true;
@@ -341,7 +341,7 @@ void LoginModule::SendRoomInfo(SHARE<AccoutInfo>& account, SHARE<ClientObj>& cli
 	msg.set_ip(room->ip);
 	msg.set_port(room->port);
 	msg.set_pid(account->id);
-	m_netModule->SendNetMsg(client->sock, LPMsg::N_ACK_LOGIN_RES, msg);
+	m_netModule->SendNetMsg(client->sock, LPMsg::SM_LOGIN_RES, msg);
 }
 
 void LoginModule::RemoveClient(const std::string & account)

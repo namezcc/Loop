@@ -1,4 +1,4 @@
-#include "MatchServerModule.h"
+﻿#include "MatchServerModule.h"
 #include "MsgModule.h"
 #include "TransMsgModule.h"
 #include "module/ProxyNodeModule.h"
@@ -66,7 +66,7 @@ void MatchServerModule::OnAckServerOffLine(NetMsg * msg)
 	if (it == m_battle.end())
 		return;
 
-	m_freeSceneNum -= it->second->m_scene.size();
+	m_freeSceneNum -= (int32_t)it->second->m_scene.size();
 	it->second->m_scene.clear();
 	if (it->second->m_battle.serid == m_useBattle->m_battle.serid)
 	{

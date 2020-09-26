@@ -4,6 +4,7 @@
 #include "LPFile.h"
 #include <boost/process.hpp>
 #include <boost/filesystem.hpp>
+#include "JsonHelp.h"
 
 namespace bp = boost::process;
 namespace bf = boost::filesystem;
@@ -20,14 +21,10 @@ void ProcessModule::Init()
 {
 	m_msgModule = GET_MODULE(MsgModule);
 
-	Json::Value jroot;
-	LoopFile::ReadJsonInRoot(jroot,"commonconf/Common.json");
-	m_logdir = jroot["logdir"].asString();
-
-	std::string root;
-	LoopFile::GetRootPath(root);
-	root.append(m_logdir);
-	m_logdir = move(root);
+	JsonHelp jhelp;
+	if (!jhelp.ParseFile(LoopFile::GetRootPath().append("commonconf/Common.json")))
+		exit(-1);
+	m_logdir = LoopFile::GetRootPath().append(jhelp.GetMember("logdir")->GetString());
 	LoopFile::MakeDir(m_logdir);
 }
 

@@ -46,7 +46,7 @@ void SceneModule::Init()
 
 	//m_gcRegIndex = m_luaState->RegistGlobalFunc("ClearGC",false);
 
-	auto rootp = LoopFile::GetRootPath2();
+	auto rootp = LoopFile::GetRootPath();
 	rootp.append("Servers/BattleScene/script/main.lua");
 	m_luaState->RunScript(rootp);
 	m_luaState->CallGlobalLuaFunc("Main");
@@ -56,7 +56,7 @@ void SceneModule::Init()
 
 void SceneModule::InitScene()
 {
-	for (size_t i = 0; i < MAX_SCENE_SIZE; i++)
+	for (int32_t i = 0; i < MAX_SCENE_SIZE; i++)
 	{
 		auto scene = GET_SHARE(BattleScene);
 		scene->m_id = i + 1;
@@ -136,7 +136,7 @@ int SceneModule::SendStreamData(lua_State * L)
 	if (!lua_isinteger(L, -2))
 		return m_luaState->PushArgs(false);
 
-	int32_t mid = lua_tointeger(L, -2);
+	int32_t mid = (int32_t)lua_tointeger(L, -2);
 
 	OutPutStream** ud = (OutPutStream**)luaL_checkudata(L, -1, "OutPutStream");
 	if (ud == NULL)
@@ -158,14 +158,14 @@ int SceneModule::SendStreamData(lua_State * L)
 
 int SceneModule::GetScriptPath()
 {
-	auto rootp = LoopFile::GetRootPath2();
+	auto rootp = LoopFile::GetRootPath();
 	rootp.append("Servers/BattleScene/script/");
 	return m_luaState->PushArgs(rootp);
 }
 
 int SceneModule::GetProtoPath()
 {
-	auto rootp = LoopFile::GetRootPath2();
+	auto rootp = LoopFile::GetRootPath();
 	rootp.append("proto/");
 	return m_luaState->PushArgs(rootp);
 }

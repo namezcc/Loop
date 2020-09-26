@@ -3,6 +3,7 @@
 #include "ScheduleModule.h"
 #include "LPFile.h"
 #include "spdlog/spdlog.h"
+#include "JsonHelp.h"
 
 LogModule::LogModule(BaseLayer * l):BaseModule(l),m_showlog(true)
 {
@@ -24,9 +25,9 @@ void LogModule::Init()
 	dir.append("logs");
 	LoopFile::MakeDir(dir);
 
-	Json::Value jroot;
-	LoopFile::ReadJsonInRoot(jroot,"commonconf/Common.json");
-	m_showlog = jroot["showlog"].asBool();
+	JsonHelp jhelp;
+	if(jhelp.ParseFile(LoopFile::GetRootPath().append("commonconf/Common.json")))
+		m_showlog = jhelp.GetMember("showlog")->GetBool();
 }
 
 void LogModule::AfterInit()

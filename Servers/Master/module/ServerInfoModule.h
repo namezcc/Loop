@@ -1,11 +1,11 @@
-#ifndef SERVER_INFO_MODULE_H
+ï»¿#ifndef SERVER_INFO_MODULE_H
 #define SERVER_INFO_MODULE_H
 
 #include "BaseModule.h"
 
 class MsgModule;
 class MysqlModule;
-class ServerInfo;
+struct ServerInfo;
 
 class ServerInfoModule:public BaseModule
 {
@@ -14,7 +14,7 @@ public:
 	~ServerInfoModule();
 
 private:
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 	virtual void BeforExecute() override;
 
