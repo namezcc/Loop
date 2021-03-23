@@ -1,4 +1,4 @@
-#include "HttpLogicModule.h"
+﻿#include "HttpLogicModule.h"
 #include "MsgModule.h"
 #include "EventModule.h"
 #include "NetObjectModule.h"
@@ -273,7 +273,7 @@ void HttpLogicModule::OnRecvHttpMsg(NetMsg * msg)
 
 	auto buff = msg->m_buff;
 	while(buff){
-		it->second->request.RecvBuff(buff->m_buff, buff->m_size);
+		it->second->request.RecvBuff(buff->m_buff, buff->getSize());
 		buff = buff->m_next;	
 	}
 	auto st = it->second->request.Decode();

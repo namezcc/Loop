@@ -1,4 +1,4 @@
-#include "NetObjectModule.h"
+﻿#include "NetObjectModule.h"
 #include "MsgModule.h"
 #include "EventModule.h"
 #include "LoopServer.h"
@@ -21,8 +21,8 @@ void NetObjectModule::Init()
 	m_eventModule = GetLayer()->GetModule<EventModule>();
 	m_transModule = GET_MODULE(TransMsgModule);
 
-	m_msgModule->AddMsgCall(L_SOCKET_CONNET, BIND_CALL(OnSocketConnet,NetSocket));
-	m_msgModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnSocketClose,NetSocket));
+	m_msgModule->AddMsgCall(L_SOCKET_CONNET, BIND_CALL(OnSocketConnet, NetMsg));
+	m_msgModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnSocketClose, NetMsg));
 	m_msgModule->AddMsgCall(L_SERVER_CONNECTED, BIND_CALL(OnServerConnet,NetServer));
 	
 	m_outTime = 5;
@@ -37,7 +37,7 @@ void NetObjectModule::Execute()
 	CheckOutTime();
 }
 
-void NetObjectModule::OnSocketConnet(NetSocket * sock)
+void NetObjectModule::OnSocketConnet(NetMsg * sock)
 {
 	auto netobj = GET_SHARE(NetObject);
 	netobj->socket = sock->socket;
@@ -52,7 +52,7 @@ void NetObjectModule::OnSocketConnet(NetSocket * sock)
 	m_eventModule->SendEvent(E_SOCKEK_CONNECT, sock->socket);
 }
 
-void NetObjectModule::OnSocketClose(NetSocket * sock)
+void NetObjectModule::OnSocketClose(NetMsg * sock)
 {
 	auto it = m_objects.find(sock->socket);
 	if (it != m_objects.end())
@@ -104,7 +104,9 @@ void NetObjectModule::SendNetMsg(const int & socket, const int & mid, google::pr
 	NetMsg* nMsg = GetLayer()->GetLayerMsg<NetMsg>();
 	nMsg->socket = socket;
 	nMsg->mid = mid;
-	auto buff = PB::PBToBuffBlock(GetLayer(),pbmsg);
+	auto buff = GET_LAYER_MSG(BuffBlock);
+	buff->makeRoom(pbmsg.ByteSize());
+	buff->write(pbmsg);
 	nMsg->push_front(buff);
 	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
 }
@@ -125,7 +127,9 @@ void NetObjectModule::BroadNetMsg(const std::vector<int32_t>& socks, const int32
 
 	nMsg->m_socks = std::move(socks);
 	nMsg->mid = mid;
-	auto buff = PB::PBToBuffBlock(GetLayer(), pbmsg);
+	auto buff = GET_LAYER_MSG(BuffBlock);
+	buff->makeRoom(pbmsg.ByteSize());
+	buff->write(pbmsg);
 	nMsg->push_front(buff);
 	m_msgModule->SendMsg(L_SOCKET_BROAD_DATA, nMsg);
 }
@@ -141,7 +145,9 @@ void NetObjectModule::BroadNetMsg(const std::vector<int32_t>& socks, const int32
 
 SHARE<BaseMsg> NetObjectModule::ResponseAsynMsg(const int32_t & socket, SHARE<BaseMsg>& comsg, gpb::Message & pbmsg, c_pull& pull, SHARE<BaseCoro>& coro)
 {
-	auto buff = PB::PBToBuffBlock(GetLayer(), pbmsg);
+	auto buff = GET_LAYER_MSG(BuffBlock);
+	buff->makeRoom(pbmsg.ByteSize());
+	buff->write(pbmsg);
 	return ResponseAsynMsg(socket,comsg,buff,pull,coro);
 }
 
@@ -157,7 +163,9 @@ SHARE<BaseMsg> NetObjectModule::ResponseAsynMsg(const int32_t & socket, SHARE<Ba
 
 void NetObjectModule::ResponseMsg(const int32_t & socket, SHARE<BaseMsg>& comsg, gpb::Message & pbmsg)
 {
-	auto buff = PB::PBToBuffBlock(GetLayer(), pbmsg);
+	auto buff = GET_LAYER_MSG(BuffBlock);
+	buff->makeRoom(pbmsg.ByteSize());
+	buff->write(pbmsg);
 	ResponseMsg(socket, comsg, buff);
 }
 
@@ -174,8 +182,8 @@ void NetObjectModule::SendHttpMsg(const int& socket, NetBuffer& buf)
 	NetMsg* nMsg = GetLayer()->GetLayerMsg<NetMsg>();
 	auto buffblk = GetLayer()->GetLayerMsg<BuffBlock>();
 	nMsg->socket = socket;
-	buffblk->m_buff = buf.buf;
-	buffblk->m_size = buf.use;
+	buffblk->makeRoom(buf.use);
+	buffblk->write(buf.buf,buf.use);
 	buf.buf = NULL;
 	nMsg->push_front(buffblk);
 	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
@@ -187,7 +195,7 @@ void NetObjectModule::CloseNetObject(const int& socket)
 	if (it == m_objects.end())
 		return;
 
-	NetSocket* sock = GetLayer()->GetLayerMsg<NetSocket>();
+	auto sock = GetLayer()->GetLayerMsg<NetMsg>();
 	sock->socket = socket;
 
 	m_msgModule->SendMsg(L_SOCKET_CLOSE, sock);
@@ -199,21 +207,27 @@ void NetObjectModule::ConnectServer(const NetServer & ser, const ConnectServerRe
 {
 	auto msg = GET_LAYER_MSG(NetServer);
 	*msg = ser;
-	m_tempServer[ser.ip + loop_cast<std::string>(ser.port)] = call;
+	m_tempServer[ser.ip + ":" + loop_cast<std::string>(ser.port)] = call;
 	m_msgModule->SendMsg(L_TO_CONNET_SERVER,msg);
 }
 
 void NetObjectModule::OnServerConnet(NetServer* ser)
 {
-	auto it = m_tempServer.find(ser->ip.append(loop_cast<std::string>(ser->port)));
+	auto key = ser->ip + ":" + loop_cast<std::string>(ser->port);
+	auto it = m_tempServer.find(key);
 	if (it == m_tempServer.end())
 		return;
 
-	if (ser->socket >= 0)
+	if (ser->state == CONN_STATE::CONNECT)
 	{
+		LP_WARN << "connect server " << ser->serid << "success ip:" << ser->ip << " port: " << ser->port;
 		auto netobj = GET_SHARE(NetObject);
 		netobj->socket = ser->socket;
 		m_objects_tmp[netobj->socket] = netobj;
+	}
+	else
+	{
+		LP_ERROR << "connect server " << ser->serid << "error ip:" << ser->ip << " port: " << ser->port;
 	}
 	it->second(ser->socket >= 0, *ser);
 	m_tempServer.erase(it);
@@ -231,7 +245,7 @@ void NetObjectModule::CheckOutTime()
 	{
 		if (it->second->ctime < nt)
 		{
-			NetSocket* sock = GetLayer()->GetLayerMsg<NetSocket>();
+			auto sock = GetLayer()->GetLayerMsg<NetMsg>();
 			sock->socket = it->second->socket;
 			m_msgModule->SendMsg(L_SOCKET_CLOSE, sock);
 			m_objects_tmp.erase(it++);

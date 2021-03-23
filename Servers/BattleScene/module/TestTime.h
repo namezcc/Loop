@@ -1,4 +1,4 @@
-#ifndef TEST_TIME_H
+ï»¿#ifndef TEST_TIME_H
 #define TEST_TIME_H
 
 #include "BaseModule.h"
@@ -13,12 +13,12 @@ public:
 
 private:
 
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 
-	void OnTestBegin(NetSocket* s);
-	void OnTest(NetSocket* s);
-	void OnTestEnd(NetSocket* s);
+	void OnTestBegin(NetMsg* s);
+	void OnTest(NetMsg* s);
+	void OnTestEnd(NetMsg* s);
 
 
 	int64_t m_beg;

@@ -1,4 +1,4 @@
-#include "SendProxyDbModule.h"
+ï»¿#include "SendProxyDbModule.h"
 #include "TransMsgModule.h"
 #include "MsgModule.h"
 
@@ -42,28 +42,27 @@ SHARE<BaseMsg> SendProxyDbModule::RequestToProxyDbGroup(google::protobuf::Messag
 void SendProxyDbModule::SendToProxyDb(google::protobuf::Message & msg, const int32_t & hash, const int32_t & mid, const int32_t & api)
 {
 	auto forbuff = GET_LAYER_MSG(BuffBlock);
-	forbuff->makeRoom(sizeof(int32_t) * 2);
-	forbuff->m_size = sizeof(int32_t) * 2;
-	PB::WriteInt(forbuff->m_buff, hash);
-	PB::WriteInt(forbuff->m_buff + sizeof(int32_t), mid);
-	auto buff = PB::PBToBuffBlock(GetLayer(), msg);
-	forbuff->m_next = buff;
+	forbuff->makeRoom(sizeof(int32_t) * 2 + msg.ByteSize());
+	forbuff->writeInt32(hash);
+	forbuff->writeInt32(mid);
+	forbuff->write(msg);
 	m_tranModule->SendToServer(m_proxy, api, forbuff);
 }
 
 SHARE<BaseMsg> SendProxyDbModule::RequestToProxyDb(google::protobuf::Message & msg, const int32_t & hash, const int32_t & mid, c_pull & pull, SHARE<BaseCoro>& coro, const int32_t & api)
 {
-	auto forbuff = GET_LAYER_MSG(BuffBlock);
-	forbuff->makeRoom(sizeof(int32_t) * 2);
-	forbuff->m_size = sizeof(int32_t) * 2;
-	PB::WriteInt(forbuff->m_buff, hash);
-	PB::WriteInt(forbuff->m_buff + sizeof(int32_t), N_REQUEST_CORO_MSG);
-	auto buff = PB::PBToBuffBlock(GetLayer(), msg);
-
 	auto coid = m_msgModule->GenCoroIndex();
-	auto corobuf = m_tranModule->EncodeCoroMsg(buff, mid, coid);
+	auto corobuf = m_tranModule->EncodeCoroMsg(NULL, mid, coid);
 
-	forbuff->m_next = corobuf;		//db prox buff ÔÚ corobuff Ö®Ç°
+	auto forbuff = GET_LAYER_MSG(BuffBlock);
+	forbuff->makeRoom(sizeof(int32_t) * 2 + msg.ByteSize() + corobuf->getSize());
+	forbuff->writeInt32(hash);
+	forbuff->writeInt32(N_REQUEST_CORO_MSG);
+
+	forbuff->write(corobuf->m_buff, corobuf->getSize());
+
+	forbuff->write(msg);
+
 	m_tranModule->SendToServer(m_proxy, api, forbuff);
 	return m_msgModule->PullWait(coid, coro, pull);
 }

@@ -1,0 +1,5 @@
+[
+	{"server":7,"to_server":3,"type":1,"param":0,"desc":"所有"},
+	{"server":1,"to_server":7,"type":2,"param":0,"desc":"均分n个"},
+	{"server":2,"to_server":1,"type":3,"param":1,"desc":"固定id"}
+]

@@ -32,6 +32,7 @@ void MysqlManagerModule::Init()
 	m_msgmodule->AddMsgCallBack(N_UPDATE_TABLE_GROUP, this, &MysqlManagerModule::OnUpdateTableGroup);
 	m_msgmodule->AddMsgCallBack(N_ADD_TABLE_GROUP, this, &MysqlManagerModule::OnAddTableGroup);
 	m_msgmodule->AddMsgCallBack(N_CREATE_ACCOUNT, this, &MysqlManagerModule::OnCreateAccount);
+	m_msgmodule->AddMsgCallBack(100, this, &MysqlManagerModule::onTestMsg);
 	
 
 	m_index = 0;
@@ -70,8 +71,8 @@ void MysqlManagerModule::InitTableGroupNum()
 	}
 
 	for (int32_t i = 0; i < m_sqlLayerNum; i++)
-	{//拿 NetSocket 结构代用一下
-		auto num = GET_LAYER_MSG(NetSocket);
+	{
+		auto num = GET_LAYER_MSG(NetMsg);
 		num->socket = m_tableGroup;
 		m_msgmodule->SendMsg(LY_MYSQL, i, L_UPDATE_TABLE_GROUP, num);
 	}
@@ -232,8 +233,8 @@ void MysqlManagerModule::OnUpdateTableGroup(NetMsg * msg)
 	m_tableGroup = pbMsg.groupcount();
 
 	for (int32_t i = 0; i < m_sqlLayerNum; i++)
-	{//拿 NetSocket 结构代用一下
-		auto num = GET_LAYER_MSG(NetSocket);
+	{
+		auto num = GET_LAYER_MSG(NetMsg);
 		num->socket = m_tableGroup;
 		m_msgmodule->SendMsg(LY_MYSQL, i, L_UPDATE_TABLE_GROUP, num);
 	}
@@ -276,4 +277,12 @@ int MysqlManagerModule::GetSendLayerId()
 {
 	++m_index;
 	return m_index%m_sqlLayerNum;
+}
+
+void MysqlManagerModule::onTestMsg(NetServerMsg * msg)
+{
+	LPMsg::EmptyPB pbmsg;
+
+	LP_INFO << "get msg onTestMsg";
+	m_transModule->SendBackServer(msg->path, 100, pbmsg);
 }

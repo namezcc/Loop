@@ -1,4 +1,4 @@
-#ifndef MET_OBJECT_MODULE_H
+﻿#ifndef MET_OBJECT_MODULE_H
 #define MET_OBJECT_MODULE_H
 #include "BaseModule.h"
 class MsgModule;
@@ -36,8 +36,8 @@ public:
 	inline void SetAccept(bool _accept, int32_t _type) { m_acceptNoCheck = _accept; m_noCheckType = _type; };
 protected:
 
-	void OnSocketConnet(NetSocket* sock);
-	void OnSocketClose(NetSocket* sock);
+	void OnSocketConnet(NetMsg* sock);
+	void OnSocketClose(NetMsg* sock);
 	void OnServerConnet(NetServer* ser);
 
 	void NoticeSocketClose(NetObject* obj);

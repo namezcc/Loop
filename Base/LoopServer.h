@@ -1,4 +1,4 @@
-#ifndef LOOP_SERVER_H
+﻿#ifndef LOOP_SERVER_H
 #define LOOP_SERVER_H
 //#include "BaseLayer.h"
 #include "ThreadPool.h"
@@ -17,11 +17,18 @@ struct SqlInfo
 	int dbGroup;
 };
 
+struct ServerConfigInfo
+{
+	int32_t type;
+	int32_t server_id;
+	std::string ip;
+	int32_t port;
+};
+
 struct ServerConfig
 {
 	NetServer addr;
 	NetServer udpAddr;
-	vector<NetServer> connect;
 	SqlInfo sql;
 };
 
@@ -52,16 +59,18 @@ public:
 	template<typename T>
 	T* popMsg(int32_t index)
 	{
-		//return m_msgPool[index].popMsg<T>();
 		return MsgPool::popMsg<T>();
 	}
 	void recycle(int32_t index, BaseData* msg);
+	std::vector<ServerConfigInfo> getConnectServer();
 
 	int m_port;
 protected:
 	void Init(const int& stype, const int& serid);
 	void InitConfig();
-	void InitLogLayer();//loglayerĬ�ϴ��� ������layer����
+	void InitServerConfig();
+	void InitConnectRule();
+	void InitLogLayer();//
 	void InitMsgPool();
 private:
 	SHARE<ThreadPool> m_pool;
@@ -71,6 +80,9 @@ private:
 
 	MsgPool* m_msgPool;
 	RecyclePool* m_recycle;
+	std::map<int32_t, std::vector<ServerConfigInfo>> m_all_server;
+	std::map<int32_t, std::pair<int32_t, int32_t>> m_connect_rule;
+
 	bool m_over;
 };
 

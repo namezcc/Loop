@@ -1,4 +1,4 @@
-#include "BaseMsg.h"
+﻿#include "BaseMsg.h"
 #include "LoopArray.h"
 #include "BaseLayer.h"
 #include "BuffPool.h"
@@ -10,7 +10,10 @@ void BaseMsg::recycleMsg()
 		m_data->recycleMsg();
 		m_data = NULL;
 	}
-	((LoopList<BaseMsg*>*)m_looplist)->write(this);
+	if (!m_looplist)
+		delete this;
+	else
+		((LoopList<BaseMsg*>*)m_looplist)->write(this);
 }
 
 BuffBlock::BuffBlock():m_size(0),m_allsize(0), m_next(NULL),m_buff(NULL),m_recylist(NULL)
@@ -32,14 +35,19 @@ void BuffBlock::write(char * buf, const int32_t & size)
 {
 	if (size <= 0)
 		return;
-	if (m_buff == NULL)
-		makeRoom(size);
 
-	if (size + m_size > m_allsize)
+	if (m_buff == NULL)
+	{
+		makeRoom(size);
+	}
+
+	if (m_offect + size > m_allsize)
 		assert(0);
 
-	memcpy(m_buff + m_size, buf, size);
-	m_size += size;
+	memcpy(m_buff + m_offect, buf, size);
+	if(m_offect == m_size)
+		m_size += size;
+	m_offect += size;
 }
 
 void BuffBlock::recycleMsg()
@@ -57,7 +65,10 @@ void BuffBlock::recycleMsg()
 		m_recylist = NULL;
 		m_buff = NULL;
 	}
-	((LoopList<BuffBlock*>*)m_looplist)->write(this);
+	if (!m_looplist)
+		delete this;
+	else
+		((LoopList<BuffBlock*>*)m_looplist)->write(this);
 }
 
 void BuffBlock::recycleCheck()
@@ -114,7 +125,7 @@ void NetMsg::push_front(BuffBlock* buff)
 		return;
 	auto tmp = buff;
 	while(tmp){
-		len += tmp->m_size;
+		len += tmp->getSize();
 		if (tmp->m_next == NULL)
 		{
 			tmp->m_next = m_buff;
@@ -128,20 +139,21 @@ void NetMsg::push_front(BuffBlock* buff)
 void NetMsg::push_front(BaseLayer* l,const char* buf,const int32_t& size)
 {
 	auto buff = l->GetLayerMsg<BuffBlock>();
+	buff->makeRoom(size);
 	buff->write(const_cast<char*>(buf),size);
+	buff->setOffect(0);
 	push_front(buff);
 }
 
 char * NetMsg::getNetBuff()
 {
 	if (m_buff)
-		return m_buff->m_buff;
+		return m_buff->m_buff + m_buff->getOffect();
 	return NULL;
 }
 
 SHARE<LocalBuffBlock> NetMsg::getCombinBuff()
 {
-	//auto buff = l->GetSharedLoop<LocalBuffBlock>();
 	auto buff = GET_SHARE(LocalBuffBlock);
 	if (len == 0)
 		return buff;
@@ -149,7 +161,7 @@ SHARE<LocalBuffBlock> NetMsg::getCombinBuff()
 	auto mbf = m_buff;
 	while (mbf) {
 		if (mbf->m_buff)
-			buff->write(mbf->m_buff, mbf->m_size);
+			buff->write(mbf->m_buff, mbf->getSize());
 		mbf = mbf->m_next;
 	}
 	return buff;
@@ -160,7 +172,7 @@ void NetMsg::getCombinBuff(LocalBuffBlock* buff)
 	auto mbf = m_buff;
 	while (mbf) {
 		if (mbf->m_buff)
-			buff->write(mbf->m_buff, mbf->m_size);
+			buff->write(mbf->m_buff, mbf->getSize());
 		mbf = mbf->m_next;
 	}
 }
@@ -173,7 +185,7 @@ BuffBlock * NetMsg::popBuffBlock()
 		pop = m_buff;
 		m_buff = m_buff->m_next;
 		pop->m_next = NULL;
-		len -= pop->m_size;
+		len -= pop->getSize();
 	}
 	return pop;
 }
@@ -185,7 +197,10 @@ void NetMsg::recycleMsg()
 		m_buff->recycleMsg();
 		m_buff = NULL;
 	}
-	((LoopList<NetMsg*>*)m_looplist)->write(this);
+	if (!m_looplist)
+		delete this;
+	else
+		((LoopList<NetMsg*>*)m_looplist)->write(this);
 }
 
 void NetServerMsg::recycleMsg()
@@ -203,7 +218,6 @@ void NetServerMsg::recycle(FactorManager * fm)
 {
 	if(m_buff)
 	{
-		//fm->recycle(dynamic_cast<LocalBuffBlock*>(m_buff));
 		LOOP_RECYCLE(m_buff);
 		m_buff = NULL;
 	}
@@ -211,44 +225,26 @@ void NetServerMsg::recycle(FactorManager * fm)
 
 void NetServerMsg::push_front(BaseLayer * l, const char * buf, const int32_t & size)
 {
-	//auto buff = l->GetLoopObj<LocalBuffBlock>();
 	auto buff = GET_LOOP(LocalBuffBlock);
+	buff->makeRoom(size);
 	buff->write(const_cast<char*>(buf), size);
+	buff->setOffect(0);
 	NetMsg::push_front(buff);
-}
-
-void NetSocket::recycleMsg()
-{
-	((LoopList<NetSocket*>*)m_looplist)->write(this);
 }
 
 void NetServer::recycleMsg()
 {
-	((LoopList<NetServer*>*)m_looplist)->write(this);
+	if (!m_looplist)
+		delete this;
+	else
+		((LoopList<NetServer*>*)m_looplist)->write(this);
 }
 
 void LogInfo::recycleMsg()
 {
 	log.str("");
-	((LoopList<LogInfo*>*)m_looplist)->write(this);
-}
-
-BuffBlock* PB::PBToBuffBlock(BaseLayer* l,const google::protobuf::Message& msg)
-{
-	auto buff = l->GetLayerMsg<BuffBlock>();
-	auto pbsize = msg.ByteSize();
-	buff->makeRoom(pbsize);
-	buff->m_size = pbsize;
-	msg.SerializeToArray(buff->m_buff, pbsize);
-	return buff;
-}
-
-BuffBlock * PB::PBToBuffBlock(BaseLayer * l, const google::protobuf::Message & msg, const int32_t & append)
-{
-	auto buff = l->GetLayerMsg<BuffBlock>();
-	auto pbsize = msg.ByteSize();
-	buff->makeRoom(pbsize + append);
-	buff->m_size = pbsize + append;
-	msg.SerializeToArray(buff->m_buff + append, pbsize);
-	return buff;
+	if (!m_looplist)
+		delete this;
+	else
+		((LoopList<LogInfo*>*)m_looplist)->write(this);
 }

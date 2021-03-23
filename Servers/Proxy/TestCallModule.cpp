@@ -1,4 +1,4 @@
-#include "TestCallModule.h"
+﻿#include "TestCallModule.h"
 #include "ScheduleModule.h"
 #include "MsgModule.h"
 #include "EventModule.h"
@@ -13,10 +13,10 @@ void TestCallModule::Init()
 	m_msgModule = GET_MODULE(MsgModule);
 	m_netModule = GET_MODULE(NetObjectModule);
 
-	m_msgModule->AddMsgCall(20001, BIND_CALL(OnGetData, NetSocket));
-	m_msgModule->AddMsgCall(30001, BIND_CALL(OnTestData, NetMsg));
+	m_msgModule->AddMsgCall(10001, BIND_CALL(OnGetData, NetMsg));
+	m_msgModule->AddMsgCall(11001, BIND_CALL(OnTestData, NetMsg));
 	
-	//m_netModule->SetAccept(true);
+	m_netModule->SetAccept(true, CONN_CLIENT);
 
 	/*if (m_send)
 	{
@@ -66,7 +66,7 @@ void TestCallModule::startSend(int64_t & dt)
 
 	for (int32_t i = 0; i < 10; i++)
 	{
-		auto msg = GET_LAYER_MSG(NetSocket);
+		auto msg = GET_LAYER_MSG(NetMsg);
 		msg->socket = i;
 		m_msgModule->SendMsg(20001, msg);
 	}
@@ -78,7 +78,7 @@ void TestCallModule::OnTimeTest(int64_t & dt)
 	++a;
 }
 
-void TestCallModule::OnGetData(NetSocket * sock)
+void TestCallModule::OnGetData(NetMsg * sock)
 {
 	if (sock->socket == 0)
 		m_start = GetMilliSecend();
@@ -94,6 +94,7 @@ void TestCallModule::OnTestData(NetMsg * msg)
 {
 	//assert(msg != NULL);
 	auto buff = GET_LAYER_MSG(BuffBlock);
+	buff->makeRoom(msg->getLen());
 	buff->write(msg->getNetBuff(), msg->getLen());
 	m_netModule->SendNetMsg(msg->socket, msg->mid, buff);
 }
@@ -105,12 +106,12 @@ void TestCallModule::OnEvent1(const int32_t & arg)
 	//LP_INFO << "event 1 :" << arg;
 }
 
-void TestCallModule::OnEvent2(NetSocket * sock)
+void TestCallModule::OnEvent2(NetMsg * sock)
 {
 	LP_INFO << "event 2 :" << sock->socket;
 }
 
-void TestCallModule::OnEvent3(SHARE<NetSocket>& sock)
+void TestCallModule::OnEvent3(SHARE<NetMsg>& sock)
 {
 	LP_INFO << "event 3 :" << sock->socket;
 }

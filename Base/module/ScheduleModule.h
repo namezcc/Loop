@@ -1,4 +1,4 @@
-#ifndef SCHEDULE_MODULE_H
+﻿#ifndef SCHEDULE_MODULE_H
 #define SCHEDULE_MODULE_H
 #include "BaseModule.h"
 #include "TimerPlate.h"
@@ -24,7 +24,7 @@ public:
 	uint32_t AddInterValTask(const TimeTask& nTask, const int& interval,const int& count = -1,const int& delay = 0)
 	{
 		//auto timer = GetLayer()->GetSharedLoop<Timer>();
-		auto timer = GET_SHARE(Timer);
+		auto timer = NEW_SHARE(Timer);
 		timer->count = count;
 		timer->interval = interval;
 		timer->task = nTask;
@@ -38,7 +38,7 @@ public:
 	uint32_t AddTimePointTask(const TimeTask& nTask,const int& repeat, const int& sec=0, const int& min=-1, const int& hour=-1, const int& week=-1, const int& mday=-1)
 	{
 		//auto timer = GetLayer()->GetSharedLoop<Plate>();
-		auto timer = GET_SHARE(Plate);
+		auto timer = NEW_SHARE(Plate);
 		timer->rep = repeat;
 		timer->mid = GetTimerIndex();
 		timer->task = nTask;

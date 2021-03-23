@@ -1,4 +1,4 @@
-#include "UdpNetModule.h"
+﻿#include "UdpNetModule.h"
 #include "UdpServerModule.h"
 #include "MsgModule.h"
 #include "NetModule.h"
@@ -30,7 +30,7 @@ void UdpNetModule::Init()
 	m_msgModule = GET_MODULE(MsgModule);
 	m_schedule = GET_MODULE(ScheduleModule);
 	
-	m_msgModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnCloseSocket,NetSocket));
+	m_msgModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnCloseSocket, NetMsg));
 	m_msgModule->AddMsgCall(L_SOCKET_SEND_DATA, BIND_CALL(OnSocketSendData,NetMsg));
 	m_msgModule->AddMsgCall(L_SOCKET_BROAD_DATA, BIND_CALL(OnBroadData,BroadMsg));
 
@@ -42,13 +42,13 @@ void UdpNetModule::Init()
 void UdpNetModule::InitHandle()
 {
 	m_udpServer->BindOnConnect([this](int32_t sock) {
-		auto msg = GET_LAYER_MSG(NetSocket);
+		auto msg = GET_LAYER_MSG(NetMsg);
 		msg->socket = sock;
 		m_msgModule->SendMsg(L_UDP_SOCKET_CONNECT, msg);
 	});
 
 	m_udpServer->BindOnClose([this](int32_t sock) {
-		auto msg = GET_LAYER_MSG(NetSocket);
+		auto msg = GET_LAYER_MSG(NetMsg);
 		msg->socket = sock;
 		m_msgModule->SendMsg(L_UDP_SOCKET_CLOSE, msg);
 		m_cashSendBuff.erase(sock);
@@ -69,7 +69,7 @@ void UdpNetModule::InitHandle()
 	});
 }
 
-void UdpNetModule::OnCloseSocket(NetSocket * msg)
+void UdpNetModule::OnCloseSocket(NetMsg * msg)
 {
 	m_udpServer->CloseSocket(msg->socket,false);
 	m_cashSendBuff.erase(msg->socket);
@@ -77,20 +77,21 @@ void UdpNetModule::OnCloseSocket(NetSocket * msg)
 
 void UdpNetModule::OnSocketSendData(NetMsg * nMsg)
 {
-	char encode[MsgHead::HEAD_SIZE];
-	MsgHead::Encode(encode, nMsg->mid, nMsg->getLen());
-	nMsg->push_front(GetLayer(), encode, MsgHead::HEAD_SIZE);
-	auto buff = nMsg->getCombinBuff();
-	bool canCombin = buff->m_size < UDP_DATA_SIZE - MsgHead::HEAD_SIZE;
+	auto buff = GET_SHARE(LocalBuffBlock);
+	buff->makeRoom(nMsg->getLen() + MsgHead::HEAD_SIZE);
+	MsgHead::Encode(*buff, nMsg->mid, nMsg->getLen());
+	nMsg->getCombinBuff(buff.get());
+
+	bool canCombin = buff->getSize() < UDP_DATA_SIZE - MsgHead::HEAD_SIZE;
 
 	auto& ls = m_cashSendBuff[nMsg->socket];
 
 	if (canCombin && ls.size() > 0)
 	{
 		auto& back = ls.back();
-		if (back->m_udpbuff && back->m_udpbuff->size+buff->m_size <= UDP_DATA_SIZE)
+		if (back->m_udpbuff && back->m_udpbuff->size+buff->getSize() <= UDP_DATA_SIZE)
 		{
-			back->m_udpbuff->write(buff->m_buff, buff->m_size);
+			back->m_udpbuff->write(buff->m_buff, buff->getSize());
 			return;
 		}
 	}
@@ -101,7 +102,7 @@ void UdpNetModule::OnSocketSendData(NetMsg * nMsg)
 	else
 	{
 		cash->m_udpbuff = GET_SHARE(UdpBuff);
-		cash->m_udpbuff->write(buff->m_buff, buff->m_size);
+		cash->m_udpbuff->write(buff->m_buff, buff->getSize());
 	}
 	ls.push_back(cash);
 }
@@ -111,11 +112,12 @@ void UdpNetModule::OnBroadData(BroadMsg * nMsg)
 	if (nMsg->m_socks.size() == 0)
 		return;
 
-	char encode[MsgHead::HEAD_SIZE];
-	MsgHead::Encode(encode, nMsg->mid, nMsg->getLen());
-	nMsg->push_front(GetLayer(), encode, MsgHead::HEAD_SIZE);
-	auto buff = nMsg->getCombinBuff();
-	bool canCombin = buff->m_size < UDP_DATA_SIZE - MsgHead::HEAD_SIZE;
+	auto buff = GET_SHARE(LocalBuffBlock);
+	buff->makeRoom(nMsg->getLen() + MsgHead::HEAD_SIZE);
+	MsgHead::Encode(*buff, nMsg->mid, nMsg->getLen());
+	nMsg->getCombinBuff(buff.get());
+
+	bool canCombin = buff->getSize() < UDP_DATA_SIZE - MsgHead::HEAD_SIZE;
 
 	for (auto& sock:nMsg->m_socks)
 	{
@@ -124,9 +126,9 @@ void UdpNetModule::OnBroadData(BroadMsg * nMsg)
 		if (canCombin && ls.size() > 0)
 		{
 			auto& back = ls.back();
-			if (back->m_udpbuff && back->m_udpbuff->size + buff->m_size <= UDP_DATA_SIZE)
+			if (back->m_udpbuff && back->m_udpbuff->size + buff->getSize() <= UDP_DATA_SIZE)
 			{
-				back->m_udpbuff->write(buff->m_buff, buff->m_size);
+				back->m_udpbuff->write(buff->m_buff, buff->getSize());
 				continue;
 			}
 		}
@@ -137,7 +139,7 @@ void UdpNetModule::OnBroadData(BroadMsg * nMsg)
 		else
 		{
 			cash->m_udpbuff = GET_SHARE(UdpBuff);
-			cash->m_udpbuff->write(buff->m_buff, buff->m_size);
+			cash->m_udpbuff->write(buff->m_buff, buff->getSize());
 		}
 		ls.push_back(cash);
 	}
@@ -150,7 +152,7 @@ void UdpNetModule::TickSendBuff(int64_t & dt)
 		for (auto& buf:ls.second)
 		{
 			if(buf->m_buff)
-				m_udpServer->SendData(ls.first, buf->m_buff->m_buff, buf->m_buff->m_size);
+				m_udpServer->SendData(ls.first, buf->m_buff->m_buff, buf->m_buff->getSize());
 			else if(buf->m_udpbuff)
 				m_udpServer->SendData(ls.first, buf->m_udpbuff->buf, buf->m_udpbuff->size);
 		}

@@ -1,9 +1,62 @@
-#ifndef LOOP_ARRAY_H
+﻿#ifndef LOOP_ARRAY_H
 #define LOOP_ARRAY_H
 
 #define DEF_LOOP_SIZE 1000
 #include "Block2.h"
-//#include "Single.h"
+
+template<typename T, size_t N = 10000>
+class LoopArray
+{
+public:
+
+	LoopArray() :m_ridx(0), m_widx(0)
+	{}
+
+	~LoopArray()
+	{}
+
+	bool pop(T& t) {
+		if (!tryRead())
+			return false;
+		m_ridx = IncIndex(m_ridx);
+		t = m_data[m_ridx];
+		return true;
+	}
+
+	bool try_write(const T& t)
+	{
+		if (!tryWrite())
+			return false;
+		m_data[IncIndex(m_widx)] = t;
+		m_widx = IncIndex(m_widx);
+		return true;
+	}
+
+	void write(const T& t)
+	{
+		while (!try_write(t))
+		{
+		}
+	}
+
+protected:
+	size_t IncIndex(size_t idx)
+	{
+		return ++idx >= N ? 0 : idx;
+	}
+
+	bool tryRead() {
+		return m_ridx != m_widx;
+	};
+	bool tryWrite() {
+		return IncIndex(m_widx) != m_ridx;
+	};
+
+private:
+	T m_data[N];
+	size_t m_ridx;
+	size_t m_widx;
+};
 
 template<typename T>
 class LoopList
@@ -119,17 +172,12 @@ public:
 			else
 			{
 				m_lockindex = static_cast<int32_t>(m_widx);
-				if (tryWrite())
-					m_lockindex = -1;
-				else
-				{
-					LPList* lw = &m_data[m_widx];
-					auto n = getNode();
-					n->data = t;
-					lw->push(n);
-					m_lockindex = -1;
-					break;
-				}
+				LPList* lw = &m_data[m_widx];
+				auto n = getNode();
+				n->data = t;
+				lw->push(n);
+				m_lockindex = -1;
+				break;
 			}
 		}
 	}
@@ -157,7 +205,7 @@ protected:
 	{
 		if (!tryRead())
 			return false;
-		if (m_lockindex >= 0 && m_lockindex == IncIndex(m_ridx))
+		if (m_lockindex == IncIndex(m_ridx))
 			return false;
 		m_ridx = IncIndex(m_ridx);
 

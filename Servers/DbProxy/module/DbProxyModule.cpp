@@ -22,7 +22,7 @@ void DBProxyModule::Init()
 	m_tranModule = GET_MODULE(TransMsgModule);
 	m_scheduleModule = GET_MODULE(ScheduleModule);
 
-	m_scheduleModule->AddInterValTask(BIND_TIME(OnCheckProxy), 1000);
+	//m_scheduleModule->AddInterValTask(BIND_TIME(OnCheckProxy), 1000);
 	
 	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
 	m_eventModule->AddEventCall(E_SERVER_CLOSE, BIND_EVENT(OnServerClose, SHARE<NetServer>));
@@ -143,16 +143,16 @@ void DBProxyModule::OnForwardMsgHash(NetMsg * msg)
 		return;
 	}
 	int group = m_groups[0];
-	auto forbeg = msg->getNetBuff();
+	auto forbeg = msg->m_buff;
 	if (m_groups.size() > 1)
 	{
-		int crc = PB::GetInt(forbeg);
+		int crc = forbeg->readInt32();
 		size_t idx = crc % (m_groups.size() * 2);
 		if (idx >= m_groups.size())
 			idx = m_groups.size() - 1;
 		group = m_groups[idx];
 	}
-	int32_t mid = PB::GetInt(forbeg + sizeof(int32_t));
+	int32_t mid = forbeg->readInt32();
 	SendToProxy(group,mid ,msg);
 }
 
@@ -160,9 +160,9 @@ void DBProxyModule::OnForwardMsgGroup(NetMsg * msg)
 {
 	if (msg->getLen() < sizeof(int32_t) * 2)
 		return;
-	auto forbeg = msg->getNetBuff();
-	int group = PB::GetInt(forbeg);
-	int32_t mid = PB::GetInt(forbeg +sizeof(int32_t));
+	auto forbeg = msg->m_buff;
+	int group = forbeg->readInt32();
+	int32_t mid = forbeg->readInt32();
 	SendToProxy(group, mid, msg);
 }
 

@@ -20,7 +20,7 @@ private:
 
 	void InitServers();
 
-	void OnGetMachineList(NetSocket* sock);
+	void OnGetMachineList(NetMsg* sock);
 private:
 	MsgModule* m_msgModule;
 	MysqlModule* m_mysqlModule;

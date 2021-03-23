@@ -1,4 +1,4 @@
-#ifndef LOGIN_MODULE_H
+ï»¿#ifndef LOGIN_MODULE_H
 #define LOGIN_MODULE_H
 
 #include "BaseModule.h"
@@ -10,6 +10,7 @@ class RedisModule;
 class RoomStateModule;
 class TransMsgModule;
 class EventModule;
+class ScheduleModule;
 
 struct AccoutInfo;
 struct RoomServer;
@@ -28,7 +29,7 @@ public:
 	~LoginModule();
 
 private:
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 
 	void OnClientConnect(const int32_t& sock);
@@ -43,6 +44,9 @@ private:
 
 	void SendRoomInfo(SHARE<AccoutInfo>& account, SHARE<ClientObj>& client, RoomServer* room, c_pull & pull, SHARE<BaseCoro>& coro);
 	void RemoveClient(const std::string& account);
+
+	void testSqlMsg(int64_t& dt);
+	void OnSqlMsg(NetMsg* msg);
 private:
 	MsgModule * m_msgModule;
 	NetObjectModule* m_netModule;
@@ -51,6 +55,7 @@ private:
 	RoomStateModule* m_roomModule;
 	TransMsgModule* m_transModule;
 	EventModule* m_eventModule;
+	ScheduleModule* m_schedule;
 
 	map<string, SHARE<AccoutInfo>> m_cash;
 	map<string,SHARE<ClientObj>> m_tmpClient;

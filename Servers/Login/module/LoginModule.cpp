@@ -9,6 +9,7 @@
 #include "RoomStateModule.h"
 #include "TransMsgModule.h"
 #include "EventModule.h"
+#include "ScheduleModule.h"
 
 #include "protoPB/base/LPSql.pb.h"
 #include "protoPB/client/login.pb.h"
@@ -37,8 +38,13 @@ void LoginModule::Init()
 	m_msgModule->AddAsynMsgCall(N_ML_CREATE_ACCOUNT, BIND_ASYN_CALL(OnCreateAccount));
 
 	m_msgModule->AddMsgCall(LPMsg::CM_PLAYER_OPERATION, BIND_CALL(OnTestPing, NetMsg));
+	m_msgModule->AddMsgCall(100, BIND_CALL(OnSqlMsg, NetMsg));
+
 
 	m_eventModule->AddEventCall(E_SOCKEK_CONNECT,BIND_EVENT(OnClientConnect,int32_t));
+
+	m_schedule = GET_MODULE(ScheduleModule);
+	m_schedule->AddInterValTask(BIND_TIME(testSqlMsg), 5000, -1, 3000);
 }
 
 void LoginModule::OnClientConnect(const int32_t& sock)
@@ -351,4 +357,42 @@ void LoginModule::RemoveClient(const std::string & account)
 		return;
 	m_netModule->CloseNetObject(it->second->sock);
 	m_tmpClient.erase(it);
+}
+
+void LoginModule::testSqlMsg(int64_t & dt)
+{
+	LPMsg::propertyInt32 msg;
+	msg.set_data(666);
+	VecPath path;
+
+	auto p1 = GET_SHARE(ServerNode);
+	auto p2 = GET_SHARE(ServerNode);
+	auto p3 = GET_SHARE(ServerNode);
+	auto p4 = GET_SHARE(ServerNode);
+	
+	p1->type = GetLayer()->GetServer()->type;
+	p1->serid = GetLayer()->GetServer()->serid;
+
+	p2->type = SERVER_TYPE::LOOP_PROXY;
+	p2->serid = 0;
+
+	p3->type = SERVER_TYPE::LOOP_PROXY_DB;
+	p3->serid = 0;
+
+	p4->type = SERVER_TYPE::LOOP_MYSQL;
+	p4->serid = 0;
+
+	path.push_back(p1);
+	path.push_back(p2);
+	path.push_back(p3);
+	path.push_back(p4);
+
+	LP_INFO << "send test msg";
+	m_transModule->SendToServer(path, 100, msg);
+}
+
+void LoginModule::OnSqlMsg(NetMsg * msg)
+{
+	LP_INFO << "OnSqlMsg from sql";
+
 }

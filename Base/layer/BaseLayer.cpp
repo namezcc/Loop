@@ -7,7 +7,17 @@ BaseLayer::~BaseLayer() {
 
 void BaseLayer::StartRun()
 {
-	GetDefaultTrans(m_defltype, m_deflid);
+	auto defltype = 0;
+	auto deflid = 0;
+	GetDefaultTrans(defltype, deflid);
+
+	auto it = m_pipes.find(defltype);
+	if (it != m_pipes.end())
+	{
+		if (deflid < it->second.size())
+			m_defPipe = &it->second[deflid];
+	}
+
 	init();
 	for (auto& it : m_modules)
 		it.second->Init();

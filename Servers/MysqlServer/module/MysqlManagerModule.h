@@ -1,4 +1,4 @@
-#ifndef MYSQL_MANAGER_MODULE
+ï»¿#ifndef MYSQL_MANAGER_MODULE
 #define MYSQL_MANAGER_MODULE
 
 #include "BaseModule.h"
@@ -21,7 +21,7 @@ struct SqlReply:public LoopObject
 	LPMsg::PBSqlParam pbMsg;
 	vector<SHARE<ServerNode>> path;
 
-	// Í¨¹ý LoopObject ¼Ì³Ð
+	// é€šè¿‡ LoopObject ç»§æ‰¿
 	virtual void init(FactorManager * fm) override {};
 	virtual void recycle(FactorManager * fm) override
 	{
@@ -36,7 +36,7 @@ public:
 	~MysqlManagerModule();
 
 private:
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 	virtual void AfterInit() override;
 	virtual void BeforExecute() override;
@@ -56,7 +56,7 @@ private:
 	void SendSqlReply(SHARE<SqlReply>& reply, const int& gid);
 	int GetSendLayerId();
 
-
+	void onTestMsg(NetServerMsg* msg);
 protected:
 	MysqlModule* m_mysqlmodule;
 	MsgModule*	m_msgmodule;

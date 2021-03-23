@@ -1,4 +1,4 @@
-#include "HttpCgiModule.h"
+﻿#include "HttpCgiModule.h"
 #include "MsgModule.h"
 #include "EventModule.h"
 #include "NetObjectModule.h"
@@ -45,7 +45,7 @@ void HttpCgiModule::OnRecvCgiMsg(NetMsg* msg)
 
 	auto buff = msg->m_buff;
 	while(buff){
-		m_recvPack.combin(buff->m_buff, buff->m_size);
+		m_recvPack.combin(buff->m_buff, buff->getSize());
 		buff = buff->m_next;
 	}
 

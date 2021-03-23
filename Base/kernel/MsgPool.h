@@ -1,4 +1,4 @@
-#ifndef MSG_POOL_H
+﻿#ifndef MSG_POOL_H
 #define MSG_POOL_H
 #include "BaseMsg.h"
 #include "LoopArray.h"
@@ -15,8 +15,14 @@ struct MsgPool
 		if (!llist->pop(msg))
 		{
 			//msg = Single::LocalInstance<LoopFactor<T>>()->get();
-			msg = Single::LocalInstance<Block2<T,1000>>()->allocateNewOnce();
-			msg->m_looplist = (void*)llist;
+			msg = Single::LocalInstance<Block2<T,1000>>()->allocateNewOnceLimitNum();
+			if(msg)
+				msg->m_looplist = (void*)llist;
+			else
+			{
+				msg = new T();
+				msg->m_looplist = NULL;
+			}
 		}
 			
 		msg->initMsg();

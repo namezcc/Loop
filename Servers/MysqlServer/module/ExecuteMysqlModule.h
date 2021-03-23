@@ -1,4 +1,4 @@
-#ifndef EXECUTE_MYSQL_MODULE_H
+ï»¿#ifndef EXECUTE_MYSQL_MODULE_H
 #define EXECUTE_MYSQL_MODULE_H
 
 #include "BaseModule.h"
@@ -15,14 +15,14 @@ public:
 	~ExecuteMysqlModule();
 
 private:
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 	virtual void AfterInit() override;
 
 	void OnGetMysqlMsg(LMsgSqlParam* msg);
 	void OnRequestMysqlMsg(SHARE<BaseMsg>& comsg);
 
-	void OnUpdateTableGroup(NetSocket* num);
+	void OnUpdateTableGroup(NetMsg* num);
 
 protected:
 	MsgModule * m_msgModule;

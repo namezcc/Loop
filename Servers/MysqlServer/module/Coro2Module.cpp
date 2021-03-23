@@ -1,4 +1,4 @@
-#include "Coro2Module.h"
+﻿#include "Coro2Module.h"
 #include "MsgModule.h"
 #include "Coro1Module.h"
 
@@ -20,20 +20,20 @@ void Coro2Module::Init()
 
 }
 
-void Coro2Module::CoroTest1(NetSocket * sock)
+void Coro2Module::CoroTest1(NetMsg * sock)
 {
 	std::cout << "get coro msg sock:" << sock->socket << std::endl;
 }
 
 void Coro2Module::CoroTest2(SHARE<BaseMsg>& msg, c_pull & pull, SHARE<BaseCoro>& coro)
 {
-	auto sock = (NetSocket*)msg->m_data;
+	auto sock = (NetMsg*)msg->m_data;
 	std::cout << "get coro2 msg sock:" << sock->socket << std::endl;
 	DieTest die;
-	auto rep = GET_LAYER_MSG(NetSocket);
+	auto rep = GET_LAYER_MSG(NetMsg);
 	rep->socket = 10;
 	auto msg2 = m_msgModule->ResponseAsynMsg(msg, rep,pull,coro);
-	sock = (NetSocket*)msg2->m_data;
+	sock = (NetMsg*)msg2->m_data;
 	std::cout << "get coro2 msg step2 sock:" << sock->socket << std::endl;
 
 
@@ -41,8 +41,8 @@ void Coro2Module::CoroTest2(SHARE<BaseMsg>& msg, c_pull & pull, SHARE<BaseCoro>&
 
 void Coro2Module::CoroTest3(SHARE<BaseMsg>& msg)
 {
-	auto sock = (NetSocket*)msg->m_data;
-	auto rep = GET_LAYER_MSG(NetSocket);
+	auto sock = (NetMsg*)msg->m_data;
+	auto rep = GET_LAYER_MSG(NetMsg);
 	rep->socket = sock->socket+10;
 	m_msgModule->ResponseMsg(msg, rep);
 }

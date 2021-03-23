@@ -1,4 +1,4 @@
-#ifndef BLOCK_H_2
+﻿#ifndef BLOCK_H_2
 #define BLOCK_H_2
 //#include <iostream>
 
@@ -74,6 +74,23 @@ public:
 	void destroy(T* p)
 	{
 		p->~T();
+	}
+
+	template<typename... Args>
+	inline T* allocateNewOnceLimitNum(Args&&... args)
+	{
+		if (m_freeSlot != NULL) {
+			T* res = reinterpret_cast<T*>(m_freeSlot);
+			m_freeSlot = m_freeSlot->next;
+			return res;
+		}
+		else {
+			if (m_curSlot >= m_lastSlot)
+				return NULL;
+			T* res = reinterpret_cast<T*>(m_curSlot++);
+			construct(res, std::forward<Args>(args)...);
+			return res;
+		}
 	}
 
 	template<typename... Args>

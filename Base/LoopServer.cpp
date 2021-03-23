@@ -1,9 +1,18 @@
-#include "LoopServer.h"
+﻿#include "LoopServer.h"
 #include "cmdline.h"
 #include "LogLayer.h"
 #include "LPFile.h"
 #include "DataDefine.h"
 #include "JsonHelp.h"
+#include "LPStringUtil.h"
+
+enum ServerConnectType
+{
+	SCT_NONE,
+	SCT_ALL,			//链接所有
+	SCT_AVG_NUM,		//平均分配n个
+	SCT_ID,				//固定id
+};
 
 LoopServer::LoopServer():m_over(false)
 {
@@ -35,6 +44,8 @@ void LoopServer::Init(const int& stype, const int& serid)
 	m_server.serid = serid;
 	m_server.type = stype;
 	InitConfig();
+	InitServerConfig();
+	InitConnectRule();
 }
 
 void LoopServer::InitConfig()
@@ -77,19 +88,6 @@ void LoopServer::InitConfig()
 		m_config.udpAddr.port = config["udpaddr"]["port"].GetInt();
 	}
 
-	if (config.HasMember("connect"))
-	{
-		for (auto& v:config["connect"].GetArray())
-		{
-			NetServer s;
-			s.ip = v["ip"].GetString();
-			s.port = v["port"].GetInt();
-			s.type = v["type"].GetInt();
-			s.serid = v["id"].GetInt();
-			m_config.connect.push_back(s);
-		}
-	}
-
 	if (config.HasMember("sql"))
 	{
 		m_config.sql.ip = config["sql"]["ip"].GetString();
@@ -98,6 +96,58 @@ void LoopServer::InitConfig()
 		m_config.sql.user = config["sql"]["user"].GetString();
 		m_config.sql.pass = config["sql"]["pass"].GetString();
 		m_config.sql.dbGroup = config["sql"]["group"].GetInt();
+	}
+}
+
+void LoopServer::InitServerConfig()
+{
+	string file = LoopFile::GetRootPath();
+	file.append("commonconf/ServerConfig.json");
+	JsonHelp jhelp;
+	if (!jhelp.ParseFile(file))
+		exit(-1);
+	Value root = jhelp.GetDocument().GetObject();
+
+	for (auto it=root.MemberBegin();it!=root.MemberEnd();++it)
+	{
+		if (it->value.IsObject())
+		{
+			auto type = Loop::Cvto<int>(it->name.GetString());
+			auto& vec = m_all_server[type];
+
+			for (auto its=it->value.MemberBegin();its != it->value.MemberEnd();++its)
+			{
+				ServerConfigInfo info = {};
+				info.server_id = Loop::Cvto<int>(its->name.GetString());
+				info.ip = its->value["addr"]["ip"].GetString();
+				info.port = its->value["addr"]["port"].GetInt();
+				info.type = type;
+				vec.push_back(info);
+			}
+		}
+	}
+}
+
+void LoopServer::InitConnectRule()
+{
+	string file = LoopFile::GetRootPath();
+	file.append("commonconf/connect_rule.json");
+	JsonHelp jhelp;
+	if (!jhelp.ParseFile(file))
+		exit(-1);
+	auto& root = jhelp.GetDocument().GetArray();
+
+	for (auto& v:root)
+	{
+		auto server_type = v["server"].GetInt();
+
+		if (server_type == m_server.type)
+		{
+			auto toserver = v["to_server"].GetInt();
+			auto conn_type = v["type"].GetInt();
+			auto param = v["param"].GetInt();
+			m_connect_rule[toserver] = std::make_pair(conn_type, param);
+		}
 	}
 }
 
@@ -154,7 +204,7 @@ void LoopServer::Loop()
 		BaseData* msg = NULL;
 		auto pool = m_recycle + i;
 		int num = 0;
-		while (msg= pool->pop())
+		while (msg = pool->pop())
 		{
 			msg->recycleMsg();
 			if (++num >= 5000)
@@ -163,9 +213,63 @@ void LoopServer::Loop()
 	}
 }
 
+std::vector<ServerConfigInfo> LoopServer::getConnectServer()
+{
+	std::vector<ServerConfigInfo> res;
+	for (auto p:m_connect_rule)
+	{
+		auto server = p.first;
+		auto type = p.second.first;
+		auto param = p.second.second;
+		auto svec = m_all_server[server];
+		auto msvec = m_all_server[m_server.type];
+		if (svec.empty())
+			continue;
+
+		if (type == SCT_ALL)
+		{
+			res.insert(res.end(), svec.begin(),svec.end());
+		}
+		else if (type == SCT_AVG_NUM)
+		{
+			auto to_snum = svec.size();
+			auto my_snum = msvec.size();
+			auto mindex = 0;
+
+			for (size_t i = 0; i < msvec.size(); i++)
+			{
+				if (msvec[i].server_id == m_server.serid) 
+					mindex = (int)i;
+			}
+
+			auto to_index = mindex * to_snum / my_snum;
+			if (to_index >= to_snum) to_index = 0;
+
+			if (param > to_snum) param = (int32_t)to_snum;
+
+			for (size_t i = 0; i < param; i++)
+			{
+				res.push_back(svec[to_index]);
+				if ((++to_index) >= to_snum)
+					to_index = 0;
+			}
+		}
+		else if (type == SCT_ID)
+		{
+			for (auto it:svec)
+			{
+				if (it.server_id == param)
+				{
+					res.push_back(it);
+					break;
+				}
+			}
+		}
+	}
+	return res;
+}
 void LoopServer::recycle(int32_t index, BaseData* msg)
 {
-	assert(msg->m_looplist);
 	msg->recycleCheck();
 	m_recycle[index].recycle(msg);
 }

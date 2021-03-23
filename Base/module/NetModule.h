@@ -1,4 +1,4 @@
-#ifndef PACK_MODULE_I_H
+﻿#ifndef PACK_MODULE_I_H
 #define PACK_MODULE_I_H
 #include "BaseModule.h"
 #include <uv.h>
@@ -11,7 +11,6 @@ struct Conn:public LoopObject
 {
 	Conn()
 	{
-		socket = ++Conn::SOCKET;
 	}
 
 	void init(FactorManager* fm)
@@ -25,15 +24,17 @@ struct Conn:public LoopObject
 	void recycle(FactorManager* fm)
 	{
 		buffer.Clear();
-		LOOP_RECYCLE(conn);
+		if (conn)
+		{
+			LOOP_RECYCLE(conn);
+			conn = NULL;
+		}
 	}
 
 	uv_tcp_t* conn;
 	NetModule* netmodule;
 	NetBuffer buffer;
 	int socket;
-
-	static thread_local int32_t SOCKET;
 };
 
 struct Write_t:public LoopObject
@@ -58,7 +59,7 @@ struct Write_t:public LoopObject
 	void SetBlock(LocalBuffBlock* b)
 	{
 		buf.base = b->m_buff;
-		buf.len = b->m_size;
+		buf.len = b->getSize();
 		block = b;
 		++block->m_ref;
 	}
@@ -72,8 +73,7 @@ class MsgModule;
 class LOOP_EXPORT NetModule:public BaseModule
 {
 public:
-	NetModule(BaseLayer* l):BaseModule(l),m_port(0)
-	{};
+	NetModule(BaseLayer* l);
 	~NetModule() {};
 	void SetProtoType(ProtoType ptype);
 	void SetBind(const int& port, uv_loop_t* loop);
@@ -94,7 +94,7 @@ protected:
 	virtual bool ReadPack(Conn* conn, char* buf, int len);
 	static void After_write(uv_write_t* req, int status);
 
-	void OnCloseSocket(NetSocket* msg);
+	void OnCloseSocket(NetMsg* msg);
 	void OnSocketSendData(NetMsg* nMsg);
 	void OnBroadData(BroadMsg* nMsg);
 	void OnConnectServer(NetServer* ser);
@@ -105,8 +105,8 @@ protected:
 
 	MsgModule* m_mgsModule;
 
-	std::unordered_map<int32_t, SHARE<Conn>> m_conns;
-	std::unordered_map<int32_t, SHARE<Conn>> m_waitClose;
+	Conn* m_conns[MAX_CLIENT_CONN];
+	std::list<int32_t> m_sock_pool;
 
 	int32_t m_port;
 	uv_tcp_t m_hand;

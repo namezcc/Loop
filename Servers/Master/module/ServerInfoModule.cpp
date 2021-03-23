@@ -35,7 +35,7 @@ void ServerInfoModule::InitServers()
 
 }
 
-void ServerInfoModule::OnGetMachineList(NetSocket * sock)
+void ServerInfoModule::OnGetMachineList(NetMsg * sock)
 {
 	StringBuffer jbuff;
 	rapidjson::Writer<StringBuffer> jw(jbuff);

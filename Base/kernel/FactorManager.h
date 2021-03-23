@@ -1,4 +1,4 @@
-#ifndef FACTOR_MANAGER_H
+﻿#ifndef FACTOR_MANAGER_H
 #define FACTOR_MANAGER_H
 #include "LoopFactor.h"
 #include <unordered_map>
@@ -89,6 +89,28 @@ public:
 		});
 		return p;
 	}
+
+	template<typename T>
+	static std::shared_ptr<T> new_share()
+	{
+		std::shared_ptr<T> p(new T(), [](T* ptr) {
+			FactorManager::delete_share(ptr);
+		});
+		return p;
+	}
+
+	template<typename T>
+	static typename std::enable_if<!std::is_base_of<LoopObject, T>::value>::type delete_share(T* t)
+	{
+		delete t;
+	}
+
+	template<typename T>
+	static typename std::enable_if<std::is_base_of<LoopObject, T>::value>::type delete_share(T* t)
+	{
+		t->recycle(NULL);
+		delete t;
+	}
 	//-----------------------------
 };
 
@@ -96,6 +118,7 @@ public:
 //#define GET_LOOP(T) FactorManager::getLoopObj<T>()
 //#define LOOP_RECYCLE(t) FactorManager::recycle(t)
 
+#define NEW_SHARE(T) FactorManager::new_share<T>()
 #define GET_SHARE(T) FactorManager::GetSharedLoop_2<T>()
 #define GET_LOOP(T) FactorManager::getLoopObj_2<T>()
 #define LOOP_RECYCLE(t) FactorManager::recycle_2(t)

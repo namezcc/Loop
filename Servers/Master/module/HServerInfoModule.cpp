@@ -1,4 +1,4 @@
-#include "HServerInfoModule.h"
+﻿#include "HServerInfoModule.h"
 #include "HttpLogicModule.h"
 #include "MsgModule.h"
 
@@ -22,7 +22,7 @@ void HServerInfoModule::Init()
 void HServerInfoModule::OnReqGetMachineList(HttpMsg * msg)
 {
 	msg->opration = HttpMsg::NONE;
-	auto sock = GET_LAYER_MSG(NetSocket);
+	auto sock = GET_LAYER_MSG(NetMsg);
 	sock->socket = msg->socket;
 	m_msgModule->SendMsg(LY_LOGIC,0, L_HL_GET_MACHINE_LIST, sock);
 }
@@ -31,7 +31,7 @@ void HServerInfoModule::OnGetMachineList(NetMsg * msg)
 {
 	auto buff = msg->getCombinBuff();
 	m_httpModule->SendHttpMsg(msg->socket, [buff](HttpMsg* hmsg) {
-		hmsg->response.buff.append(buff->m_buff, buff->m_size);
+		hmsg->response.buff.append(buff->m_buff, buff->getSize());
 		hmsg->opration = HttpMsg::SEND;
 	});
 }

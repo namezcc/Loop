@@ -1,4 +1,4 @@
-#include "ExecuteMysqlModule.h"
+﻿#include "ExecuteMysqlModule.h"
 #include "MsgModule.h"
 #include "MysqlModule.h"
 
@@ -94,7 +94,7 @@ void ExecuteMysqlModule::OnRequestMysqlMsg(SHARE<BaseMsg>& comsg)
 	m_msgModule->ResponseMsg(comsg, lmsg, LY_LOGIC, 0);
 }
 
-void ExecuteMysqlModule::OnUpdateTableGroup(NetSocket * num)
+void ExecuteMysqlModule::OnUpdateTableGroup(NetMsg * num)
 {
 	m_tableGroup = num->socket;
 }

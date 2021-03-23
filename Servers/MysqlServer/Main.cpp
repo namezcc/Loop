@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include "LoopServer.h"
 #include "TcpNetLayer.h"
 #include "LogicLayer.h"
@@ -12,8 +12,6 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 {
 	LoopServer ser;
 	ser.InitServer(argc, args);
-
-	auto config = ser.GetConfig();
 
 	auto nl = ser.CreateLayer<TcpNetLayer>(ser.m_port);
 	auto ll = ser.CreateLayer<LogicLayer>(LY_LOGIC);

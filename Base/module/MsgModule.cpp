@@ -69,8 +69,12 @@ void MsgModule::MsgCallBack(void* msg)
 			m_protoCall[smsg->msgId - CM_MSG_BEGIN](smsg);
 		else
 			LOOP_RECYCLE(smsg);
-	}else
+	}
+	else
+	{
+		LP_ERROR << "error misId:" << smsg->msgId;
 		LOOP_RECYCLE(smsg);
+	}
 }
 
 void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
@@ -81,20 +85,20 @@ void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
 		nmsg->m_data = NULL;
 		LOOP_RECYCLE(nmsg);
 	});
-	if (smsg->msgId > L_BEGAN && smsg->msgId < N_END)
+	if (msg->mid > L_BEGAN && msg->mid < N_END)
 	{
-		if (m_arrayCall[smsg->msgId])
+		if (m_arrayCall[msg->mid])
 		{
 			m_msgCash = smsg;
-			m_arrayCall[smsg->msgId](NULL);
+			m_arrayCall[msg->mid](NULL);
 		}
 	}
-	else if(smsg->msgId > CM_MSG_BEGIN && smsg->msgId<CM_MSG_END)
+	else if(msg->mid > CM_MSG_BEGIN && msg->mid<CM_MSG_END)
 	{
-		if (m_protoCall[smsg->msgId - CM_MSG_BEGIN])
+		if (m_protoCall[msg->mid - CM_MSG_BEGIN])
 		{
 			m_msgCash = smsg;
-			m_protoCall[smsg->msgId - CM_MSG_BEGIN](NULL);
+			m_protoCall[msg->mid - CM_MSG_BEGIN](NULL);
 		}
 	}
 }
@@ -271,25 +275,17 @@ SHARE<CoroMsg> MsgModule::DecodeCoroMsg(SHARE<BaseMsg>& msg)
 		return NULL;
 	}
 	auto netbuff = netmsg->popBuffBlock();
-	//auto coromsg = GetLayer()->GetLoopObj<CoroMsg>();
+	
 	auto coromsg = GET_LOOP(CoroMsg);
-	coromsg->m_subMsgId = PB::GetInt(netbuff->m_buff);
-	coromsg->m_coroId = PB::GetInt(netbuff->m_buff+sizeof(int32_t));
-	coromsg->m_mycoid = PB::GetInt(netbuff->m_buff+sizeof(int32_t)*2);
-	int32_t nOffset = sizeof(int32_t)*3;
-	netbuff->m_buff += nOffset;		//move offset to data
-	netbuff->m_size -= nOffset;
+	coromsg->m_subMsgId = netbuff->readInt32();
+	coromsg->m_coroId = netbuff->readInt32();
+	coromsg->m_mycoid = netbuff->readInt32();
 	netmsg->push_front(netbuff);
-	//netmsg->write_front(netbuff->m_buff+nOffset,netbuff->m_size-nOffset);
-	//swap m_data
+
 	std::swap(coromsg->m_data,msg->m_data);
-	auto coroShar = SHARE<CoroMsg>(coromsg,[this,msg,nOffset,netbuff](CoroMsg* ptr){
-		//move offset back
-		netbuff->m_buff -= nOffset;
-		netbuff->m_size += nOffset;
+	auto coroShar = SHARE<CoroMsg>(coromsg,[this,msg](CoroMsg* ptr){
 		//swap back m_data
 		std::swap(ptr->m_data,msg->m_data);
-		//GetLayer()->Recycle(ptr);
 		LOOP_RECYCLE(ptr);
 	});
 	return coroShar;

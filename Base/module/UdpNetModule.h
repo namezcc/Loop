@@ -1,4 +1,4 @@
-#ifndef UDP_NET_MODULE_H
+ï»¿#ifndef UDP_NET_MODULE_H
 #define UDP_NET_MODULE_H
 
 #include "BaseModule.h"
@@ -14,7 +14,7 @@ struct UdpCashNode:public LoopObject
 	SHARE<LocalBuffBlock> m_buff;
 	SHARE<UdpBuff> m_udpbuff;
 
-	// Í¨¹ý LoopObject ¼Ì³Ð
+	// é€šè¿‡ LoopObject ç»§æ‰¿
 	virtual void init(FactorManager * fm) override;
 	virtual void recycle(FactorManager * fm) override;
 };
@@ -30,7 +30,7 @@ public:
 protected:
 
 	void InitHandle();
-	void OnCloseSocket(NetSocket* msg);
+	void OnCloseSocket(NetMsg* msg);
 	void OnSocketSendData(NetMsg* nMsg);
 	void OnBroadData(BroadMsg* nMsg);
 

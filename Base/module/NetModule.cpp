@@ -1,18 +1,23 @@
-#include "NetModule.h"
+﻿#include "NetModule.h"
 #include "MsgModule.h"
 #include "BuffPool.h"
 #include "Protocol.h"
 
-thread_local int32_t Conn::SOCKET = 0;
+NetModule::NetModule(BaseLayer* l):BaseModule(l), m_port(0)
+{
+	memset(m_conns, 0, sizeof(m_conns));
+	for (int32_t i = 0; i < MAX_CLIENT_CONN; i++)
+		m_sock_pool.push_back(i);
+};
 
 void NetModule::Init()
 {
 	m_mgsModule = GetLayer()->GetModule<MsgModule>();
 
-	m_mgsModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnCloseSocket,NetSocket));
+	m_mgsModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnCloseSocket, NetMsg));
 	m_mgsModule->AddMsgCall(L_SOCKET_SEND_DATA, BIND_CALL(OnSocketSendData,NetMsg));
 	m_mgsModule->AddMsgCall(L_SOCKET_BROAD_DATA, BIND_CALL(OnBroadData,BroadMsg));
-	
+	m_mgsModule->AddMsgCall(L_TO_CONNET_SERVER, BIND_CALL(OnConnectServer, NetServer));
 }
 
 void NetModule::Execute()
@@ -53,19 +58,22 @@ void NetModule::StartListen()
 
 void NetModule::Connection_cb(uv_stream_t * serhand, int status)
 {
-	if (status == 0)
+	if (status != 0)
+	{
+		fprintf(stderr, "Connect error %s\n", uv_err_name(status));
 		return;
+	}
 
 	auto netmod = (NetModule*)serhand->data;
 	uv_tcp_t* client = GET_LOOP(uv_tcp_t);
 	int r = uv_tcp_init(netmod->m_uvloop, client);
-	if (r == 0)
+	if (r != 0)
 	{
 		LOOP_RECYCLE(client);
 		return;
 	}
 	r = uv_accept(serhand, (uv_stream_t*)client);
-	if (r == 0)
+	if (r != 0)
 	{
 		LOOP_RECYCLE(client);
 		return;
@@ -75,19 +83,31 @@ void NetModule::Connection_cb(uv_stream_t * serhand, int status)
 
 void NetModule::Connected(uv_tcp_t* conn, bool client)
 {
-	conn->close_cb = &NetModule::on_close_client;
+	if (m_sock_pool.empty())
+	{
+		LP_ERROR << "add session no sock index";
+		return;
+	}
 
-	auto cn = GET_SHARE(Conn);
+	conn->close_cb = &NetModule::on_close_client;
+	auto cn = GET_LOOP(Conn);
 	cn->conn = conn;
 	cn->netmodule = this;
-	auto uvsocket = cn->socket;
-	m_conns[uvsocket] = cn;
-	conn->data = cn.get();
+	cn->socket = m_sock_pool.front();
+	m_sock_pool.pop_front();
+
+	if (m_conns[cn->socket] != NULL)
+	{
+		LP_ERROR << "add session sock index used:" << cn->socket;
+	}
+
+	m_conns[cn->socket] = cn;
+	conn->data = cn;
 
 	if (client)
 	{
-		auto sock = GET_LAYER_MSG(NetSocket);
-		sock->socket = uvsocket;
+		auto sock = GET_LAYER_MSG(NetMsg);
+		sock->socket = cn->socket;
 		m_mgsModule->SendMsg(L_SOCKET_CONNET, sock);
 	}
 
@@ -137,10 +157,19 @@ void NetModule::on_close_client(uv_handle_t* client) {
 	auto conn = (Conn*)tcpcli->data;
 	auto server = conn->netmodule;
 
-	auto sock = server->GetLayer()->GetLayerMsg<NetSocket>();
+	auto sock = server->GetLayer()->GetLayerMsg<NetMsg>();
 	sock->socket = conn->socket;
 	server->m_mgsModule->SendMsg(L_SOCKET_CLOSE, sock);
-	server->m_conns.erase(conn->socket);
+
+	if (CHECK_SOCK_INDEX(conn->socket))
+	{
+		if (server->m_conns[conn->socket] == conn)
+		{
+			server->m_sock_pool.push_front(conn->socket);
+			server->m_conns[conn->socket] = NULL;
+			LOOP_RECYCLE(conn);
+		}
+	}
 }
 
 void NetModule::OnActiveClose(uv_handle_t * client)
@@ -148,7 +177,16 @@ void NetModule::OnActiveClose(uv_handle_t * client)
 	auto tcpcli = (uv_tcp_t*)client;
 	auto conn = (Conn*)tcpcli->data;
 	auto server = conn->netmodule;
-	server->m_waitClose.erase(conn->socket);
+
+	if (CHECK_SOCK_INDEX(conn->socket))
+	{
+		if (server->m_conns[conn->socket] == conn)
+		{
+			server->m_sock_pool.push_front(conn->socket);
+			server->m_conns[conn->socket] = NULL;
+			LOOP_RECYCLE(conn);
+		}
+	}
 }
 
 bool NetModule::ReadPack(Conn* conn, char* buf, int len)
@@ -168,22 +206,25 @@ bool NetModule::ReadPack(Conn* conn, char* buf, int len)
 		return false;
 }
 
-void NetModule::OnCloseSocket(NetSocket* msg)
+void NetModule::OnCloseSocket(NetMsg* msg)
 {
-	auto it = m_conns.find(msg->socket);
-	if (it != m_conns.end())
+	if (CHECK_SOCK_INDEX(msg->socket))
 	{
-		uv_close((uv_handle_t*)it->second->conn, NetModule::OnActiveClose);
-		m_waitClose[it->second->socket] = it->second;
-		m_conns.erase(it);
+		auto conn = m_conns[msg->socket];
+		if (conn != NULL)
+		{
+			uv_close((uv_handle_t*)conn->conn, NetModule::OnActiveClose);
+		}
 	}
 }
 
 void NetModule::OnSocketSendData(NetMsg* nMsg)
 {
+	if (!CHECK_SOCK_INDEX(nMsg->socket))
+		return;
 	assert(nMsg != NULL);
-	auto it = m_conns.find(nMsg->socket);
-	if (it != m_conns.end())
+	auto conn = m_conns[nMsg->socket];
+	if (conn != NULL)
 	{
 		auto buff = GET_LOOP(LocalBuffBlock);
 		m_proto->EncodeSendData(*buff, nMsg);
@@ -191,7 +232,7 @@ void NetModule::OnSocketSendData(NetMsg* nMsg)
 		Write_t* buf = GET_LOOP(Write_t);
 		buf->SetBlock(buff);
 		whand->data = buf;
-		uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
+		uv_write(whand, (uv_stream_t*)conn->conn, &buf->buf, 1, After_write);
 	}
 }
 
@@ -205,15 +246,18 @@ void NetModule::OnBroadData(BroadMsg * nMsg)
 
 	for (size_t i = 0; i < nMsg->m_socks.size(); i++)
 	{
-		auto it = m_conns.find(nMsg->m_socks[i]);
-		if (it == m_conns.end())
+		auto sockIndex = nMsg->m_socks[i];
+		if (!CHECK_SOCK_INDEX(sockIndex))
+			continue;
+		auto conn = m_conns[sockIndex];
+		if (conn == NULL)
 			continue;
 
 		uv_write_t* whand = GET_LOOP(uv_write_t);
 		Write_t* buf = GET_LOOP(Write_t);
 		buf->SetBlock(buff);
 		whand->data = buf;
-		uv_write(whand, (uv_stream_t*)it->second->conn, &buf->buf, 1, After_write);
+		uv_write(whand, (uv_stream_t*)conn->conn, &buf->buf, 1, After_write);
 	}
 	if (buff->m_ref == 0)
 		LOOP_RECYCLE(buff);

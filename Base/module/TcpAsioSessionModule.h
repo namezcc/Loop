@@ -1,4 +1,4 @@
-#ifndef TCP_ASIO_SESSION_MODULE
+ï»¿#ifndef TCP_ASIO_SESSION_MODULE
 #define TCP_ASIO_SESSION_MODULE
 
 #include "BaseModule.h"
@@ -53,20 +53,20 @@ public:
 	}
 private:
 
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 	virtual void AfterInit() override;
 	virtual void Execute() override;
 	void DoAccept();
 
-	void OnCloseSocket(NetSocket* msg);
+	void OnCloseSocket(NetMsg* msg);
 	void OnSocketSendData(NetMsg* nMsg);
 	void OnBroadData(BroadMsg* nMsg);
 	void OnConnectServer(NetServer * ser);
 
 	void CombinBuff(NetMsg * nMsg);
 
-	void DoReadData(SHARE<AsioSession> session);
+	void DoReadData(AsioSession* session);
 	void CloseSession(const int32_t& sock,bool active = false);
 
 private:
@@ -78,7 +78,9 @@ private:
 
 	as::io_context m_context;
 	std::unique_ptr<tcp::acceptor> m_accptor;
-	std::unordered_map<int32_t, SHARE<AsioSession>> m_session;
+	//std::unordered_map<int32_t, SHARE<AsioSession>> m_session;
+	AsioSession* m_session[MAX_CLIENT_CONN];
+	std::list<int32_t> m_sock_pool;
 };
 
 #endif

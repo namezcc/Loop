@@ -1,4 +1,4 @@
-#include "Coro1Module.h"
+﻿#include "Coro1Module.h"
 #include "MsgModule.h"
 #include "ScheduleModule.h"
 #include "TransMsgModule.h"
@@ -34,13 +34,13 @@ void Coro1Module::CoroTest1(c_pull & pull, SHARE<BaseCoro>& coro)
 {
 	std::cout << "coro test begin" << std::endl;
 
-	auto sock = GET_LAYER_MSG(NetSocket);
+	auto sock = GET_LAYER_MSG(NetMsg);
 	sock->socket = 1;
 	DieTest die;
 	auto msg = m_msgModule->RequestAsynMsg(L_CORO_2_TEST_1, sock, pull, coro, LAYER_TYPE::LY_MYSQL, 0);
-	auto sock2 = (NetSocket*)msg->m_data;
+	auto sock2 = (NetMsg*)msg->m_data;
 	std::cout << "coro get form mysql step 2 sock: " << sock2->socket<<std::endl;
-	sock = GET_LAYER_MSG(NetSocket);
+	sock = GET_LAYER_MSG(NetMsg);
 	sock->socket = 11;
 	m_msgModule->ResponseMsg(msg, sock, LAYER_TYPE::LY_MYSQL, 0);
 }
@@ -50,11 +50,11 @@ void Coro1Module::CoroTest2(SHARE<BaseMsg>& msg, c_pull & pull, SHARE<BaseCoro>&
 	auto netmsg = (NetServerMsg*)msg->m_data;
 	TRY_PARSEPB(LPMsg::ServerInfo, netmsg);
 	std::cout << "coro forward get sock:" << pbMsg.id() << std::endl;
-	auto sock = GET_LAYER_MSG(NetSocket);
+	auto sock = GET_LAYER_MSG(NetMsg);
 	DieTest die;
 	sock->socket = pbMsg.id();
 	auto msg2 = m_msgModule->RequestAsynMsg(L_CORO_2_TEST_1, sock, pull, coro, LAYER_TYPE::LY_MYSQL, 0);
-	sock = (NetSocket*)msg2->m_data;
+	sock = (NetMsg*)msg2->m_data;
 	std::cout << "coro forward back sock:" << sock->socket << std::endl;
 	pbMsg.set_id(sock->socket);
 	m_transModule->ResponseBackServerMsg(netmsg->path, msg, pbMsg);

@@ -1,4 +1,4 @@
-#ifndef UDP_NET_SOCK_MODULE_H
+ï»¿#ifndef UDP_NET_SOCK_MODULE_H
 #define UDP_NET_SOCK_MODULE_H
 
 #include "BaseModule.h"
@@ -18,11 +18,11 @@ public:
 	void BroadNetMsg(std::vector<int32_t>& socks, const int32_t & mid, BuffBlock* buff);
 	void CloseNetObject(const int& socket);
 private:
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 
-	void OnSocketConnet(NetSocket* sock);
-	void OnSocketClose(NetSocket* sock);
+	void OnSocketConnet(NetMsg* sock);
+	void OnSocketClose(NetMsg* sock);
 
 private:
 	MsgModule * m_msgModule;

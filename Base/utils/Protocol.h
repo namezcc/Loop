@@ -1,4 +1,4 @@
-#ifndef PROTOCOL_H
+﻿#ifndef PROTOCOL_H
 #define PROTOCOL_H
 
 #include "BaseModule.h"
@@ -42,8 +42,7 @@ private:
 	static void EecodeMyProto(LocalBuffBlock& lb, NetMsg* nMsg)
 	{
 		lb.makeRoom(nMsg->getLen() + MsgHead::HEAD_SIZE);
-		MsgHead::Encode(lb.m_buff, nMsg->mid, nMsg->getLen());
-		lb.m_size = MsgHead::HEAD_SIZE;
+		MsgHead::Encode(lb, nMsg->mid, nMsg->getLen());
 		nMsg->getCombinBuff(&lb);
 	}
 
@@ -61,13 +60,17 @@ private:
 				break;
 			}
 
-			if (head.size <= (int32_t)buff.use - read)
+			if (head.size <= buff.use - read)
 			{
 				call(head.mid, buff.buf + read + MsgHead::HEAD_SIZE, head.size - MsgHead::HEAD_SIZE);
 				read += head.size;
 			}
 			else
+			{
+				if(buff.len < head.size)
+					buff.MakeRoome(head.size);
 				break;
+			}
 		}
 		buff.moveHalf(read);
 		return res;

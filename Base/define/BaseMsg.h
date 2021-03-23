@@ -7,19 +7,12 @@
 #include <memory>
 #include "Define.h"
 #include "FactorManager.h"
-//#include "protoPB/base/LPBase.pb.h"
 #include <google/protobuf/message.h>
 
 
 #define SAFE_FREE(ptr) if(ptr){free(ptr);ptr=NULL;}
 
-struct NoCopy
-{
-	NoCopy() = default;
-	NoCopy(const NoCopy&) = delete;  //��ֹ����
-	NoCopy & operator = (const NoCopy&) = delete; //��ֹ��ֵ
-	~NoCopy() = default;
-};
+class BaseLayer;
 
 struct ServerNode
 {
@@ -88,17 +81,95 @@ struct LOOP_EXPORT BuffBlock:public BaseData
 		m_size = 0;
 		m_allsize = 0;
 		m_ref = 0;
+		m_offect = 0;
 	};
 	virtual void recycleMsg() override;
 	virtual void recycleCheck() override;
 	int32_t MaxSize() { return m_allsize; };
 	char* m_buff;
-	int32_t m_size;		//used size
 	BuffBlock* m_next;
 	int16_t m_ref;
+
+	template<typename T>
+	T read()
+	{
+		auto ts = sizeof(T);
+		if (ts + m_offect > m_size)
+		{
+			//error 
+			return T();
+		}
+		T t = *(T*)(m_buff + m_offect);
+		m_offect += (int32_t)ts;
+		return t;
+	}
+
+	template<typename T>
+	void write(const T& t)
+	{
+		auto ts = sizeof(T);
+		if (ts + m_offect > m_allsize)
+		{
+			//error 
+			return;
+		}
+		T* pt = (T*)(m_buff + m_offect);
+		*pt = t;
+
+		if (m_offect == m_size)
+			m_size += (int32_t)ts;
+		m_offect += (int32_t)ts;
+	}
+
+	int8_t readInt8() { return read<int8_t>(); }
+	uint8_t readUint8() { return read<uint8_t>(); }
+	int16_t readInt16() { return read<int16_t>(); }
+	uint16_t readUint16() { return read<uint16_t>(); }
+	int32_t readInt32() { return read<int32_t>(); }
+	uint32_t readUint32() { return read<uint32_t>(); }
+	int64_t readInt64() { return read<int64_t>(); }
+	uint64_t readUint64() { return read<uint64_t>(); }
+
+	char* readBuff(int32_t& buffsize)
+	{
+		buffsize = m_size - m_offect;
+		char* buff = m_buff + m_offect;
+		m_offect += buffsize;
+		return buff;
+	}
+
+	void writeInt8(const int8_t& t) { write(t); }
+	void writeUInt8(const uint8_t& t) { write(t); }
+	void writeInt16(const int16_t& t) { write(t); }
+	void writeUInt16(const uint16_t& t) { write(t); }
+	void writeInt32(const int32_t& t) { write(t); }
+	void writeUInt32(const uint32_t& t) { write(t); }
+	void writeInt64(const int64_t& t) { write(t); }
+	void writeUInt64(const uint64_t& t) { write(t); }
+	void write(const google::protobuf::Message& msg)
+	{
+		int32_t msize = msg.ByteSize();
+		if (msize + m_offect > m_allsize)
+		{
+			//error
+			return;
+		}
+
+		msg.SerializeToArray(m_buff + m_offect, msize);
+
+		if (m_offect == m_size)
+			m_size += msize;
+		m_offect += msize;
+	}
+
+	int32_t getOffect() { return m_offect; }
+	void setOffect(const int32_t& offect) { m_offect = offect; }
+	int32_t getSize() { return m_size; }
 protected:
+	int32_t m_size;		//used size
 	int32_t m_allsize;
 	void* m_recylist;
+	int32_t m_offect;
 
 };
 
@@ -162,14 +233,6 @@ struct LOOP_EXPORT NetServerMsg:public NetMsg,public LoopObject
 	virtual void push_front(BaseLayer* l, const char* buf, const int32_t& size);
 };
 
-
-struct LOOP_EXPORT NetSocket:public BaseData
-{
-	virtual void initMsg() override {};
-	virtual void recycleMsg() override;
-	int32_t socket;
-};
-
 struct LOOP_EXPORT NetServer:public BaseData
 {
 	virtual void initMsg() override {};
@@ -197,9 +260,6 @@ namespace gpb = google::protobuf;
 
 struct LOOP_EXPORT PB
 {
-	static BuffBlock* PBToBuffBlock(BaseLayer* l,const google::protobuf::Message& msg);
-	static BuffBlock* PBToBuffBlock(BaseLayer* l, const google::protobuf::Message& msg,const int32_t& append);
-
 	static int32_t GetInt(char* msg)
 	{
 		int32_t res = msg[0]&0xff;

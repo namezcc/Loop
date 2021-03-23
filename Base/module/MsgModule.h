@@ -90,7 +90,7 @@ public:
 		PushMsgCall(mid,[this, call](BaseMsg* inmsg) {
 			SHARE<BaseMsg> comsg = GetRealMsg(inmsg);
 
-			auto baseco = GET_SHARE(BaseCoro);
+			auto baseco = NEW_SHARE(BaseCoro);
 			auto coro = new c_push([call, &baseco](c_pull& pull) {
 				auto msg = pull.get();	//不能用引用 防止析构
 				auto pcoro = baseco;	//copy 防止跳出后析构
@@ -108,7 +108,7 @@ public:
 		PushMsgCall(mid, [this,call](BaseMsg* inmsg){
 			SHARE<BaseMsg> comsg = GetRealMsg(inmsg);
 
-			auto baseco = GET_SHARE(BaseCoro);
+			auto baseco = NEW_SHARE(BaseCoro);
 			auto coro = new c_push([call,&baseco](c_pull& pull){
 				auto msg = pull.get();	//不能用引用 防止析构
 				auto pcoro = baseco;	//copy 防止跳出后析构
@@ -121,7 +121,7 @@ public:
 
 	void DoCoroFunc(const std::function<void(c_pull&,SHARE<BaseCoro>& coro )>& func)
 	{
-		auto baseco = GET_SHARE(BaseCoro);
+		auto baseco = NEW_SHARE(BaseCoro);
 		auto coro = new c_push([func, &baseco](c_pull& pull) {
 			auto msg = pull.get();	//不能用引用 防止析构
 			auto pcoro = baseco;	//copy 防止跳出后析构
@@ -216,8 +216,10 @@ private:
 	{
 		if (mid > L_BEGAN && mid < N_END)
 			m_arrayCall[mid] = call;
-		else if(mid >= CM_MSG_BEGIN && mid < CM_MSG_END)
-			m_protoCall[mid] = call;
+		else if (mid >= CM_MSG_BEGIN && mid < CM_MSG_END)
+		{
+			m_protoCall[mid - CM_MSG_BEGIN] = call;
+		}
 	}
 
 	void CheckCoroClear(const int64_t& dt);
@@ -241,14 +243,11 @@ private:
 	}
 
 private:
-	//ScheduleModule* m_schedule;
 
 	SHARE<BaseMsg> m_msgCash;
 
-	std::unordered_map<int32_t, MsgCall> m_callBack;
 	MsgCall m_arrayCall[N_END];
 	MsgCall m_protoCall[MAX_CM_MSG_ID];
-	//std::unordered_map<int32_t, MsgCall2> m_callBack2;
 
 	int64_t m_coroCheckTime;
 	int32_t m_coroIndex;

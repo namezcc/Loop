@@ -1,4 +1,4 @@
-#ifndef BASE_LAYER_H
+﻿#ifndef BASE_LAYER_H
 #define BASE_LAYER_H
 #include <functional>
 #include "LoopArray.h"
@@ -24,7 +24,7 @@ typedef struct RWPipe
 class LOOP_EXPORT BaseLayer
 {
 public:
-	BaseLayer(const int32_t& ltype):m_type(ltype)
+	BaseLayer(const int32_t& ltype):m_type(ltype), m_defPipe(NULL)
 	{
 	};
 	virtual ~BaseLayer();
@@ -41,7 +41,10 @@ public:
 
 	void writePipe(BaseData* msg)
 	{
-		writePipe(m_defltype, m_deflid, msg);
+		if (m_defPipe)
+			m_defPipe->wpipe->write(msg);
+		else
+			RecycleLayerMsg(msg);
 	}
 
 	void writePipe(const int32_t& ltype,const int32_t& lid, BaseData* msg)
@@ -49,10 +52,12 @@ public:
 		auto it = m_pipes.find(ltype);
 		if (it == m_pipes.end())
 		{
-			RecycleLayerMsg(msg);
 			assert(0);
 		}
-		it->second[lid].wpipe->write(msg);
+		if(lid >= 0 && lid < it->second.size())
+			it->second[lid].wpipe->write(msg);
+		else
+			RecycleLayerMsg(msg);
 	}
 
 	void RegLayerMsg(const LayerMsg&f)
@@ -89,24 +94,6 @@ public:
 			return dynamic_cast<T*>(it->second.get());
 	}
 
-	/*template<typename T>
-	T* GetLoopObj()
-	{
-		return Single::LocalInstance<FactorManager>()->getLoopObj<T>();
-	}
-
-	template<typename T>
-	std::shared_ptr<T> GetSharedLoop()
-	{
-		return Single::LocalInstance<FactorManager>()->GetSharedLoop<T>();
-	}
-
-	template<typename T>
-	void Recycle(T* t)
-	{
-		Single::LocalInstance<FactorManager>()->recycle(t);
-	}*/
-
 	template<typename T>
 	T* GetLayerMsg()
 	{
@@ -135,7 +122,7 @@ protected:
 
 	virtual void GetDefaultTrans(int32_t& ltype,int32_t& lid)=0;
 protected:
-	int32_t m_defltype, m_deflid;
+	RWPipe* m_defPipe;
 	int32_t m_type;
 	int32_t m_lsindex;	//在server的下标
 	LayerMsg m_msgCall;
