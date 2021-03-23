@@ -86,7 +86,12 @@ public:
 		}
 		else {
 			if (m_curSlot >= m_lastSlot)
-				return NULL;
+			{
+				if(m_curSlot == NULL)
+					allocBlock();
+				else
+					return NULL;
+			}
 			T* res = reinterpret_cast<T*>(m_curSlot++);
 			construct(res, std::forward<Args>(args)...);
 			return res;
