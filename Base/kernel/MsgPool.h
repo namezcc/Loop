@@ -10,12 +10,12 @@ struct MsgPool
 	template<typename T>
 	static typename std::enable_if<std::is_base_of<BaseData, T>::value, T*>::type popMsg()
 	{
-		auto llist = Single::LocalInstance<LoopList<T*>>();
+		auto llist = Single::LocalInstance<LoopArray<T*>>();
 		T* msg = NULL;
 		if (!llist->pop(msg))
 		{
 			//msg = Single::LocalInstance<LoopFactor<T>>()->get();
-			msg = Single::LocalInstance<Block2<T,1000>>()->allocateNewOnceLimitNum();
+			msg = Single::LocalInstance<Block2<T>>()->allocateNewOnceLimitNum();
 			if(msg)
 				msg->m_looplist = (void*)llist;
 			else
@@ -44,7 +44,7 @@ struct RecyclePool
 		return msg;
 	}
 
-	LoopList<BaseData*> m_pool;
+	LoopArray<BaseData*> m_pool;
 };
 
 #endif

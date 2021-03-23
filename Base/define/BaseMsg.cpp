@@ -13,7 +13,7 @@ void BaseMsg::recycleMsg()
 	if (!m_looplist)
 		delete this;
 	else
-		((LoopList<BaseMsg*>*)m_looplist)->write(this);
+		((LoopArray<BaseMsg*>*)m_looplist)->write(this);
 }
 
 BuffBlock::BuffBlock():m_size(0),m_allsize(0), m_next(NULL),m_buff(NULL),m_recylist(NULL)
@@ -68,7 +68,7 @@ void BuffBlock::recycleMsg()
 	if (!m_looplist)
 		delete this;
 	else
-		((LoopList<BuffBlock*>*)m_looplist)->write(this);
+		((LoopArray<BuffBlock*>*)m_looplist)->write(this);
 }
 
 void BuffBlock::recycleCheck()
@@ -200,7 +200,7 @@ void NetMsg::recycleMsg()
 	if (!m_looplist)
 		delete this;
 	else
-		((LoopList<NetMsg*>*)m_looplist)->write(this);
+		((LoopArray<NetMsg*>*)m_looplist)->write(this);
 }
 
 void NetServerMsg::recycleMsg()
@@ -237,7 +237,7 @@ void NetServer::recycleMsg()
 	if (!m_looplist)
 		delete this;
 	else
-		((LoopList<NetServer*>*)m_looplist)->write(this);
+		((LoopArray<NetServer*>*)m_looplist)->write(this);
 }
 
 void LogInfo::recycleMsg()
@@ -246,5 +246,5 @@ void LogInfo::recycleMsg()
 	if (!m_looplist)
 		delete this;
 	else
-		((LoopList<LogInfo*>*)m_looplist)->write(this);
+		((LoopArray<LogInfo*>*)m_looplist)->write(this);
 }

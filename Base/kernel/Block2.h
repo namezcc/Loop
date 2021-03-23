@@ -11,7 +11,7 @@ struct MultSize
 template<typename T>
 struct TSB2
 {
-	enum { bsize = 10, };
+	enum { bsize = 1000, };
 };
 #define SET_T_BLOCK_SIZE_2(T,S)	\
 template<>						\

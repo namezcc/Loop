@@ -7,7 +7,7 @@
 #include <memory>
 
 typedef std::function<void(void*)> LayerMsg;
-typedef LoopList<void*> PIPE;
+typedef LoopArray<void*> PIPE;
 
 class BaseModule;
 struct ServerNode;
