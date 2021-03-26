@@ -24,11 +24,9 @@ void BuffBlock::makeRoom(const int32_t & size)
 {
 	if (m_buff)
 		assert(0);
-	LoopList<char*>* tlist = NULL;
+	LoopArray<char*>* tlist = NULL;
 	m_buff = GET_POOL_BUFF(size, m_allsize, tlist);
 	m_recylist = tlist;
-	if(!m_recylist)
-		assert(0);
 }
 
 void BuffBlock::write(char * buf, const int32_t & size)
@@ -61,8 +59,15 @@ void BuffBlock::recycleMsg()
 	}
 	if (m_buff)
 	{
-		((LoopList<char*>*)m_recylist)->write(m_buff);
-		m_recylist = NULL;
+		if (m_recylist)
+		{
+			((LoopArray<char*>*)m_recylist)->write(m_buff);
+			m_recylist = NULL;
+		}
+		else
+		{//释放内存
+			free(m_buff);
+		}
 		m_buff = NULL;
 	}
 	if (!m_looplist)
@@ -73,11 +78,12 @@ void BuffBlock::recycleMsg()
 
 void BuffBlock::recycleCheck()
 {
-	assert(m_recylist);
+	
 }
 
 LocalBuffBlock::LocalBuffBlock():BuffBlock()
 {
+	init(NULL);
 }
 
 void LocalBuffBlock::makeRoom(const int32_t & size)

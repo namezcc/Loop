@@ -1,4 +1,4 @@
-#ifndef BUFF_POOL_H
+﻿#ifndef BUFF_POOL_H
 #define BUFF_POOL_H
 
 #include "LoopArray.h"
@@ -26,6 +26,13 @@ static const int32_t bitIndexMap[256] = {
 	7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
 };
 
+static const int32_t pool_size[32] = {
+	1000,1000,1000,1000,1000,1000,1000,100,
+	10,10,10,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0
+};
+
 inline int32_t hightestBitIndex(const uint32_t& value)
 {
 	if (value <= 0xFF) return bitIndexMap[value];
@@ -39,7 +46,7 @@ class BuffPool
 	friend class Single;
 public:
 	
-	char* GetLayerBuff(const int32_t& nsize,int32_t& rsize,LoopList<char*>* &llist)
+	char* GetLayerBuff(const int32_t& nsize,int32_t& rsize,LoopArray<char*>* &llist)
 	{
 		int32_t base = BASE_BUFF_SIZE;
 		int32_t idx = 0;
@@ -53,18 +60,16 @@ public:
 				base <<= 1;
 			}
 		}
-		/*while (base < nsize)
-		{
-			base <<= 1;
-			++idx;
-		}*/
 
-		llist = &m_layerArr[idx];
-		rsize = base;
 		char* buf = NULL;
 		if (m_layerArr[idx].pop(buf))
+		{
+			rsize = base;
+			llist = &m_layerArr[idx];
 			return buf;
-		buf = (char*)malloc(base);
+		}
+		rsize = nsize;
+		buf = (char*)malloc(nsize);
 		return buf;
 	}
 
@@ -82,11 +87,6 @@ public:
 				base <<= 1;
 			}
 		}
-		/*while (base < nsize)
-		{
-			base <<= 1;
-			++idx;
-		}*/
 
 		rsize = base;
 		char* buf = NULL;
@@ -111,33 +111,48 @@ public:
 			if (base < size)
 				++idx;
 		}
-		m_localArr[idx].push_back(buff);
+		if (idx > 6)
+			free(buff);
+		else
+		{
+			if (m_localArr[idx].size() >= 10000)
+				free(buff);
+			else
+				m_localArr[idx].push_back(buff);
+		}
 	}
 
 private:
 	BuffPool() 
 	{
-		for (size_t i = 0; i < 4; i++)
+		for (size_t i = 0; i < 11; i++)
 		{
+			auto num = pool_size[i];
+			if (num == 0) continue;
 			auto bsize = BASE_BUFF_SIZE << i;
-			auto bnum = BASE_INIT_SIZE >> i;
-			char* beg = (char*)malloc(bsize * bnum * 2);
-			auto ptr = beg;
-			for (size_t j = 0; j < bnum; j++)
+
+			char* beg = (char*)malloc(bsize * num);
+			m_delete_pool.push_back(beg);
+
+			for (size_t j = 0; j < num; j++)
 			{
-				m_layerArr[i].write(ptr);
-				ptr += bsize;
-			}
-			for (size_t j = 0; j < bnum; j++)
-			{
-				m_localArr[i].push_back(ptr);
-				ptr += bsize;
+				m_layerArr[i].write(beg);
+				beg += bsize;
 			}
 		}
 	}
 
-	LoopList<char*> m_layerArr[32];
+	~BuffPool()
+	{
+		for (size_t i = 0; i < m_delete_pool.size(); i++)
+		{
+			free(m_delete_pool[i]);
+		}
+	}
+
+	LoopArray<char*> m_layerArr[32];
 	std::vector<char*> m_localArr[32];
+	std::vector<char*> m_delete_pool;
 };
 //use for layers
 #define GET_POOL_BUFF(nsize,rsize,looplist) Single::LocalInstance<BuffPool>()->GetLayerBuff(nsize,rsize,looplist)
