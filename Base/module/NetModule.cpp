@@ -3,6 +3,8 @@
 #include "BuffPool.h"
 #include "Protocol.h"
 
+#define UV_ALLOC_BUFF_SIZE 4096
+
 NetModule::NetModule(BaseLayer* l):BaseModule(l), m_port(0)
 {
 	memset(m_conns, 0, sizeof(m_conns));
@@ -118,7 +120,7 @@ void NetModule::Connected(uv_tcp_t* conn, bool client)
 void NetModule::read_alloc(uv_handle_t * client, size_t suggested_size, uv_buf_t * buf)
 {
 	int32_t gsize;
-	buf->base = GET_LOCAL_BUFF(static_cast<int32_t>(suggested_size), gsize);
+	buf->base = GET_LOCAL_BUFF(UV_ALLOC_BUFF_SIZE, gsize);
 	buf->len = gsize;
 }
 

@@ -161,16 +161,13 @@ void LoopServer::InitLogLayer()
 
 void LoopServer::InitMsgPool()
 {
-	//m_msgPool = new MsgPool[m_layers.size()];
 	m_recycle = new RecyclePool[m_layers.size()];
 }
 
 void LoopServer::BuildPipe(BaseLayer * l1, BaseLayer * l2)
 {
-	//auto p1 = Single::LocalInstance<FactorManager>()->getLoopObj<PIPE>();
-	//auto p2 = Single::LocalInstance<FactorManager>()->getLoopObj<PIPE>();
-	auto p1 = GET_LOOP(PIPE);
-	auto p2 = GET_LOOP(PIPE);
+	auto p1 = new PIPE();
+	auto p2 = new PIPE();
 	l1->regPipe(l2->GetType(), p1, p2);
 	l2->regPipe(l1->GetType(), p2, p1);
 }

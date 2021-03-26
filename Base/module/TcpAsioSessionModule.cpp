@@ -2,7 +2,7 @@
 #include "MsgModule.h"
 #include "Protocol.h"
 
-#define ASIO_READ_BUFF_SIZE 65535
+#define ASIO_READ_BUFF_SIZE 4096
 
 thread_local int32_t AsioSession::SOCKET = 0;
 
@@ -21,7 +21,6 @@ TcpAsioSessionModule::~TcpAsioSessionModule()
 
 void TcpAsioSessionModule::Init()
 {
-	m_sendBuff.makeRoom(ASIO_READ_BUFF_SIZE);
 	m_msgModule = GET_MODULE(MsgModule);
 
 	m_msgModule->AddMsgCall(L_SOCKET_CLOSE, BIND_CALL(OnCloseSocket, NetMsg));
@@ -69,11 +68,28 @@ void TcpAsioSessionModule::OnSocketSendData(NetMsg * nMsg)
 	auto session = m_session[nMsg->socket];
 	if (session == NULL || session->m_close)
 		return;
-	CombinBuff(nMsg);
+
+	auto buff = GET_SHARE(LocalBuffBlock);
+	m_proto->EncodeSendData(*buff, nMsg);
+
 	boost::system::error_code ec;
-	session->m_sock->write_some(boost::asio::buffer(m_sendBuff.m_buff, m_sendBuff.getSize()), ec);
-	if (ec)
-		LP_ERROR << ec.message();
+
+	boost::asio::async_write(*session->m_sock, boost::asio::buffer(buff->m_buff, buff->getSize()),
+	[this, buff](boost::system::error_code ec, std::size_t length) {
+		if (ec)
+			LP_ERROR << ec.message();
+
+		if (length != buff->getOffect())
+			LP_ERROR << "write data len not over";
+	});
+
+	/*session->m_sock->async_write_some(boost::asio::buffer(buff->m_buff, buff->getSize()), 
+	[this,buff](boost::system::error_code ec, std::size_t length) {
+		if (ec)
+			LP_ERROR << ec.message();
+	});*/
+
+	//session->m_sock->write_some(boost::asio::buffer(buff->m_buff, buff->getSize()), ec);
 }
 
 void TcpAsioSessionModule::OnBroadData(BroadMsg * nMsg)
@@ -81,7 +97,8 @@ void TcpAsioSessionModule::OnBroadData(BroadMsg * nMsg)
 	if (nMsg->m_socks.size() == 0)
 		return;
 
-	CombinBuff(nMsg);
+	auto buff = GET_SHARE(LocalBuffBlock);
+	m_proto->EncodeSendData(*buff, nMsg);
 
 	for (size_t i = 0; i < nMsg->m_socks.size(); i++)
 	{
@@ -91,7 +108,23 @@ void TcpAsioSessionModule::OnBroadData(BroadMsg * nMsg)
 		auto session = m_session[sockIndex];
 		if (session == NULL)
 			continue;
-		session->m_sock->write_some(boost::asio::buffer(m_sendBuff.m_buff, m_sendBuff.getSize()));
+
+
+		boost::asio::async_write(*session->m_sock, boost::asio::buffer(buff->m_buff, buff->getSize()),
+			[this, buff](boost::system::error_code ec, std::size_t length) {
+			if (ec)
+				LP_ERROR << ec.message();
+
+			if (length != buff->getOffect())
+				LP_ERROR << "write data len not over";
+		});
+
+		/*session->m_sock->async_write_some(boost::asio::buffer(buff->m_buff, buff->getSize()),
+			[this, buff](boost::system::error_code ec, std::size_t length) {
+			if (ec)
+				LP_ERROR << ec.message();
+		});*/
+		//session->m_sock->write_some(boost::asio::buffer(buff->m_buff, buff->getSize()));
 	}
 }
 
@@ -116,11 +149,6 @@ void TcpAsioSessionModule::OnConnectServer(NetServer * ser)
 		m_msgModule->SendMsg(L_SERVER_CONNECTED, tmpser);
 		delete s;
 	});
-}
-
-void TcpAsioSessionModule::CombinBuff(NetMsg * nMsg)
-{
-	m_proto->EncodeSendData(m_sendBuff, nMsg);
 }
 
 int32_t TcpAsioSessionModule::AddNewSession(tcp::socket & sock, bool clien)
@@ -170,6 +198,10 @@ void TcpAsioSessionModule::DoReadData(AsioSession* session)
 			{
 				DoReadData(session);
 				return;
+			}
+			else
+			{
+				LP_ERROR << "decode error";
 			}
 		}
 		if (!session->m_close)

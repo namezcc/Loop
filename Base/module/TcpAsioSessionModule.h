@@ -64,8 +64,6 @@ private:
 	void OnBroadData(BroadMsg* nMsg);
 	void OnConnectServer(NetServer * ser);
 
-	void CombinBuff(NetMsg * nMsg);
-
 	void DoReadData(AsioSession* session);
 	void CloseSession(const int32_t& sock,bool active = false);
 
@@ -74,7 +72,6 @@ private:
 	Protocol * m_proto;
 
 	MsgModule* m_msgModule;
-	LocalBuffBlock m_sendBuff;
 
 	as::io_context m_context;
 	std::unique_ptr<tcp::acceptor> m_accptor;

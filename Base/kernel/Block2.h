@@ -27,6 +27,7 @@ private:
 	struct Slot_
 	{
 		T mdata;
+		bool isNew;
 		Slot_* next;
 	};
 
@@ -103,12 +104,23 @@ public:
 	{
 		if (m_freeSlot != NULL) {
 			T* res = reinterpret_cast<T*>(m_freeSlot);
+			m_freeSlot->isNew = false;
 			m_freeSlot = m_freeSlot->next;
 			return res;
 		}
 		else {
 			if (m_curSlot >= m_lastSlot)
-				allocBlock();
+			{
+				if (m_curSlot == NULL)
+					allocBlock();
+				else
+				{
+					auto s = new Slot_();
+					s->isNew = true;
+					return reinterpret_cast<T*>(s);
+				}
+			}
+			m_curSlot->isNew = false;
 			T* res = reinterpret_cast<T*>(m_curSlot++);
 			construct(res, std::forward<Args>(args)...);
 			return res;
@@ -118,8 +130,15 @@ public:
 	inline void deallcate(T* p)
 	{
 		if (p != NULL) {
-			reinterpret_cast<Slot_*>(p)->next = m_freeSlot;
-			m_freeSlot = reinterpret_cast<Slot_*>(p);
+			if (reinterpret_cast<Slot_*>(p)->isNew)
+			{
+				delete reinterpret_cast<Slot_*>(p);
+			}
+			else
+			{
+				reinterpret_cast<Slot_*>(p)->next = m_freeSlot;
+				m_freeSlot = reinterpret_cast<Slot_*>(p);
+			}
 		}
 	}
 
