@@ -196,7 +196,7 @@ void LoopServer::Run()
 
 void LoopServer::Loop()
 {
-	for (size_t i = 0; i < m_layers.size(); i++)
+	/*for (size_t i = 0; i < m_layers.size(); i++)
 	{
 		BaseData* msg = NULL;
 		auto pool = m_recycle + i;
@@ -207,7 +207,7 @@ void LoopServer::Loop()
 			if (++num >= 5000)
 				break;
 		}
-	}
+	}*/
 }
 
 std::vector<ServerConfigInfo> LoopServer::getConnectServer()

@@ -10,23 +10,21 @@ struct MsgPool
 	template<typename T>
 	static typename std::enable_if<std::is_base_of<BaseData, T>::value, T*>::type popMsg()
 	{
-		auto llist = Single::LocalInstance<LoopArray<T*>>();
 		T* msg = NULL;
-		if (!llist->pop(msg))
+		msg = Single::GetInstence<Block2<T,10000>>()->allocateNewOnceLimitNum();
+		if (msg == NULL)
 		{
-			//msg = Single::LocalInstance<LoopFactor<T>>()->get();
-			msg = Single::LocalInstance<Block2<T>>()->allocateNewOnceLimitNum();
-			if(msg)
-				msg->m_looplist = (void*)llist;
-			else
-			{
-				msg = new T();
-				msg->m_looplist = NULL;
-			}
-		}
-			
+			msg = new T();
+			msg->m_isNew = true;
+		}	
 		msg->initMsg();
 		return msg;
+	}
+
+	template<typename T>
+	static typename std::enable_if<std::is_base_of<BaseData, T>::value>::type pushMsg(T* t)
+	{
+		Single::GetInstence<Block2<T, 10000>>()->deallcate(t);
 	}
 };
 

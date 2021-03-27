@@ -1,4 +1,4 @@
-#ifndef DATA_DEFINE_H
+﻿#ifndef DATA_DEFINE_H
 #define DATA_DEFINE_H
 #include "FactorManager.h"
 #include "LTime.h"
@@ -71,7 +71,7 @@ struct NetBuffer
 	~NetBuffer()
 	{
 		if (buf)
-			RCY_LOCAL_BUFF(buf, len);
+			PUSH_POOL_BUFF(buf, len);
 		//free(buf);
 	}
 
@@ -99,7 +99,7 @@ struct NetBuffer
 	void Clear()
 	{
 		if (buf)
-			RCY_LOCAL_BUFF(buf, len);
+			PUSH_POOL_BUFF(buf, len);
 		//free(buf);
 		buf = NULL;
 		len = use = scan = 0;
@@ -111,11 +111,11 @@ struct NetBuffer
 			return;
 		//auto room = (char*)malloc(size);
 		int32_t newlen = 0;
-		auto room = GET_LOCAL_BUFF(size, newlen);
+		auto room = GET_POOL_BUFF(size, newlen);
 		if (use > 0 && buf)
 		{
 			memcpy(room, buf, use);
-			RCY_LOCAL_BUFF(buf, len);
+			PUSH_POOL_BUFF(buf, len);
 		}
 		buf = room;
 		len = static_cast<uint32_t>(newlen);

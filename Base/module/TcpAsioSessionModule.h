@@ -4,6 +4,7 @@
 #include "BaseModule.h"
 #include <boost/asio.hpp>
 #include "ProtoDefine.h"
+#include "io_pool.h"
 
 using boost::asio::ip::tcp;
 namespace as = boost::asio;
@@ -15,12 +16,12 @@ struct AsioSession:public LoopObject
 {
 	AsioSession()
 	{
-		m_sockId = ++AsioSession::SOCKET;
+		m_sockId = 0;
 	}
 
 	virtual void init(FactorManager* fm)
 	{
-		m_close = false;
+		
 	}
 
 	virtual void recycle(FactorManager* fm)
@@ -33,10 +34,6 @@ struct AsioSession:public LoopObject
 	int32_t m_sockId;
 	LocalBuffBlock m_buff;
 	NetBuffer m_decodeBuff;
-	bool m_close;
-	
-
-	static thread_local int32_t SOCKET;
 };
 
 class TcpAsioSessionModule:public BaseModule
@@ -45,7 +42,7 @@ public:
 	TcpAsioSessionModule(BaseLayer*l);
 	~TcpAsioSessionModule();
 
-	int32_t AddNewSession(tcp::socket& sock,bool clien = true);
+	int32_t AddNewSession(const std::shared_ptr<tcp::socket>& sock,bool clien = true);
 	void SetProtoType(ProtoType ptype);
 	void SetBind(int port)
 	{
@@ -66,7 +63,11 @@ private:
 
 	void DoReadData(AsioSession* session);
 	void CloseSession(const int32_t& sock,bool active = false);
+	void pushMsg(NetMsg* msg);
+	void sendMsgToLayer();
 
+	void pushCloseSock(int32_t sock);
+	void extureCloseSock();
 private:
 
 	Protocol * m_proto;
@@ -78,6 +79,13 @@ private:
 	//std::unordered_map<int32_t, SHARE<AsioSession>> m_session;
 	AsioSession* m_session[MAX_CLIENT_CONN];
 	std::list<int32_t> m_sock_pool;
+	io_service_pool m_io_pool;
+	NetMsg* m_send_msg_head;
+	NetMsg* m_send_msg_tail;
+	std::mutex m_msg_mutex;
+
+	NetMsg* m_close_list;
+	std::mutex m_close_mutex;
 };
 
 #endif

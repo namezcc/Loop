@@ -1,4 +1,4 @@
-#include "BaseLayer.h"
+﻿#include "BaseLayer.h"
 #include "BaseModule.h"
 #include <thread>
 
@@ -45,7 +45,8 @@ void BaseLayer::StartRun()
 
 void BaseLayer::RecycleLayerMsg(BaseData* msg)
 {
-	m_server->recycle(m_lsindex,msg);
+	msg->recycleMsg();
+	//m_server->recycle(m_lsindex,msg);
 	//msg->recycleCheck();
 	//msg->recycleMsg();
 }

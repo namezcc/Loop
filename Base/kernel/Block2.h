@@ -1,6 +1,7 @@
 ﻿#ifndef BLOCK_H_2
 #define BLOCK_H_2
 //#include <iostream>
+#include <mutex>
 
 template<size_t Size, size_t Bsize = 4096>
 struct MultSize
@@ -80,8 +81,11 @@ public:
 	template<typename... Args>
 	inline T* allocateNewOnceLimitNum(Args&&... args)
 	{
+		std::lock_guard<std::mutex> _g(m_mutex);
+
 		if (m_freeSlot != NULL) {
 			T* res = reinterpret_cast<T*>(m_freeSlot);
+			m_freeSlot->isNew = false;
 			m_freeSlot = m_freeSlot->next;
 			return res;
 		}
@@ -93,6 +97,7 @@ public:
 				else
 					return NULL;
 			}
+			m_curSlot->isNew = false;
 			T* res = reinterpret_cast<T*>(m_curSlot++);
 			construct(res, std::forward<Args>(args)...);
 			return res;
@@ -102,6 +107,8 @@ public:
 	template<typename... Args>
 	inline T* allocateNewOnce(Args&&... args)
 	{
+		std::lock_guard<std::mutex> _g(m_mutex);
+
 		if (m_freeSlot != NULL) {
 			T* res = reinterpret_cast<T*>(m_freeSlot);
 			m_freeSlot->isNew = false;
@@ -130,6 +137,8 @@ public:
 	inline void deallcate(T* p)
 	{
 		if (p != NULL) {
+			std::lock_guard<std::mutex> _g(m_mutex);
+
 			if (reinterpret_cast<Slot_*>(p)->isNew)
 			{
 				delete reinterpret_cast<Slot_*>(p);
@@ -183,6 +192,7 @@ private:
 	Slot_ * m_curSlot;
 	Slot_ * m_lastSlot;
 	Slot_ * m_freeSlot;
+	std::mutex m_mutex;
 
 	static_assert(Tsize >= 2, "BSize too small.");
 };

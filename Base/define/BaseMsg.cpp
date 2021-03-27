@@ -10,13 +10,15 @@ void BaseMsg::recycleMsg()
 		m_data->recycleMsg();
 		m_data = NULL;
 	}
-	if (!m_looplist)
+	if (m_isNew)
 		delete this;
 	else
-		((LoopArray<BaseMsg*>*)m_looplist)->write(this);
+	{
+		MsgPool::pushMsg(this);
+	}
 }
 
-BuffBlock::BuffBlock():m_size(0),m_allsize(0), m_next(NULL),m_buff(NULL),m_recylist(NULL)
+BuffBlock::BuffBlock():m_size(0),m_allsize(0), m_next(NULL),m_buff(NULL)
 {
 }
 
@@ -24,9 +26,8 @@ void BuffBlock::makeRoom(const int32_t & size)
 {
 	if (m_buff)
 		assert(0);
-	LoopArray<char*>* tlist = NULL;
-	m_buff = GET_POOL_BUFF(size, m_allsize, tlist);
-	m_recylist = tlist;
+
+	m_buff = GET_POOL_BUFF(size, m_allsize);
 }
 
 void BuffBlock::write(char * buf, const int32_t & size)
@@ -59,21 +60,25 @@ void BuffBlock::recycleMsg()
 	}
 	if (m_buff)
 	{
-		if (m_recylist)
-		{
-			((LoopArray<char*>*)m_recylist)->write(m_buff);
-			m_recylist = NULL;
-		}
-		else
-		{//释放内存
-			free(m_buff);
-		}
+		PUSH_POOL_BUFF(m_buff, m_allsize);
+		//if (m_recylist)
+		//{
+		//	((LoopArray<char*>*)m_recylist)->write(m_buff);
+		//	m_recylist = NULL;
+		//}
+		//else
+		//{//释放内存
+		//	free(m_buff);
+		//}
 		m_buff = NULL;
 	}
-	if (!m_looplist)
+
+	if (m_isNew)
 		delete this;
 	else
-		((LoopArray<BuffBlock*>*)m_looplist)->write(this);
+	{
+		MsgPool::pushMsg(this);
+	}
 }
 
 void BuffBlock::recycleCheck()
@@ -91,11 +96,11 @@ void LocalBuffBlock::makeRoom(const int32_t & size)
 	if (m_buff)
 	{
 		if (size > m_allsize)
-			RCY_LOCAL_BUFF(m_buff, m_allsize);
+			PUSH_POOL_BUFF(m_buff, m_allsize);
 		else
 			return;
 	}
-	m_buff = GET_LOCAL_BUFF(size, m_allsize);
+	m_buff = GET_POOL_BUFF(size, m_allsize);
 }
 
 void LocalBuffBlock::init(FactorManager * fm)
@@ -109,12 +114,12 @@ void LocalBuffBlock::recycle(FactorManager * fm)
 		assert(0);
 	if (m_buff)
 	{
-		RCY_LOCAL_BUFF(m_buff, m_allsize);
+		PUSH_POOL_BUFF(m_buff, m_allsize);
 		m_buff = NULL;
 	}
 }
 
-NetMsg::NetMsg():m_buff(NULL)
+NetMsg::NetMsg():m_buff(NULL), m_next_data(NULL)
 {
 }
 
@@ -123,6 +128,7 @@ void NetMsg::initMsg()
 	len = 0;
 	mid = 0;
 	socket = 0;
+	m_next_data = NULL;
 }
 
 void NetMsg::push_front(BuffBlock* buff)
@@ -203,10 +209,13 @@ void NetMsg::recycleMsg()
 		m_buff->recycleMsg();
 		m_buff = NULL;
 	}
-	if (!m_looplist)
+
+	if (m_isNew)
 		delete this;
 	else
-		((LoopArray<NetMsg*>*)m_looplist)->write(this);
+	{
+		MsgPool::pushMsg(this);
+	}
 }
 
 void NetServerMsg::recycleMsg()
@@ -240,17 +249,21 @@ void NetServerMsg::push_front(BaseLayer * l, const char * buf, const int32_t & s
 
 void NetServer::recycleMsg()
 {
-	if (!m_looplist)
+	if (m_isNew)
 		delete this;
 	else
-		((LoopArray<NetServer*>*)m_looplist)->write(this);
+	{
+		MsgPool::pushMsg(this);
+	}
 }
 
 void LogInfo::recycleMsg()
 {
 	log.str("");
-	if (!m_looplist)
+	if (m_isNew)
 		delete this;
 	else
-		((LoopArray<LogInfo*>*)m_looplist)->write(this);
+	{
+		MsgPool::pushMsg(this);
+	}
 }

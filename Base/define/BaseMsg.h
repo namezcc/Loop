@@ -1,4 +1,4 @@
-#ifndef BASE_MSG_H
+﻿#ifndef BASE_MSG_H
 #define BASE_MSG_H
 #include <string>
 #include <sstream>
@@ -26,7 +26,7 @@ struct ServerNode
 
 struct BaseData
 {
-	BaseData():m_looplist(NULL)
+	BaseData():m_isNew(false)
 	{};
 	/*BaseData(const BaseData&)
 	{}*/
@@ -44,7 +44,7 @@ struct BaseData
 	virtual void recycleMsg()=0;
 	virtual void recycleCheck(){};
 
-	void* m_looplist;
+	bool m_isNew;
 };
 
 struct BaseMsg:public BaseData
@@ -168,7 +168,7 @@ struct LOOP_EXPORT BuffBlock:public BaseData
 protected:
 	int32_t m_size;		//used size
 	int32_t m_allsize;
-	void* m_recylist;
+	//void* m_recylist;
 	int32_t m_offect;
 
 };
@@ -204,6 +204,7 @@ struct LOOP_EXPORT NetMsg:public BaseData
 	int32_t socket;
 	int32_t mid;
 	BuffBlock* m_buff;
+	NetMsg* m_next_data;
 protected:
 	int32_t len;
 };

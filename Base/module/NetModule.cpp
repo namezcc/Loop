@@ -120,7 +120,7 @@ void NetModule::Connected(uv_tcp_t* conn, bool client)
 void NetModule::read_alloc(uv_handle_t * client, size_t suggested_size, uv_buf_t * buf)
 {
 	int32_t gsize;
-	buf->base = GET_LOCAL_BUFF(UV_ALLOC_BUFF_SIZE, gsize);
+	buf->base = GET_POOL_BUFF(UV_ALLOC_BUFF_SIZE, gsize);
 	buf->len = gsize;
 }
 
@@ -133,7 +133,7 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 		/* Error or EOF */
 		//ASSERT(nread == UV_EOF);
 		if(buf->base)
-			RCY_LOCAL_BUFF(buf->base, buf->len);
+			PUSH_POOL_BUFF(buf->base, buf->len);
 
 		//uv_close ��� socket �ÿ� �����ȱ���
 		uv_close((uv_handle_t*)client, client->close_cb);
@@ -143,7 +143,7 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 	if (nread == 0) {
 		/* Everything OK, but nothing read. */
 		if (buf->base)
-			RCY_LOCAL_BUFF(buf->base, buf->len);
+			PUSH_POOL_BUFF(buf->base, buf->len);
 		return;
 	}
 	
@@ -151,7 +151,7 @@ void NetModule::after_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* b
 	{
 		uv_close((uv_handle_t*)client, client->close_cb);
 	}
-	RCY_LOCAL_BUFF(buf->base, buf->len);
+	PUSH_POOL_BUFF(buf->base, buf->len);
 }
 
 void NetModule::on_close_client(uv_handle_t* client) {
