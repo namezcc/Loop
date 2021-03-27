@@ -41,6 +41,27 @@ inline int32_t hightestBitIndex(const uint32_t& value)
 	else return bitIndexMap[(value >> 24) & 0xFF] + 24;
 }
 
+template<size_t I>
+struct IndexNum
+{
+	static constexpr size_t value = 1000;
+};
+
+#define INDEX_NUM(i,n) \
+template<> struct IndexNum<i> \
+{	\
+	static constexpr size_t value = n;\
+};
+
+INDEX_NUM(0,1000)
+INDEX_NUM(1, 1000)
+INDEX_NUM(2, 1000)
+INDEX_NUM(3, 1000)
+INDEX_NUM(4, 1000)
+INDEX_NUM(5, 1000)
+INDEX_NUM(6, 10000)
+INDEX_NUM(7, 500)
+
 template <size_t I>
 struct IndexSize
 {
@@ -53,8 +74,8 @@ struct BuffNode
 	char m_buff[S];
 };
 
-#define GET_BUFF_BLOCK(i,n) Single::GetInstence<Block2<BuffNode<IndexSize<i>::value>, n>>()->allocateNewOnce()->m_buff
-#define PUSH_BUFF_BLOCK(i,n,b) Single::GetInstence<Block2<BuffNode<IndexSize<i>::value>, n>>()->deallcate((BuffNode<IndexSize<i>::value>*)b)
+#define GET_BUFF_BLOCK(i) Single::GetInstence<Block2<BuffNode<IndexSize<i>::value>, IndexNum<i>::value>>()->allocateNewOnce()->m_buff
+#define PUSH_BUFF_BLOCK(i,b) Single::GetInstence<Block2<BuffNode<IndexSize<i>::value>, IndexNum<i>::value>>()->deallcate((BuffNode<IndexSize<i>::value>*)b)
 
 class BuffPool
 {
@@ -80,17 +101,17 @@ public:
 
 		switch (idx)
 		{
-		case 0: return GET_BUFF_BLOCK(0,1000);
-		case 1: return GET_BUFF_BLOCK(1, 1000);
-		case 2: return GET_BUFF_BLOCK(2, 1000);
-		case 3: return GET_BUFF_BLOCK(3, 1000);
-		case 4: return GET_BUFF_BLOCK(4, 1000);
-		case 5: return GET_BUFF_BLOCK(5, 1000);
-		case 6: return GET_BUFF_BLOCK(6, 1000);
-		case 7: return GET_BUFF_BLOCK(7, 1000);
-		case 8: return GET_BUFF_BLOCK(8, 1000);
-		case 9: return GET_BUFF_BLOCK(9, 1000);
-		case 10: return GET_BUFF_BLOCK(10, 1000);
+		case 0: return GET_BUFF_BLOCK(0);
+		case 1: return GET_BUFF_BLOCK(1);
+		case 2: return GET_BUFF_BLOCK(2);
+		case 3: return GET_BUFF_BLOCK(3);
+		case 4: return GET_BUFF_BLOCK(4);
+		case 5: return GET_BUFF_BLOCK(5);
+		case 6: return GET_BUFF_BLOCK(6);
+		case 7: return GET_BUFF_BLOCK(7);
+		case 8: return GET_BUFF_BLOCK(8);
+		case 9: return GET_BUFF_BLOCK(9);
+		case 10: return GET_BUFF_BLOCK(10);
 		default:
 			rsize = nsize;
 			return (char*)malloc(nsize);
@@ -111,17 +132,17 @@ public:
 
 		switch (idx)
 		{
-		case 0: PUSH_BUFF_BLOCK(0, 1000, buf); break;
-		case 1: PUSH_BUFF_BLOCK(1, 1000, buf); break;
-		case 2: PUSH_BUFF_BLOCK(2, 1000, buf); break;
-		case 3: PUSH_BUFF_BLOCK(3, 1000, buf); break;
-		case 4: PUSH_BUFF_BLOCK(4, 1000, buf); break;
-		case 5: PUSH_BUFF_BLOCK(5, 1000, buf); break;
-		case 6: PUSH_BUFF_BLOCK(6, 1000, buf); break;
-		case 7: PUSH_BUFF_BLOCK(7, 1000, buf); break;
-		case 8: PUSH_BUFF_BLOCK(8, 1000, buf); break;
-		case 9: PUSH_BUFF_BLOCK(9, 1000, buf); break;
-		case 10: PUSH_BUFF_BLOCK(10, 1000, buf); break;
+		case 0: PUSH_BUFF_BLOCK(0, buf); break;
+		case 1: PUSH_BUFF_BLOCK(1, buf); break;
+		case 2: PUSH_BUFF_BLOCK(2, buf); break;
+		case 3: PUSH_BUFF_BLOCK(3, buf); break;
+		case 4: PUSH_BUFF_BLOCK(4, buf); break;
+		case 5: PUSH_BUFF_BLOCK(5, buf); break;
+		case 6: PUSH_BUFF_BLOCK(6, buf); break;
+		case 7: PUSH_BUFF_BLOCK(7, buf); break;
+		case 8: PUSH_BUFF_BLOCK(8, buf); break;
+		case 9: PUSH_BUFF_BLOCK(9, buf); break;
+		case 10: PUSH_BUFF_BLOCK(10, buf); break;
 		default:
 			free(buf);
 			break;
