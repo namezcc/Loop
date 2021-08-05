@@ -30,6 +30,7 @@ struct ServerConfig
 	NetServer addr;
 	NetServer udpAddr;
 	SqlInfo sql;
+	SqlInfo redis;
 };
 
 class LOOP_EXPORT LoopServer

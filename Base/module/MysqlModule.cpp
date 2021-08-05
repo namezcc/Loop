@@ -1,45 +1,125 @@
-#include "MysqlModule.h"
+﻿#include "MysqlModule.h"
 #include <mysql++/mysql++.h>
 #include "MsgModule.h"
 #include "LoopServer.h"
 
 #define MYSQL_TRY try{
 
-/*
-std::cout << "BadQuery [" << msg << "] Error: " << er.what() << std::endl; \
-std::cout << "BadConversion [" << msg << "] Error:" << er.what() << " retrieved data size:" << 
-er.retrieved << ", actual size:" << er.actual_size << std::endl; \
-std::cerr << "Failed to connect to database server: " <<er.what()  << std::endl; \
-std::cout << "mysqlpp::Exception [" << msg << "] Error:" << er.what() << std::endl; \
-std::cout << "std::exception [" <<msg << "] Error:Unknown " << std::endl; \
-*/
 
-#define MYSQL_CATCH(msg) }\
+#define _MYSQL_CATCH(msg,code) }\
 	catch (mysqlpp::BadQuery& er) \
     { \
         LP_ERROR<<"BadQuery ["<<msg<<"] Error: "<<er.what(); \
-        return false; \
+        code \
     } \
     catch (const mysqlpp::BadConversion& er)  \
     { \
 		LP_ERROR<<" retrieved data size:"<<er.retrieved<<", actual size:"<<er.actual_size;	\
-        return false; \
+        code \
     } \
 	catch (const mysqlpp::ConnectionFailed& er) \
 	{ \
 		LP_ERROR<<"Failed to connect to database server: "<<er.what();	\
-		return false; \
+		code \
 	} \
     catch (const mysqlpp::Exception& er) \
     { \
 		LP_ERROR<<"mysqlpp::Exception ["<<msg<<"] Error:"<<er.what();	\
-        return false; \
+        code \
     }\
     catch ( ... ) \
     { \
 		LP_ERROR<<"std::exception ["<<msg<<"] Error:Unknown ";	\
-        return false; \
+        code \
     }
+
+
+#define MYSQL_CATCH(msg) _MYSQL_CATCH(msg,return false;)
+
+#define MYSQL_CATCH_NOR() _MYSQL_CATCH("", )
+
+class QuerySqlResult:public SqlResult
+{
+public:
+	QuerySqlResult():m_index(0)
+	{
+	}
+
+	~QuerySqlResult()
+	{
+	}
+
+
+	// 通过 SqlResult 继承
+	virtual int32_t getInt32(const char * f) override
+	{
+		auto i = m_ret.field_num(f);
+		if (i < 0 || i >= m_ret.num_fields())
+			return 0;
+		return loop_cast<int32_t>(m_ret[m_index][i]);
+	}
+
+	virtual uint32_t getUInt32(const char * f) override
+	{
+		auto i = m_ret.field_num(f);
+		if (i < 0 || i >= m_ret.num_fields())
+			return 0;
+		return loop_cast<uint32_t>(m_ret[m_index][i]);
+	}
+
+	virtual int64_t getInt64(const char * f) override
+	{
+		auto i = m_ret.field_num(f);
+		if (i < 0 || i >= m_ret.num_fields())
+			return 0;
+		return loop_cast<int64_t>(m_ret[m_index][i]);
+	}
+
+	virtual uint64_t getUInt64(const char * f) override
+	{
+		auto i = m_ret.field_num(f);
+		if (i < 0 || i >= m_ret.num_fields())
+			return 0;
+		return loop_cast<uint64_t>(m_ret[m_index][i]);
+	}
+
+	virtual std::string getString(const char * f) override
+	{
+		auto i = m_ret.field_num(f);
+		if (i < 0 || i >= m_ret.num_fields())
+			return 0;
+		return std::string(m_ret[m_index][i]);
+	}
+
+	virtual float getFloat(const char* f) override
+	{
+		auto i = m_ret.field_num(f);
+		if (i < 0 || i >= m_ret.num_fields())
+			return 0;
+		return loop_cast<float>(m_ret[m_index][i]);
+	}
+
+	virtual double getDouble(const char* f) override
+	{
+		auto i = m_ret.field_num(f);
+		if (i < 0 || i >= m_ret.num_fields())
+			return 0;
+		return loop_cast<double>(m_ret[m_index][i]);
+	}
+
+	virtual bool eof() override
+	{
+		return m_index >= m_ret.num_rows();
+	}
+
+	virtual void nextRow() override
+	{
+		++m_index;
+	}
+
+	mysqlpp::StoreQueryResult m_ret;
+	int32_t m_index;
+};
 
 MysqlModule::MysqlModule(BaseLayer * l):BaseModule(l)
 {
@@ -112,24 +192,88 @@ bool MysqlModule::Reconnect()
 		LP_ERROR << "Mysql Connect Error "<<e.what();
 	}
 	if (!res)
-		LP_WARN << "Mysql Connect Error "<<"db:"<<m_dbname<<" ip:"<<m_ip<<" user:"<<m_user<<" pass:"<<m_pass<<" port:"<<m_port;
+		LP_ERROR << "Mysql Connect Error "<<"db:"<<m_dbname<<" ip:"<<m_ip<<" user:"<<m_user<<" pass:"<<m_pass<<" port:"<<m_port;
+	else
+		LP_WARN << "Mysql Connect Success " << "db:" << m_dbname << " ip:" << m_ip << " port:" << m_port;
 	return res;
 }
 
 bool MysqlModule::Query(const string & str)
 {
+	//bool ret = false;
+	//auto query = m_sqlConn->query(str);
+
+	//ExitCall _call([this,&ret,&str]() {
+	//	if (!ret)
+	//		LP_ERROR<< "Query Error:"<< str;
+	//	//cout << "Query Error:" << str <<endl;
+	//});
+	//MYSQL_TRY
+	//	auto r = query.execute();
+	//MYSQL_CATCH("")
+	//return ret = true;
+	return Query(str.data());
+}
+
+bool MysqlModule::Query(const char * str)
+{
 	bool ret = false;
 	auto query = m_sqlConn->query(str);
 
-	ExitCall _call([this,&ret,&str]() {
+	ExitCall _call([this, &ret, &str]() {
 		if (!ret)
-			LP_ERROR<< "Query Error:"<< str;
+			LP_ERROR << "Query Error:" << str;
 		//cout << "Query Error:" << str <<endl;
 	});
 	MYSQL_TRY
 		auto r = query.execute();
 	MYSQL_CATCH("")
 	return ret = true;
+}
+
+SHARE<SqlResult> MysqlModule::query(const string & str)
+{
+	/*bool ret = false;
+	auto query = m_sqlConn->query(str);
+
+	ExitCall _call([this, &ret, &str]() {
+		if (!ret)
+			LP_ERROR << "Query Error:" << str;
+	});
+
+	auto qres = new QuerySqlResult();
+	SHARE<SqlResult> res = SHARE<SqlResult>(qres, [](SqlResult* _r) {
+		delete (QuerySqlResult*)_r;
+	});
+
+	MYSQL_TRY
+		qres->m_ret = query.store();
+	MYSQL_CATCH_NOR()
+	ret = true;
+	return res;*/
+	return query(str.data());
+}
+
+SHARE<SqlResult> MysqlModule::query(const char * str)
+{
+	bool ret = false;
+	auto query = m_sqlConn->query(str);
+
+	ExitCall _call([this, &ret, &str]() {
+		if (!ret)
+			LP_ERROR << "Query Error:" << str;
+	});
+
+	auto qres = new QuerySqlResult();
+	SHARE<SqlResult> res = SHARE<SqlResult>(qres, [](SqlResult* _r) {
+		delete (QuerySqlResult*)_r;
+	});
+
+	MYSQL_TRY
+		qres->m_ret = query.store();
+	MYSQL_CATCH_NOR()
+	ret = true;
+	return res;
 }
 
 bool MysqlModule::Select(const string & str, MultRow & res, SqlRow & files)

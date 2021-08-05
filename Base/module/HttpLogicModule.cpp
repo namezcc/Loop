@@ -196,7 +196,7 @@ void HttpResponse::EncodePHP(NetBuffer& nbuff)
 
 void FileCash::init(FactorManager * fm)
 {
-	cashTime = GetMilliSecend();
+	cashTime = Loop::GetMilliSecend();
 }
 
 void FileCash::recycle(FactorManager * fm)
@@ -451,7 +451,7 @@ void HttpLogicModule::AddCashFile(const string& file, NetBuffer& buff)
 {
 	//auto cash = GetLayer()->GetSharedLoop<FileCash>();
 	auto cash = GET_SHARE(FileCash);
-	cash->cashTime = GetMilliSecend() + CHECK_TIME;
+	cash->cashTime = Loop::GetMilliSecend() + CHECK_TIME;
 	cash->file = file;
 	cash->buff.append(buff.buf,buff.use);
 	m_fileCash[file] = cash;

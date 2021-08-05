@@ -20,7 +20,7 @@ void TestTime::Init()
 
 void TestTime::OnTestBegin(NetMsg * s)
 {
-	m_beg = GetMilliSecend();
+	m_beg = Loop::GetMilliSecend();
 	LP_WARN << "Test begin:" << m_beg;
 	m_num = 0;
 }
@@ -28,13 +28,13 @@ void TestTime::OnTestBegin(NetMsg * s)
 void TestTime::OnTest(NetMsg * s)
 {
 	//do something
-	//auto t = GetMilliSecend();
+	//auto t = Loop::GetMilliSecend();
 	++m_num;
 }
 
 void TestTime::OnTestEnd(NetMsg * s)
 {
-	auto mend = GetMilliSecend();
+	auto mend = Loop::GetMilliSecend();
 	LP_WARN << "use time ms:" << mend - m_beg << "  num:"<< m_num;
 }
 

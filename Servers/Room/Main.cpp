@@ -1,11 +1,10 @@
-#include <iostream>
+﻿#include <iostream>
 #include "LoopServer.h"
 #include "TcpNetLayer.h"
 #include "LogicLayer.h"
 #include "PlayerModule.h"
-#include "SendProxyDbModule.h"
-#include "ProxyNodeModule.h"
 #include "MatchModule.h"
+#include "RoomModule.h"
 
 EXPORT void DLL_START_NAME(int argc,char* args[])
 {
@@ -15,10 +14,9 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 	auto nl = ser.CreateLayer<TcpNetLayer>(ser.m_port);
 	auto ll = ser.CreateLayer<LogicLayer>(LY_LOGIC);
 
+	ll->CreateModule<RoomModuloe>();
 	ll->CreateModule<PlayerModule>();
-	ll->CreateModule<SendProxyDbModule>();
-	ll->CreateModule<ProxyNodeModule>();
-	ll->CreateModule<MatchModule>();
+	//ll->CreateModule<MatchModule>();
 
 	ser.BuildPipe(nl, ll);
 	ser.Run();

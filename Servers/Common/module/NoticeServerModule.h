@@ -1,4 +1,4 @@
-#ifndef NOTICE_SERVER_MOCULE_H
+ï»¿#ifndef NOTICE_SERVER_MOCULE_H
 #define NOTICE_SERVER_MOCULE_H
 
 #include "BaseModule.h"
@@ -14,7 +14,7 @@ public:
 	~NoticeServerModule();
 
 private:
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 
 	void OnServerConnect(SHARE<NetServer>& ser);
@@ -28,7 +28,7 @@ private:
 	TransMsgModule* m_transModule;
 	EventModule* m_eventModule;
 
-	std::unordered_map<int32_t, std::vector<VecPath>> m_notice;
+	std::unordered_map<int32_t, std::vector<ServerPath>> m_notice;
 };
 
 #endif

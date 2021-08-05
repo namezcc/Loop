@@ -1,4 +1,4 @@
-#ifndef REDIS_MODULE_H
+ï»¿#ifndef REDIS_MODULE_H
 #define REDIS_MODULE_H
 #include "BaseModule.h"
 
@@ -35,6 +35,7 @@ public:
 	bool HSet(const string& key, const string& f, const string& v);
 	bool HGet(const string& key,const string& f, string& v);
 	bool HMSet(const string& key, const vec_str& f, const vec_str& v);
+	bool HMSet(const string& key,const std::map<std::string, std::string>& vals);
 	bool HMGet(const string& key, const vec_str& f,vec_str& v);
 
 	bool HDel(const string& key, const string& f);
@@ -46,10 +47,11 @@ public:
 	bool HVals(const string& key, vec_str& v);
 
 	bool HGetAll(const string& key, vector<pair_str>& res);
+	bool HGetAll(const string& key, std::map<std::string, std::string>& res);
 
 	bool ZAdd(const string& key, const string& m, const double& s);
 private:
-	// Í¨¹ý BaseModule ¼Ì³Ð
+	// é€šè¿‡ BaseModule ç»§æ‰¿
 	virtual void Init() override;
 	virtual void AfterInit() override;
 	virtual void Execute() override;

@@ -4,6 +4,7 @@
 
 #define ASIO_READ_BUFF_SIZE 4096
 
+#include <boost/bind.hpp>
 
 TcpAsioSessionModule::TcpAsioSessionModule(BaseLayer * l):BaseModule(l), m_io_pool(8)
 , m_send_msg_head(NULL), m_send_msg_tail(NULL), m_close_list(NULL)
@@ -42,9 +43,16 @@ void TcpAsioSessionModule::Execute()
 	extureCloseSock();
 }
 
+std::vector<SHARE<AsioSession>> _vec;
+
 void TcpAsioSessionModule::DoAccept()
 {
 	std::shared_ptr<tcp::socket> sock(new tcp::socket(m_io_pool.get_io_service()));
+
+	/*auto ssss = GET_SHARE(AsioSession);
+	_vec.push_back(ssss);
+	m_accptor->async_accept(*sock, boost::bind(&TcpAsioSessionModule::testHandle, this, boost::asio::placeholders::error, ssss));*/
+
 	m_accptor->async_accept(*sock, 
 	[this,sock](boost::system::error_code ec) {
 		if (!ec)
@@ -61,6 +69,11 @@ void TcpAsioSessionModule::DoAccept()
 			LP_ERROR << "do_accept error:" << ec.message();
 		DoAccept();
 	});*/
+}
+
+void TcpAsioSessionModule::testHandle(boost::system::error_code ec,SHARE<AsioSession>& ss)
+{
+	DoAccept();
 }
 
 void TcpAsioSessionModule::SetProtoType(ProtoType ptype)
@@ -81,21 +94,19 @@ void TcpAsioSessionModule::OnSocketSendData(NetMsg * nMsg)
 	if (session == NULL)
 		return;
 
-	auto buff = GET_SHARE(LocalBuffBlock);
+	auto buff = GET_LAYER_MSG(BuffBlock);
 	m_proto->EncodeSendData(*buff, nMsg);
 
-	boost::system::error_code ec;
-
 	boost::asio::async_write(*session->m_sock, boost::asio::buffer(buff->m_buff, buff->getSize()),
-	[this, buff, session](boost::system::error_code ec, std::size_t length) {
+	[this, buff](boost::system::error_code ec, std::size_t length) {
 		if (ec)
 		{
-			pushCloseSock(session->m_sockId);
 			LP_ERROR << ec.message();
 		}
 
 		if (length != buff->getOffect())
 			LP_ERROR << "write data len not over";
+		RECYCLE_LAYER_MSG(buff);
 	});
 }
 
@@ -104,8 +115,12 @@ void TcpAsioSessionModule::OnBroadData(BroadMsg * nMsg)
 	if (nMsg->m_socks.size() == 0)
 		return;
 
-	auto buff = GET_SHARE(LocalBuffBlock);
+	auto buff = GET_LAYER_MSG(BuffBlock);
 	m_proto->EncodeSendData(*buff, nMsg);
+
+	auto shar = SHARE<BuffBlock>(buff, [this](BuffBlock* p) {
+		RECYCLE_LAYER_MSG(p);
+	});
 
 	for (size_t i = 0; i < nMsg->m_socks.size(); i++)
 	{
@@ -118,10 +133,9 @@ void TcpAsioSessionModule::OnBroadData(BroadMsg * nMsg)
 
 
 		boost::asio::async_write(*session->m_sock, boost::asio::buffer(buff->m_buff, buff->getSize()),
-			[this, buff, session](boost::system::error_code ec, std::size_t length) {
+			[this, buff, shar](boost::system::error_code ec, std::size_t length) {
 			if (ec)
 			{
-				pushCloseSock(session->m_sockId);
 				LP_ERROR << ec.message();
 			}
 
@@ -171,6 +185,7 @@ int32_t TcpAsioSessionModule::AddNewSession(const std::shared_ptr<tcp::socket> &
 	if (m_session[s->m_sockId] != NULL)
 	{
 		LP_ERROR << "add session sock index used:" << s->m_sockId;
+		assert(0);
 	}
 
 	m_session[s->m_sockId] = s;
@@ -180,11 +195,16 @@ int32_t TcpAsioSessionModule::AddNewSession(const std::shared_ptr<tcp::socket> &
 		sock->socket = s->m_sockId;
 		m_msgModule->SendMsg(L_SOCKET_CONNET, sock);
 	}
-	DoReadData(s);
+
+	auto shar = SHARE<AsioSession>(s, [this](AsioSession* p) {
+		pushCloseSock(p->m_sockId);
+	});
+
+	DoReadData(shar);
 	return s->m_sockId;
 }
 
-void TcpAsioSessionModule::DoReadData(AsioSession* session)
+void TcpAsioSessionModule::DoReadData(SHARE<AsioSession> session)
 {
 	session->m_sock->async_read_some(as::buffer(session->m_buff.m_buff, ASIO_READ_BUFF_SIZE),
 	[this, session](boost::system::error_code ec, std::size_t length) {
@@ -207,8 +227,6 @@ void TcpAsioSessionModule::DoReadData(AsioSession* session)
 				LP_ERROR << "decode error";
 			}
 		}
-
-		pushCloseSock(session->m_sockId);
 	});
 
 	/*session->m_sock->async_read_some(as::buffer(session->m_buff.m_buff, ASIO_READ_BUFF_SIZE),
@@ -260,6 +278,11 @@ void TcpAsioSessionModule::CloseSession(const int32_t & sock, bool active)
 		auto sock = GET_LAYER_MSG(NetMsg);
 		sock->socket = session->m_sockId;
 		m_msgModule->SendMsg(L_SOCKET_CLOSE, sock);
+	}
+	else if(session->m_active == false)
+	{
+		session->m_active = true;
+		return;
 	}
 
 	m_sock_pool.push_front(sock);

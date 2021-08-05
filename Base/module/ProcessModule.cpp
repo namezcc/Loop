@@ -1,4 +1,4 @@
-#include "ProcessModule.h"
+﻿#include "ProcessModule.h"
 #include "MsgModule.h"
 #include "LogModule.h"
 #include "LPFile.h"
@@ -26,6 +26,13 @@ void ProcessModule::Init()
 		exit(-1);
 	m_logdir = LoopFile::GetRootPath().append(jhelp.GetMember("logdir")->GetString());
 	LoopFile::MakeDir(m_logdir);
+
+	JsonHelp jhelp2;
+	if (jhelp2.ParseFile(LoopFile::GetRootPath().append("commonconf/Server.json")))
+	{
+		for (auto& v : jhelp2.GetDocument().GetArray())
+			m_server_name[v["type"].GetInt()] = v["name"].GetString();
+	}
 }
 
 void ProcessModule::Execute()
@@ -46,7 +53,7 @@ void ProcessModule::CreateServer(const SERVER_TYPE& sertype, const int32_t& nid,
 	args.push_back(Loop::Cvto<std::string>(nid));
 	args.push_back("-p");
 	args.push_back(Loop::Cvto<std::string>(port));
-	std::string logname = server_name[sertype];
+	std::string logname = m_server_name[sertype];
 	logname.append("_").append(Loop::Cvto<std::string>(nid));
 #if PLATFORM == PLATFORM_WIN
 	CreateLoopProcess("Server.exe", logname, args);
@@ -60,7 +67,7 @@ void ProcessModule::CreateLoopProcess(const std::string& proname, const std::str
 	m_error.clear();
 	auto exec = LoopFile::GetExecutePath();
 	exec.append(proname);
-	auto logfile = logname +"_"+GetStringTime("%Y-%m-%d_%H_%M_%S")+".log";
+	auto logfile = logname +"_"+Loop::GetStringTime("%Y-%m-%d_%H_%M_%S")+".log";
 	std::error_code ec;
 	try
 	{

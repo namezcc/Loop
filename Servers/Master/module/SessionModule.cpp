@@ -1,4 +1,4 @@
-#include "SessionModule.h"
+ï»¿#include "SessionModule.h"
 #include "HttpLogicModule.h"
 #include "MysqlModule.h"
 #include "MsgModule.h"
@@ -98,7 +98,7 @@ bool SessionModule::OnCheckSession(HttpMsg * msg)
 
 void SessionModule::OnHttpLogin(HttpMsg * msg)
 {
-	//¼ì²éÃÜÂë
+	//æ£€æŸ¥å¯†ç 
 	string user;
 	if (!CheckLogin(msg, user))
 	{
@@ -108,14 +108,14 @@ void SessionModule::OnHttpLogin(HttpMsg * msg)
 		return;
 	}
 
-	//ÒÆ³ý¾Ésession
+	//ç§»é™¤æ—§session
 	auto it = m_user.find(user);
 	if (it != m_user.end())
 		m_session.erase(it->second->id);
 
 	//auto s = GetLayer()->GetSharedLoop<Session>();
 	auto s = GET_SHARE(Session);
-	s->loseTime = GetSecend() + SESSION_LOSE_TIME;
+	s->loseTime = Loop::GetSecend() + SESSION_LOSE_TIME;
 	auto key = rand();
 	s->id = (s->loseTime << 32) | key;
 	m_session[s->id] = s;

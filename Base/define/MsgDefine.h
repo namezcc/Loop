@@ -35,7 +35,8 @@ enum MSG_FROM_LAYER
 	L_CORO_2_TEST_1,
 	L_CORO_2_TEST_2,
 
-	L_END,
+	L_END_BEFOR,
+	L_END = 300,
 };
 
 enum MSG_FROM_NET
@@ -63,7 +64,7 @@ enum MSG_FROM_NET
 	
 	N_UPDATE_TABLE_GROUP,
 	N_ADD_TABLE_GROUP,
-	N_CREATE_ACCOUNT,
+	N_GET_ACCOUNT_INFO,
 
 	N_GET_MYSQL_GROUP,	//��ȡmysql ���ݿ� ��id
 
@@ -75,6 +76,9 @@ enum MSG_FROM_NET
 	N_LOGIN_LOCK,
 	N_LOGIN_UNLOCK,
 
+	N_GET_DBINDEX,			//获取分配的数据库index
+	N_ADD_DBINDEX_NUM,		//增加玩家数量
+
 	N_ROOM_STATE,
 	N_REQ_ROOM_LIST,
 	N_ACK_ROOM_LIST,
@@ -85,7 +89,7 @@ enum MSG_FROM_NET
 
 	
 	N_END_BEFOR,
-	N_END = 1000,
+	N_END = 3000,
 };
 //�ͻ����������֮����Ϣid > 10000
 enum BASE_EVENT

@@ -2,13 +2,18 @@
 #include "MsgModule.h"
 #include "TransMsgModule.h"
 #include "NetObjectModule.h"
-#include "SendProxyDbModule.h"
 #include "EventModule.h"
 #include "RoomMsgDefine.h"
+#include "RoomModule.h"
+
+#include "CommonDefine.h"
+#include "ServerMsgDefine.h"
 
 #include "protoPB/server/server.pb.h"
 #include "protoPB/client/define.pb.h"
 #include "protoPB/client/room.pb.h"
+#include "protoPB/client/login.pb.h"
+#include "protoPB/server/dbdata.pb.h"
 
 PlayerModule::PlayerModule(BaseLayer * l):BaseModule(l)
 {
@@ -23,32 +28,30 @@ void PlayerModule::Init()
 	m_msgModule = GET_MODULE(MsgModule);
 	m_transModule = GET_MODULE(TransMsgModule);
 	m_netobjModule = GET_MODULE(NetObjectModule);
-	m_sendProxyDb = GET_MODULE(SendProxyDbModule);
 	m_eventModule = GET_MODULE(EventModule);
+	m_room_mod = GET_MODULE(RoomModuloe);
 
-	m_msgModule->AddMsgCallBack(N_ROOM_READY_TAKE_PLAYER, this, &PlayerModule::OnReadyTakePlayer);
-	m_msgModule->AddMsgCallBack(LPMsg::CM_ENTER_ROOM, this, &PlayerModule::OnPlayerEnter);
-	m_msgModule->AddAsynMsgCall(LPMsg::CM_CREATE_ROLE,BIND_ASYN_CALL(OnCreatePlayer));
+	m_msgModule->AddMsgCall(N_ROOM_READY_TAKE_PLAYER, BIND_NETMSG(OnReadyTakePlayer));
+	m_msgModule->AddMsgCall(LPMsg::CM_ENTER_ROOM, BIND_NETMSG(OnPlayerEnter));
+	m_msgModule->AddMsgCall(LPMsg::CM_CREATE_ROLE, BIND_NETMSG(OnCreatePlayer));
+
+	m_msgModule->AddMsgCall(N_TROM_GET_ROLE_LIST, BIND_NETMSG(onGetRoleList));
 
 	m_eventModule->AddEventCall(E_SOCKET_CLOSE,BIND_EVENT(OnClientClose,int32_t));
 }
 
-void PlayerModule::OnReadyTakePlayer(SHARE<BaseMsg>& comsg)
+void PlayerModule::OnReadyTakePlayer(NetMsg* msg)
 {
-	auto msg = (NetServerMsg*)comsg->m_data;
-	TRY_PARSEPB(LPMsg::RoomReadyInfo, msg);
+	TRY_PARSEPB(LPMsg::RoomInfo, msg);
 
 	auto it = m_readyTable.find(pbMsg.pid());
 	if (it == m_readyTable.end())
 	{
-		auto ready = GET_SHARE(ReadyInfo);
-		ready->pid = pbMsg.pid();
-		ready->outTime = GetSecend() + ROOM_READY_OUT_TIME;
-		ready->roleId = pbMsg.roleid();
-		ready->state = RS_NONE,
+		ReadyInfo ready = {};
+		ready.pid = pbMsg.pid();
+		ready.outTime = Loop::GetSecend() + ROOM_READY_OUT_TIME;
 		m_readyTable[pbMsg.pid()] = ready;
 	}
-	m_transModule->ResponseBackServerMsg(msg->path, comsg, pbMsg);
 }
 
 void PlayerModule::OnPlayerEnter(NetMsg * msg)
@@ -61,72 +64,34 @@ void PlayerModule::OnPlayerEnter(NetMsg * msg)
 		m_netobjModule->CloseNetObject(msg->socket);
 		return;
 	}
+	else if(it->second.sock != msg->socket)
+	{//顶号
 
-	m_netobjModule->AcceptConn(msg->socket);
+		if (it->second.sock > 0)
+		{
+			m_netobjModule->CloseNetObject(it->second.sock);
 
-	if (it->second->state != READY_STATE::RS_NONE)
+			
+		}
+
+		m_netobjModule->AcceptConn(msg->socket);
+		it->second.sock = msg->socket;
+	}
+
+	if (it->second.state != READY_STATE::RS_NONE)
 	{
 		LP_WARN << "in doing select or create pid:"<< pbMsg.pid();
 		return;
 	}
 
-	auto account = GET_SHARE(AccoutInfo);
-	account->id = pbMsg.pid();
-	Reflect<AccoutInfo> rf(account.get());
-	rf.Set_lastLoginTime(GetStringTime());
-	m_sendProxyDb->UpdateDbGroup(rf, account->id);
+	//get role list
+	it->second.state = RS_SELECT;
+	m_room_mod->doSqlOperation(pbMsg.pid(), SOP_ROLE_SELET, LPMsg::propertyInt32{}, N_TROM_GET_ROLE_LIST);
 
-	//have role 
-	//no create role
-	if (it->second->roleId == 0)
-	{
-		LPMsg::EmptyPB ackpb;
-		m_netobjModule->SendNetMsg(msg->socket, LPMsg::SM_CREATE_ROLE, ackpb);
-	}
-	else
-	{//yes select
-		auto itrmp = m_playerTable.find(it->second->roleId);
-		if (itrmp != m_playerTable.end())
-		{
-			//kick old
-			if(itrmp->second->sock != msg->socket)
-				KickChangePlayer(msg->socket, it->second->roleId);
-			SendPlayerInfo(itrmp->second);
-			return;
-		}
-
-		m_msgModule->DoCoroFunc([this,&it,&msg,account](c_pull& pull,SHARE<BaseCoro>& coro) {
-			auto player = GET_SHARE(Player);
-			auto rdinfo = it->second;
-			player->Set_id(rdinfo->roleId);
-			auto socket = msg->socket;
-			rdinfo->state = READY_STATE::RS_SELECT;
-
-			ExitCall failCall([this,&rdinfo,&socket,&coro]() {
-				if (!coro->IsFail())
-					return;
-				LP_ERROR << "Select Role Faile";
-				m_netobjModule->CloseNetObject(socket);
-				rdinfo->state = READY_STATE::RS_NONE;
-			});
-
-			auto ackres = m_sendProxyDb->RequestSelectDbGroup(*player,*player->m_sql, it->second->roleId, pull, coro);
-			if (!ackres)
-			{
-				coro->SetFail();
-				return;
-			}
-			auto rmplayer = AddPlayer(socket, player);
-			rmplayer->m_account = account;
-			SendPlayerInfo(rmplayer);
-			m_readyTable.erase(rdinfo->pid);
-		});
-	}
 }
 
-void PlayerModule::OnCreatePlayer(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro)
+void PlayerModule::OnCreatePlayer(NetMsg* msg)
 {
-	auto msg = (NetMsg*)comsg->m_data;
 	TRY_PARSEPB(LPMsg::ReqCreateRole, msg);
 	auto it = m_readyTable.find(pbMsg.pid());
 	if (it == m_readyTable.end())
@@ -141,52 +106,42 @@ void PlayerModule::OnCreatePlayer(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Ba
 		return;
 	}
 
-	if (it->second->state != READY_STATE::RS_NONE)
+	if (it->second.state != READY_STATE::RS_NONE)
 	{
 		LP_WARN << "onCreate in doing select or create pid:" << pbMsg.pid();
 		return;
 	}
 
-	it->second->state = READY_STATE::RS_CREATE;
-	auto player = GET_SHARE(Player);
-	player->Set_name(pbMsg.name());
+	it->second.state = READY_STATE::RS_CREATE;
+	LPMsg::DB_player spb;
+	spb.set_uid(pbMsg.pid());
+	spb.set_rid(1);
+	spb.set_level(1);
+	spb.set_name(pbMsg.name());
+	m_room_mod->doSqlOperation(pbMsg.pid(), SOP_CREATE_ROLE, spb, N_TROM_GET_ROLE_LIST);
+}
 
-	auto rdinfo = it->second;
-	ExitCall failCall([this,&rdinfo,&msg,&coro]() {
-		if (!coro->IsFail())
-			return;
-		LP_ERROR << "Create Role Faile";
-		m_netobjModule->CloseNetObject(msg->socket);
-		rdinfo->state = READY_STATE::RS_NONE;
-	});
-	//check have same name
-	auto checkres = m_sendProxyDb->RequestSelectDbGroup(*player,*player->m_sql, pbMsg.pid(), pull, coro,true);
-	if (checkres)
-	{
-		LP_WARN << "create role fail same Name:" << pbMsg.name();
-		rdinfo->state = READY_STATE::RS_NONE;
+void PlayerModule::onGetRoleList(NetMsg * msg)
+{
+	auto uid = msg->m_buff->readInt64();
+	auto it = m_readyTable.find(uid);
+	if (it == m_readyTable.end())
 		return;
+
+	it->second.state = RS_NONE;
+	TRY_PARSEPB(LPMsg::DB_roleList, msg);
+
+	LPMsg::RoleList spb;
+
+	for (auto r:pbMsg.roles())
+	{
+		auto role = spb.add_roles();
+		role->set_rid(r.rid());
+		role->set_name(r.name());
+		role->set_level(r.level());
 	}
 
-	auto ackres = m_sendProxyDb->RequestInsertSelectDbGroup(*player,*player->m_sql, pbMsg.pid(), pull, coro,true);
-	if (!ackres)
-	{
-		LP_ERROR << "Create Insert player Error";
-		coro->SetFail();
-		return;
-	}
-
-	//save role id
-	auto account = GET_SHARE(AccoutInfo);
-	account->id = pbMsg.pid();
-	Reflect<AccoutInfo> rf(account.get());
-	rf.Set_roleId(player->Get_id());
-	m_sendProxyDb->UpdateDbGroup(rf, account->id);
-
-	auto rmplayer = AddPlayer(msg->socket, player);
-	rmplayer->m_account = account;
-	SendPlayerInfo(rmplayer);
-	m_readyTable.erase(it);
+	m_netobjModule->SendNetMsg(it->second.sock, LPMsg::SM_SELF_ROLE_INFO, spb);
 }
 
 void PlayerModule::OnClientClose(const int32_t & sock)
@@ -198,10 +153,8 @@ void PlayerModule::OnClientClose(const int32_t & sock)
 	auto server = GetLayer()->GetServer();
 	
 	Reflect<AccoutInfo> rf(it->second->m_account.get());
-	rf.Set_lastLogoutTime(GetStringTime());
+	rf.Set_lastLogoutTime(Loop::GetStringTime());
 	rf.Set_lastRoomId(server->serid);
-
-	m_sendProxyDb->UpdateDbGroup(rf, it->second->m_account->id);
 
 	LP_INFO << "player offLine id:" << it->second->m_player->id << " name:" << it->second->m_player->Get_name();
 

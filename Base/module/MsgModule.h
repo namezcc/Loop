@@ -10,7 +10,7 @@
 #define CM_MSG_END 15000
 #define MAX_CM_MSG_ID 5000
 
-typedef std::function<void(BaseMsg*)> MsgCall;
+typedef std::function<void(SHARE<BaseMsg>&)> MsgCall;
 typedef std::function<void(SHARE<BaseMsg>&, c_pull&, SHARE<BaseCoro>&)> AsynMsgCall;
 
 class LOOP_EXPORT MsgModule:public BaseModule
@@ -50,24 +50,14 @@ public:
 		AddMsgCallBackEx<typename FuncArgsType<F>::arg1>(mId, std::forward<T>(t), std::forward<F>(f));
 	}
 
-#define BIND_CALL(F,T) [this](BaseMsg* msg) { this->F(dynamic_cast<T*>(msg->m_data));}
-#define BIND_SHARE_CALL(F) [this](BaseMsg* msg) { this->F(SHARE<BaseMsg>(msg,[](BaseMsg*){}));}
+#define BIND_CALL(F,T) [this](SHARE<BaseMsg>& msg) { this->F(dynamic_cast<T*>(msg->m_data));}
+#define BIND_NETMSG(F) [this](SHARE<BaseMsg>& msg) { this->F(dynamic_cast<NetMsg*>(msg->m_data));}
+#define BIND_SERVER_MSG(F) [this](SHARE<BaseMsg>& msg) { this->F(dynamic_cast<NetServerMsg*>(msg->m_data));}
+#define BIND_SHARE_CALL(F) [this](SHARE<BaseMsg>& msg) { this->F(msg);}
 
 	void AddMsgCall(const int32_t& mId, const MsgCall& call)
 	{
-		PushMsgCall(mId,[this,call](BaseMsg* msg) {
-			if (msg)
-			{
-				call(msg);
-				RECYCLE_LAYER_MSG(msg);
-			}
-			else
-			{
-				assert(m_msgCash);
-				call(m_msgCash.get());
-				m_msgCash.reset();
-			}
-		});
+		PushMsgCall(mId,call);
 	}
 
 	/*template<typename T, typename F>
@@ -84,11 +74,11 @@ public:
 	}*/
 
 #define BIND_ASYN_CALL(F) [this](SHARE<BaseMsg>&m, c_pull&p, SHARE<BaseCoro>&c){F(m,p,c);}
+#define BIND_ASYN_NETMSG(F) [this](SHARE<BaseMsg>&m, c_pull&p, SHARE<BaseCoro>&c){F(dynamic_cast<NetMsg*>(m->m_data),p,c);}
 
 	void AddAsynMsgCall(const int32_t& mid,const AsynMsgCall& call)
 	{
-		PushMsgCall(mid,[this, call](BaseMsg* inmsg) {
-			SHARE<BaseMsg> comsg = GetRealMsg(inmsg);
+		PushMsgCall(mid,[this, call](SHARE<BaseMsg>& inmsg) {
 
 			auto baseco = NEW_SHARE(BaseCoro);
 			auto coro = new c_push([call, &baseco](c_pull& pull) {
@@ -97,7 +87,7 @@ public:
 				call(msg, pull, pcoro);
 			});
 			baseco->SetCoro(coro);
-			(*coro)(comsg);
+			(*coro)(inmsg);
 		});
 	}
 
@@ -105,8 +95,7 @@ public:
 	void AddAsynMsgCallBack(const int32_t& mid,T&&t,F&&f)
 	{
 		auto call = ANY_BIND(t,f);
-		PushMsgCall(mid, [this,call](BaseMsg* inmsg){
-			SHARE<BaseMsg> comsg = GetRealMsg(inmsg);
+		PushMsgCall(mid, [this,call](SHARE<BaseMsg>& inmsg){
 
 			auto baseco = NEW_SHARE(BaseCoro);
 			auto coro = new c_push([call,&baseco](c_pull& pull){
@@ -115,7 +104,7 @@ public:
 				call(msg,pull,pcoro);
 			});
 			baseco->SetCoro(coro);
-			(*coro)(comsg);
+			(*coro)(inmsg);
 		});
 	}
 
@@ -143,10 +132,7 @@ public:
 	{
 		++m_coroIndex;
 		if (m_coroIndex > 100000000)
-		{
 			m_coroIndex = 1;
-			m_curList = GetDiffCurList();
-		}
 		return m_coroIndex;
 	}
 
@@ -159,25 +145,12 @@ protected:
 	AddMsgCallBackEx(const int32_t mId, T&&t, F&&f)
 	{
 		auto call = std::move(ANY_BIND(t, f));
-		PushMsgCall(mId, [this,call](BaseMsg* msg) {
-			if (msg)
-			{
-				auto mdata = dynamic_cast<C>(msg->m_data);
-				if (mdata)
-					call(mdata);
-				else
-					LogHook(this, spdlog::level::err) << __FILE__ << __LINE__ << "Recv Msg cast Null";
-				RECYCLE_LAYER_MSG(msg);
-			}
+		PushMsgCall(mId, [this,call](SHARE<BaseMsg>& msg) {
+			auto mdata = dynamic_cast<C>(msg->m_data);
+			if (mdata)
+				call(mdata);
 			else
-			{
-				auto smsg = GetRealMsg(msg);
-				auto mdata = dynamic_cast<C>(smsg->m_data);
-				if (mdata)
-					call(mdata);
-				else
-					LogHook(this, spdlog::level::err) << __FILE__ << __LINE__ << "Recv Msg cast Null";
-			}
+				LogHook(this, spdlog::level::err) << __FILE__ << __LINE__ << "Recv Msg cast Null";
 		});
 	}
 
@@ -186,24 +159,9 @@ protected:
 	AddMsgCallBackEx(const int32_t mId, T&&t, F&&f)
 	{
 		auto call = std::move(ANY_BIND(t, f));
-		PushMsgCall(mId, [this,call](BaseMsg* msg) {
-			call(GetRealMsg(msg));
+		PushMsgCall(mId, [this,call](SHARE<BaseMsg>& msg) {
+			call(msg);
 		});
-	}
-
-	SHARE<BaseMsg> GetRealMsg(BaseMsg* msg)
-	{
-		if (msg)
-		{
-			return SHARE<BaseMsg>(msg, [this](BaseMsg* nmsg) { GetLayer()->RecycleLayerMsg(nmsg);});
-		}
-		else
-		{
-			assert(m_msgCash);
-			SHARE<BaseMsg> smsg = m_msgCash;
-			m_msgCash.reset();
-			return smsg;
-		}
 	}
 
 private:
@@ -237,23 +195,15 @@ private:
 	void DoNetRequestMsg(SHARE<BaseMsg>& msg);
 	void DoNetResponseMsg(SHARE<BaseMsg>& msg);
 
-	coroMap* GetDiffCurList()
-	{
-		return m_curList == &m_coroList1 ? &m_coroList2 : &m_coroList1;
-	}
-
 private:
-
-	SHARE<BaseMsg> m_msgCash;
 
 	MsgCall m_arrayCall[N_END];
 	MsgCall m_protoCall[MAX_CM_MSG_ID];
 
 	int64_t m_coroCheckTime;
 	int32_t m_coroIndex;
-	coroMap m_coroList1;
-	coroMap m_coroList2;
-	coroMap* m_curList;
+	coroMap m_coroList;
+	Loop::mlist<BaseCoro> m_coroLink;
 };
 
 #define LP_TRACE MsgModule::LogHook(this,spdlog::level::trace)
@@ -264,21 +214,21 @@ private:
 
 #define PARSEPB_NAME_IF_FALSE(name,T,msg)\
 	T name; \
-	if(!name.ParseFromArray(msg->getNetBuff(), msg->getLen()))
+	if(!name.ParseFromArray(msg->getNetBuff(), msg->m_buff->getUnReadSize()))
 
 #define PARSEPB_IF_FALSE(T,msg)\
 	T pbMsg; \
-	if(!pbMsg.ParseFromArray(msg->getNetBuff(), msg->getLen()))
+	if(!pbMsg.ParseFromArray(msg->getNetBuff(), msg->m_buff->getUnReadSize()))
 
 #define TRY_PARSEPB(T,msg) \
 	T pbMsg; \
-	if(!pbMsg.ParseFromArray(msg->getNetBuff(), msg->getLen())){	\
+	if(!pbMsg.ParseFromArray(msg->getNetBuff(), msg->m_buff->getUnReadSize())){	\
 		LP_ERROR<<"parse "<< #T << "error";	\
 	return;}
 
 #define TRY_PARSEPB_NAME(name,T,msg) \
 	T name; \
-	if(!name.ParseFromArray(msg->getNetBuff(), msg->getLen())){	\
+	if(!name.ParseFromArray(msg->getNetBuff(), msg->m_buff->getUnReadSize())){	\
 		LP_ERROR<<"parse "<< #T << "error";	\
 	return;}
 

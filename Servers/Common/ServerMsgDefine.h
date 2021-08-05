@@ -3,9 +3,32 @@
 
 #include "MsgDefine.h"
 
+enum LAYER_MSG
+{
+	L_MSG_BEGIN = L_END_BEFOR,
+
+	L_DB_SQL_OPERATION,
+
+
+	L_MSG_END = L_END,
+};
+
 enum SERVER_MSG
 {
 	N_SERVER_MSG_BEGAN = N_END_BEFOR,
+
+	//----------- to mysql --------------
+
+	N_TDB_SQL_OPERATION,
+
+
+	//----------- to mysql <<<<<<<<<<<<<<<<<<
+
+	//----------- to room --------------
+
+	N_TROM_GET_ROLE_LIST,
+
+	//----------- to room <<<<<<<<<<<<<<
 
 	N_REQ_NOTICE_SERVER,
 	N_ACK_NOTICE_SERVER,
@@ -32,6 +55,17 @@ enum SERVER_MSG
 	N_ACK_SELF_ROLE_INFO,
 
 	N_SERVER_MSG_END = N_END,
+};
+
+enum WEB_MSG
+{
+	N_WEB_BEGIN = 2000,
+	N_WEB_TEST = 2001,
+	N_WEB_TEST2 = 2002,
+	N_WBE_TEST2 = 2002,
+	N_WBE_ON_RESPONSE = 2003,
+	N_WBE_REQUEST_1 = 2004,
+	N_WEB_END = N_END,
 };
 
 

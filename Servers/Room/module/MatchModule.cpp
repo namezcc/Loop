@@ -1,6 +1,5 @@
 ﻿#include "MatchModule.h"
 #include "MsgModule.h"
-#include "ProxyNodeModule.h"
 #include "TransMsgModule.h"
 #include "PlayerModule.h"
 #include "NetObjectModule.h"
@@ -23,7 +22,6 @@ MatchModule::~MatchModule()
 void MatchModule::Init()
 {
 	m_msgModule = GET_MODULE(MsgModule);
-	m_proxyNode = GET_MODULE(ProxyNodeModule);
 	m_transModule = GET_MODULE(TransMsgModule);
 	m_playerModule = GET_MODULE(PlayerModule);
 	m_netObjModule = GET_MODULE(NetObjectModule);
@@ -42,9 +40,6 @@ void MatchModule::Init()
 
 void MatchModule::InitPath()
 {
-	m_p_matchState = m_transModule->GetFromSelfPath(3, SERVER_TYPE::LOOP_MATCH_STATE);
-	m_p_matchState[1]->type = SERVER_TYPE::LOOP_PROXY;
-	m_p_matchState[1]->serid = m_proxyNode->GetProxyId();
 	
 	
 }
@@ -96,7 +91,6 @@ void MatchModule::OnAckGetMatchServer(NetMsg * msg)
 	LPMsg::ReqMatch reqmsg;
 	reqmsg.add_players(player->m_player->id);
 
-	m_proxyNode->SendToNode(pbMsg.proxyid(), SERVER_TYPE::LOOP_MATCH, pbMsg.serid(), N_REQ_MATCH_BATTLE, reqmsg);
 }
 
 void MatchModule::OnAckMatchBattle(NetMsg * msg)
@@ -123,13 +117,11 @@ void MatchModule::OnAckMatchBattle(NetMsg * msg)
 	LPMsg::BatPlayerInfo reqmsg;
 	auto pnode = reqmsg.mutable_pnode();
 	pnode->set_playerid(player->m_player->id);
-	pnode->set_proxyid(m_proxyNode->GetProxyId());
 	pnode->set_serid(GetLayer()->GetServer()->serid);
 
 	reqmsg.set_name(player->m_player->Get_name());
 	reqmsg.set_sceneid(match->m_sceneId);
 
-	m_proxyNode->SendToNode(match->m_proxyId, SERVER_TYPE::LOOP_BATTLE_TRANS, match->m_matchSerId, N_REQ_BATTLE_ADD_PLAYER, reqmsg);
 }
 
 void MatchModule::OnAckBattleAddPlayer(NetMsg * msg)

@@ -14,8 +14,9 @@ ${PROJECT_SOURCE_DIR}/../Common/layer
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
-set(COM_RECURSE ${PROJECT_SOURCE_DIR}/../Common/module/ProxyNodeModule.cpp 
-${PROJECT_SOURCE_DIR}/../Common/module/SendProxyDbModule.cpp 
+set(COM_RECURSE 
+#${PROJECT_SOURCE_DIR}/../Common/module/ProxyNodeModule.cpp 
+#${PROJECT_SOURCE_DIR}/../Common/module/SendProxyDbModule.cpp 
 )
 
 file(GLOB_RECURSE OBJECT_RECURSE ${PROJECT_SOURCE_DIR}/../struct/*.cpp)
@@ -26,6 +27,7 @@ add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES} ${COM_RECURSE} ${
 
 if(WIN32)
 set(DBProxylib
+Crypto.lib
 clientpb.lib
 serverpb.lib
 libprotobufd.lib

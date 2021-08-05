@@ -6,6 +6,7 @@
 #include <cstring>
 #include <boost/coroutine2/all.hpp>
 #include "BuffPool.h"
+#include "LoopList.h"
 
 enum CONN_TYPE
 {
@@ -34,7 +35,7 @@ enum SERVER_TYPE
 	LOOP_CONSOLE = 6,
 	LOOP_PROXY_DB = 7,
 	LOOP_ROOM = 8,
-	LOOP_ROOM_STATE = 9,
+	LOOP_ROOM_MANAGER = 9,
 	LOOP_LOGIN_LOCK = 10,
 
 	//-------------------------
@@ -44,6 +45,7 @@ enum SERVER_TYPE
 	LOOP_MATCH_STATE = 14,
 	LOOP_TEAM = 15,
 	LOOP_TEAM_STATE = 16,
+	LOOP_MYSQL_ACCOUNT = 17,
 
 	LOOP_SERVER_END,
 };
@@ -184,7 +186,7 @@ struct NetObject:public LoopObject
 	// ͨ�� LoopObject �̳�
 	void init(FactorManager * fm)
 	{
-		ctime = GetSecend();
+		ctime = Loop::GetSecend();
 		type = CONN_NONE;
 	}
 
@@ -211,12 +213,14 @@ typedef bc::coroutine<SHARE<BaseMsg>&>::pull_type c_pull;
 
 #define CORO_TIME_OUT 5		//second
 
-struct BaseCoro:public LoopObject
+struct BaseCoro:public Loop::mnode,public LoopObject
 {
 	virtual void init(FactorManager* fm)
 	{
 		m_coroId = 0;
 		m_endPoint = 0;
+		m_next = NULL;
+		m_prev = NULL;
 	}
 
 	virtual void recycle(FactorManager* fm)
@@ -233,7 +237,7 @@ struct BaseCoro:public LoopObject
 	void Refresh(const int32_t& nCoid)
 	{
 		m_coroId = nCoid;
-		m_endPoint = GetSecend() + CORO_TIME_OUT;
+		m_endPoint = Loop::GetSecend() + CORO_TIME_OUT;
 	}
 
 	inline void SetFail() { m_endPoint = -1; };

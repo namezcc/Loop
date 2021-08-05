@@ -1,4 +1,4 @@
-#include "LogModule.h"
+﻿#include "LogModule.h"
 #include "MsgModule.h"
 #include "ScheduleModule.h"
 #include "LPFile.h"
@@ -28,13 +28,20 @@ void LogModule::Init()
 	JsonHelp jhelp;
 	if(jhelp.ParseFile(LoopFile::GetRootPath().append("commonconf/Common.json")))
 		m_showlog = jhelp.GetMember("showlog")->GetBool();
+
+	JsonHelp jhelp2;
+	if (jhelp2.ParseFile(LoopFile::GetRootPath().append("commonconf/Server.json")))
+	{
+		for (auto& v : jhelp2.GetDocument().GetArray())
+			m_server_name[v["type"].GetInt()] = v["name"].GetString();
+	}
 }
 
 void LogModule::AfterInit()
 {
 	auto ser = GetLayer()->GetServer();
 	stringstream cons;
-	cons <<server_name[ser->type] << "-" << ser->serid;
+	cons << m_server_name[ser->type] << "-" << ser->serid;
 	m_console = spdlog::stdout_color_st(cons.str());
 	string dir = LoopFile::GetExecutePath();
 	dir.append("logs/");
@@ -45,15 +52,15 @@ void LogModule::AfterInit()
 		file << dir;
 		if (i == 0)
 		{
-			log << server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::info];
-			file << server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::info] << ".txt";
+			log << m_server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::info];
+			file << m_server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::info] << ".txt";
 			auto loger = spdlog::daily_date_logger_st(log.str(), file.str());
 			m_daily.push_back(loger);
 		}
 		else if (i == spdlog::level::err)
 		{
-			log << server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::err];
-			file << server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::err] << ".txt";
+			log << m_server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::err];
+			file << m_server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::err] << ".txt";
 			auto loger = spdlog::daily_date_logger_st(log.str(), file.str());
 			loger->flush_on(spdlog::level::err);
 			m_daily.push_back(loger);

@@ -1,4 +1,4 @@
-#ifndef PROCESS_MODULE_H
+﻿#ifndef PROCESS_MODULE_H
 #define PROCESS_MODULE_H
 
 #include "BaseModule.h"
@@ -23,6 +23,8 @@ private:
 	std::string m_logdir;
 
 	MsgModule* m_msgModule;
+
+	std::map<int32_t, std::string> m_server_name;
 };
 
 #endif

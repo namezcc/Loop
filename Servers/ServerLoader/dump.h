@@ -1,4 +1,4 @@
-#ifndef DUMP_H
+﻿#ifndef DUMP_H
 #define DUMP_H
 #include "Define.h"
 #include "LTime.h"
@@ -105,7 +105,7 @@ static bool InitCrash(const std::string& dir, const std::string& name)
 {
 	auto ctx = new CrashContext();
 	ctx->path = dir;
-	ctx->newName = name +"_"+GetStringTime("%Y-%m-%d_%H_%M_%S")+ ".dmp";
+	ctx->newName = name +"_"+Loop::GetStringTime("%Y-%m-%d_%H_%M_%S")+ ".dmp";
 	try
 	{
 		bf::create_directories(bf::path(dir));

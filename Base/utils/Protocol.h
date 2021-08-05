@@ -32,6 +32,11 @@ public:
 		m_encodeFunc(lb, msg);
 	}
 
+	void EncodeSendData(BuffBlock& lb, NetMsg* msg)
+	{
+		EecodeMyProto(lb, msg);
+	}
+
 	bool DecodeReadData(NetBuffer& buff,const DecodeDataCall& call)
 	{
 		return m_decodeFunc(buff, call);
@@ -40,6 +45,13 @@ public:
 private:
 
 	static void EecodeMyProto(LocalBuffBlock& lb, NetMsg* nMsg)
+	{
+		lb.makeRoom(nMsg->getLen() + MsgHead::HEAD_SIZE);
+		MsgHead::Encode(lb, nMsg->mid, nMsg->getLen());
+		nMsg->getCombinBuff(&lb);
+	}
+
+	static void EecodeMyProto(BuffBlock& lb, NetMsg* nMsg)
 	{
 		lb.makeRoom(nMsg->getLen() + MsgHead::HEAD_SIZE);
 		MsgHead::Encode(lb, nMsg->mid, nMsg->getLen());

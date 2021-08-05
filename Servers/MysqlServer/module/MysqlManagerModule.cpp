@@ -4,8 +4,19 @@
 #include "MsgModule.h"
 #include "TransMsgModule.h"
 #include "GameTableModule.h"
+#include "help_function.h"
+
+#include "ServerMsgDefine.h"
+#include "mysqlDefine.h"
+
+#include "protoPB/client/login.pb.h"
+#include "protoPB/server/dbdata.pb.h"
+
+#include "proto_sql.h"
 
 #include <algorithm>
+
+#define SQL_BUFF m_sql_buff, sizeof(m_sql_buff)
 
 MysqlManagerModule::MysqlManagerModule(BaseLayer * l):BaseModule(l)
 {
@@ -24,16 +35,14 @@ void MysqlManagerModule::Init()
 	m_gameTableModule = GET_MODULE(GameTableModule);
 
 	
-	m_msgmodule->AddMsgCallBack(N_GET_MYSQL_GROUP, this, &MysqlManagerModule::OnGetGroupId);
-	m_msgmodule->AddMsgCallBack(N_MYSQL_MSG, this, &MysqlManagerModule::OnGetMysqlMsg);
-	m_msgmodule->AddAsynMsgCall(N_MYSQL_CORO_MSG,BIND_ASYN_CALL(OnRequestMysqlMsg));
+	m_msgmodule->AddMsgCall(N_TDB_SQL_OPERATION, BIND_SERVER_MSG(onSqlOperation));
+	m_msgmodule->AddMsgCall(L_DB_SQL_OPERATION, BIND_CALL(onSqlOperationRes, SqlOperation));
 
-	m_msgmodule->AddMsgCallBack(L_MYSQL_MSG, this, &MysqlManagerModule::OnGetMysqlRes);
-	m_msgmodule->AddMsgCallBack(N_UPDATE_TABLE_GROUP, this, &MysqlManagerModule::OnUpdateTableGroup);
-	m_msgmodule->AddMsgCallBack(N_ADD_TABLE_GROUP, this, &MysqlManagerModule::OnAddTableGroup);
-	m_msgmodule->AddMsgCallBack(N_CREATE_ACCOUNT, this, &MysqlManagerModule::OnCreateAccount);
-	m_msgmodule->AddMsgCallBack(100, this, &MysqlManagerModule::onTestMsg);
+	m_msgmodule->AddAsynMsgCall(N_GET_ACCOUNT_INFO, BIND_ASYN_NETMSG(OnGetAccountInfo));
 	
+
+	m_lock_server.type = SERVER_TYPE::LOOP_LOGIN_LOCK;
+	m_lock_server.serid = 0;
 
 	m_index = 0;
 	auto it = GetLayer()->GetPipes().find(LY_MYSQL);
@@ -46,243 +55,79 @@ void MysqlManagerModule::AfterInit()
 
 void MysqlManagerModule::BeforExecute()
 {
-	CreateMysqlTable();
-	InitTableGroupNum();
+	
 }
 
-void MysqlManagerModule::InitTableGroupNum()
+void MysqlManagerModule::OnGetAccountInfo(NetMsg* msg, c_pull& pull, SHARE<BaseCoro>& coro)
 {
-	MultRow row;
-	SqlRow field;
-	m_mysqlmodule->Select("show TABLES;", row, field);
-	m_tableGroup = 0;
-	std::string tname = Reflect<AccoutInfo>::Name();
-	std::string lowername = tname;
-	std::transform(lowername.begin(), lowername.end(), lowername.begin(), std::tolower);
-	for (auto& r : row)
+	TRY_PARSEPB(LPMsg::ReqLogin, msg);
+	SHARE<BaseMsg> frommsg = pull.get();
+
+	LPMsg::DB_account pbaccount;
+	select_account(pbaccount, m_mysqlmodule, m_sql_buff, sizeof(m_sql_buff), pbMsg.account());
+
+	if (pbaccount.platform_uid().empty())
 	{
-		for (auto& t : r)
+		auto ackmsg = m_transModule->RequestServerAsynMsg(m_lock_server, N_GET_DBINDEX, LPMsg::EmptyPB{}, pull, coro);
+		auto pack = ackmsg->m_buff;
+
+		auto dbindex = pack->readInt32();
+		auto uid = pack->readInt64();
+		auto hashindex = getPlayerHashIndex(pbMsg.account());
+
+		pbaccount.set_platform_uid(pbMsg.account());
+		pbaccount.set_dbindex(dbindex);
+		pbaccount.set_game_uid(uid);
+		pbaccount.set_hash_index(hashindex);
+
+		if (insert_account(pbaccount, m_mysqlmodule, SQL_BUFF))
 		{
-			if (t.find(tname) != std::string::npos || t.find(lowername) != std::string::npos)
-			{
-				++m_tableGroup;
-			}
+			auto sendpack = GET_LAYER_MSG(BuffBlock);
+			sendpack->writeInt32(dbindex);
+			m_transModule->SendToServer(m_lock_server, N_ADD_DBINDEX_NUM, sendpack);
 		}
 	}
 
-	for (int32_t i = 0; i < m_sqlLayerNum; i++)
+	auto pathmsg = dynamic_cast<NetServerMsg*>(msg);
+	if(pathmsg)
+		m_transModule->ResponseBackServerMsg(pathmsg->path, frommsg, pbaccount);
+	else
 	{
-		auto num = GET_LAYER_MSG(NetMsg);
-		num->socket = m_tableGroup;
-		m_msgmodule->SendMsg(LY_MYSQL, i, L_UPDATE_TABLE_GROUP, num);
-	}
-
-	for (int32_t i = 2; i <= m_tableGroup; i++)
-		CreateMysqlTable(i);
-}
-
-void MysqlManagerModule::CreateMysqlTable(int group)
-{
-	m_gameTableModule->CreateTables(group);
-}
-
-void MysqlManagerModule::OnGetGroupId(NetServerMsg * msg)
-{
-	TRY_PARSEPB(LPMsg::EmptyPB,msg);
-	if (msg->path.size() <= 0)
-	{
-		LP_ERROR << "Get group Error Path size = 0";
-		return;
-	}
-	
-	LPMsg::UpdateTableGroup xmsg;
-	xmsg.set_groupcount(m_mysqlmodule->GetDBGroup());
-	m_transModule->SendBackServer(msg->path, N_GET_MYSQL_GROUP, xmsg);
-}
-
-void MysqlManagerModule::OnCreateAccount(NetServerMsg * msg)
-{
-	if (msg->path.size() == 0)
-	{
-		LP_ERROR << "ERROR Server path";
-		return;
-	}
-
-	//auto reply = GetLayer()->GetSharedLoop<SqlReply>();
-	auto reply = GET_SHARE(SqlReply);
-	if (!reply->pbMsg.ParseFromArray(msg->getNetBuff(), msg->getLen()))
-	{
-		LP_ERROR << "parse PBSqlParam error";
-		return;
-	}
-	
-	if (reply->pbMsg.uid() == 0)
-		return;
-	
-	//hash 到组
-	auto gid = reply->pbMsg.uid()%(m_tableGroup*2)+1;
-	if (gid > m_tableGroup)
-		gid = m_tableGroup;
-
-	reply->path = move(msg->path);
-	SendSqlReply(reply, (int32_t)gid);
-}
-
-void MysqlManagerModule::OnGetMysqlMsg(NetServerMsg * msg)
-{
-	if (msg->path.size() == 0)
-	{
-		LP_ERROR << "ERROR Server path";
-		return;
-	}
-
-	//auto reply = GetLayer()->GetSharedLoop<SqlReply>();
-	auto reply = GET_SHARE(SqlReply);
-	if (!reply->pbMsg.ParseFromArray(msg->getNetBuff(), msg->getLen()))
-	{
-		LP_ERROR << "parse PBSqlParam error";
-		return;
-	}
-	//检查是否有组ID 高 16位 8 数据库 id 8 组id
-	auto gid = (reply->pbMsg.uid() >> 48) & 0xff;
-	if (gid == 0)
-		return;
-
-	reply->path = move(msg->path);
-	SendSqlReply(reply, (int32_t)gid);
-}
-
-void MysqlManagerModule::OnRequestMysqlMsg(SHARE<BaseMsg>& msg, c_pull & pull, SHARE<BaseCoro>& coro)
-{
-	auto netmsg = (NetServerMsg*)msg->m_data;
-	if (netmsg->path.size() == 0)
-	{
-		LP_ERROR << "ERROR Server path";
-		return;
-	}
-
-	TRY_PARSEPB(LPMsg::PBSqlParam, netmsg);
-	auto gid = (pbMsg.uid() >> 48) & 0xff;
-	if (gid == 0)
-		return;
-
-	auto lmsg = GET_LAYER_MSG(LMsgSqlParam);
-	lmsg->param = GET_LAYER_MSG(SqlParam);
-
-	lmsg->param->opt = pbMsg.opt();
-	lmsg->param->tab = pbMsg.table() + std::to_string(gid);
-	lmsg->param->kname.assign(pbMsg.kname().begin(), pbMsg.kname().end());
-	lmsg->param->kval.assign(pbMsg.kval().begin(), pbMsg.kval().end());
-	lmsg->param->field.assign(pbMsg.field().begin(), pbMsg.field().end());
-	lmsg->param->value.assign(pbMsg.value().begin(), pbMsg.value().end());
-
-	auto sendid = GetSendLayerId();
-
-	SHARE<BaseMsg> ackmsg = m_msgmodule->RequestAsynMsg(L_MYSQL_CORO_MSG, lmsg, pull, coro, LY_MYSQL, sendid);
-	auto sqlres = (LMsgSqlParam*)ackmsg->m_data;
-	pbMsg.set_ret(sqlres->param->ret);
-	if (pbMsg.field_size() != sqlres->param->field.size())
-	{
-		pbMsg.clear_field();
-		for (auto& s : sqlres->param->field)
-			pbMsg.add_field(s);
-	}
-
-	if (pbMsg.value_size() != sqlres->param->value.size())
-	{
-		pbMsg.clear_value();
-		for (auto& s : sqlres->param->value)
-			pbMsg.add_value(s);
-	}
-
-	m_transModule->ResponseBackServerMsg(netmsg->path, msg, pbMsg);
-}
-
-void MysqlManagerModule::OnGetMysqlRes(LMsgSqlParam * msg)
-{
-	auto it = m_replay.find(msg->index);
-	if (it == m_replay.end())
-		return;
-
-	auto reply = it->second;
-	
-	reply->pbMsg.set_ret(msg->param->ret);
-
-	if (reply->pbMsg.field_size() != msg->param->field.size())
-	{
-		reply->pbMsg.clear_field();
-		for (auto& s : msg->param->field)
-			reply->pbMsg.add_field(s);
-	}
-	
-	if (reply->pbMsg.value_size() != msg->param->value.size())
-	{
-		reply->pbMsg.clear_value();
-		for (auto& s : msg->param->value)
-			reply->pbMsg.add_value(s);
-	}
-	//send back
-	m_transModule->SendBackServer(reply->path, reply->pbMsg.reply(), reply->pbMsg);
-
-	m_replay.erase(it);
-}
-
-void MysqlManagerModule::OnUpdateTableGroup(NetMsg * msg)
-{
-	TRY_PARSEPB(LPMsg::UpdateTableGroup, msg);
-	m_tableGroup = pbMsg.groupcount();
-
-	for (int32_t i = 0; i < m_sqlLayerNum; i++)
-	{
-		auto num = GET_LAYER_MSG(NetMsg);
-		num->socket = m_tableGroup;
-		m_msgmodule->SendMsg(LY_MYSQL, i, L_UPDATE_TABLE_GROUP, num);
+		LP_ERROR << "OnGetAccountInfo dynamic_cast<NetServerMsg*> error ";
 	}
 }
 
-void MysqlManagerModule::OnAddTableGroup(NetMsg * msg)
+void MysqlManagerModule::onSqlOperation(NetServerMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::UpdateTableGroup, msg);
+	auto pack = msg->m_buff;
+	auto opt = GET_LAYER_MSG(SqlOperation);
 
-	++m_tableGroup;
-	CreateMysqlTable(m_tableGroup);
-	pbMsg.set_groupcount(m_tableGroup);
-	//向本组server 通知更新
-	m_transModule->SendToAllServer(LOOP_MYSQL, N_UPDATE_TABLE_GROUP, pbMsg);
+
+	opt->optId = pack->readInt32();
+	opt->ackId = pack->readInt32();
+	opt->uid = pack->readInt64();
+	opt->buff = GET_LAYER_MSG(BuffBlock);
+	int32_t bufsize;
+	auto msgbuff = pack->readBuff(bufsize);
+	opt->buff->writeBuff(msgbuff, bufsize);
+
+	opt->path = std::move(msg->path);
+
+	auto sendid = getSendLayerId(opt->uid);
+
+	opt->buff->setOffect(0);
+	m_msgmodule->SendMsg(LY_MYSQL, sendid, L_DB_SQL_OPERATION, opt);
 }
 
-void MysqlManagerModule::SendSqlReply(SHARE<SqlReply>& reply,const int& gid)
+void MysqlManagerModule::onSqlOperationRes(SqlOperation * msg)
 {
-	auto lmsg = GET_LAYER_MSG(LMsgSqlParam);
-	lmsg->param = GET_LAYER_MSG(SqlParam);
+	BuffBlock* spack = NULL;
+	std::swap(spack, msg->buff);
 
-	lmsg->param->opt = reply->pbMsg.opt();
-	lmsg->param->tab = reply->pbMsg.table() + std::to_string(gid);
-	lmsg->param->kname.assign(reply->pbMsg.kname().begin(), reply->pbMsg.kname().end());
-	lmsg->param->kval.assign(reply->pbMsg.kval().begin(), reply->pbMsg.kval().end());
-	lmsg->param->field.assign(reply->pbMsg.field().begin(), reply->pbMsg.field().end());
-	lmsg->param->value.assign(reply->pbMsg.value().begin(), reply->pbMsg.value().end());
-
-	auto sendid = GetSendLayerId();
-
-	if (reply->pbMsg.reply()>0)
-	{
-		lmsg->index = m_index;
-		m_replay[m_index] = reply;
-	}
-	m_msgmodule->SendMsg(LY_MYSQL, sendid, L_MYSQL_MSG, lmsg);
+	m_transModule->SendBackServer(msg->path, msg->ackId, spack);
 }
 
-int MysqlManagerModule::GetSendLayerId()
+int32_t MysqlManagerModule::getSendLayerId(int64_t uid)
 {
-	++m_index;
-	return m_index%m_sqlLayerNum;
-}
-
-void MysqlManagerModule::onTestMsg(NetServerMsg * msg)
-{
-	LPMsg::EmptyPB pbmsg;
-
-	LP_INFO << "get msg onTestMsg";
-	m_transModule->SendBackServer(msg->path, 100, pbmsg);
+	return uid %m_sqlLayerNum;
 }

@@ -14,8 +14,10 @@ add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES})
 
 if(WIN32)
 set(DBProxylib
+Crypto.lib
 serverpb.lib
 libprotobufd.lib
+mysqlpp_d.lib
 )
 endif()
 

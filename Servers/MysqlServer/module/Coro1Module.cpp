@@ -19,7 +19,7 @@ void Coro1Module::Init()
 	m_schedule = GET_MODULE(ScheduleModule);
 	m_transModule = GET_MODULE(TransMsgModule);
 
-	//m_schedule->AddInterValTask(this, &Coro1Module::OnBeginTest, 3000, 1, 3000);
+	m_schedule->AddInterValTask(BIND_TIME(OnBeginTest), 3000, 1, 3000);
 	m_msgModule->AddAsynMsgCall(N_CORO_TEST_1,BIND_ASYN_CALL(CoroTest2));
 }
 
@@ -38,6 +38,7 @@ void Coro1Module::CoroTest1(c_pull & pull, SHARE<BaseCoro>& coro)
 	sock->socket = 1;
 	DieTest die;
 	auto msg = m_msgModule->RequestAsynMsg(L_CORO_2_TEST_1, sock, pull, coro, LAYER_TYPE::LY_MYSQL, 0);
+	auto msg2 = pull.get();
 	auto sock2 = (NetMsg*)msg->m_data;
 	std::cout << "coro get form mysql step 2 sock: " << sock2->socket<<std::endl;
 	sock = GET_LAYER_MSG(NetMsg);

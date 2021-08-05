@@ -1,4 +1,4 @@
-#include "LuaModule.h"
+﻿#include "LuaModule.h"
 
 LuaModule::LuaModule(BaseLayer * l):BaseModule(l)
 {
@@ -15,7 +15,7 @@ void LuaModule::Init()
 
 void LuaModule::Execute()
 {
-	auto dt = GetMilliSecend();
+	auto dt = Loop::GetMilliSecend();
 	for (auto& ls:m_stats)
 	{
 		ls->Run(dt);

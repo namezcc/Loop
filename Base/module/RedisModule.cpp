@@ -1,4 +1,4 @@
-#include "RedisModule.h"
+﻿#include "RedisModule.h"
 #include "redisclient.h"
 #include "MsgModule.h"
 
@@ -36,7 +36,7 @@ return false; \
 
 #define REDIS_CATCH _REDIS_CATCH_(__FUNCTION__, __LINE__)
 
-#define REDIS_CHECK if(!m_enable || !Reconnect()) return false
+#define REDIS_CHECK if(!m_enable && !Reconnect()) return false
 
 #if PLATFORM == PLATFORM_WIN
 #pragma comment( lib, "ws2_32" )
@@ -55,6 +55,9 @@ RedisModule::~RedisModule()
 void RedisModule::Init()
 {
 	m_msgModule = GetLayer()->GetModule<MsgModule>();
+
+	auto& cf = GetLayer()->GetLoopServer()->GetConfig();
+	SetConnect(cf.redis.ip, cf.redis.pass, cf.redis.port);
 }
 
 void RedisModule::AfterInit()
@@ -168,6 +171,18 @@ bool RedisModule::HMSet(const string & key, const vec_str & f, const vec_str & v
 	return false;
 }
 
+bool RedisModule::HMSet(const string & key, const std::map<std::string, std::string>& vals)
+{
+	REDIS_CHECK;
+	try
+	{
+		m_redis->hmset(key, vals);
+		return true;
+	}
+	REDIS_CATCH;
+	return false;
+}
+
 bool RedisModule::HMGet(const string & key, const vec_str & f, vec_str & v)
 {
 	REDIS_CHECK;
@@ -256,6 +271,18 @@ bool RedisModule::HGetAll(const string & key, vector<pair_str>& res)
 	try
 	{
 		m_redis->hgetall(key,res);
+		return true;
+	}
+	REDIS_CATCH;
+	return false;
+}
+
+bool RedisModule::HGetAll(const string & key, std::map<std::string, std::string>& res)
+{
+	REDIS_CHECK;
+	try
+	{
+		m_redis->hgetall(key, res);
 		return true;
 	}
 	REDIS_CATCH;

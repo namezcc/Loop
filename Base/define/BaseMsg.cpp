@@ -10,12 +10,8 @@ void BaseMsg::recycleMsg()
 		m_data->recycleMsg();
 		m_data = NULL;
 	}
-	if (m_isNew)
-		delete this;
-	else
-	{
-		MsgPool::pushMsg(this);
-	}
+	
+	MsgPool::pushMsg(this);
 }
 
 BuffBlock::BuffBlock():m_size(0),m_allsize(0), m_next(NULL),m_buff(NULL)
@@ -25,12 +21,17 @@ BuffBlock::BuffBlock():m_size(0),m_allsize(0), m_next(NULL),m_buff(NULL)
 void BuffBlock::makeRoom(const int32_t & size)
 {
 	if (m_buff)
-		assert(0);
-
-	m_buff = GET_POOL_BUFF(size, m_allsize);
+	{
+		auto os = m_allsize;
+		auto c = GET_POOL_BUFF(size, m_allsize);
+		if (m_size > 0) memcpy(c, m_buff, m_size);
+		PUSH_POOL_BUFF(m_buff, os);
+		m_buff = c;
+	}else
+		m_buff = GET_POOL_BUFF(size, m_allsize);
 }
 
-void BuffBlock::write(char * buf, const int32_t & size)
+void BuffBlock::writeBuff(const char * buf, const int32_t & size)
 {
 	if (size <= 0)
 		return;
@@ -41,7 +42,10 @@ void BuffBlock::write(char * buf, const int32_t & size)
 	}
 
 	if (m_offect + size > m_allsize)
-		assert(0);
+	{
+		//assert(0);
+		extandSize(size);
+	}
 
 	memcpy(m_buff + m_offect, buf, size);
 	if(m_offect == m_size)
@@ -61,24 +65,10 @@ void BuffBlock::recycleMsg()
 	if (m_buff)
 	{
 		PUSH_POOL_BUFF(m_buff, m_allsize);
-		//if (m_recylist)
-		//{
-		//	((LoopArray<char*>*)m_recylist)->write(m_buff);
-		//	m_recylist = NULL;
-		//}
-		//else
-		//{//释放内存
-		//	free(m_buff);
-		//}
 		m_buff = NULL;
 	}
 
-	if (m_isNew)
-		delete this;
-	else
-	{
-		MsgPool::pushMsg(this);
-	}
+	MsgPool::pushMsg(this);
 }
 
 void BuffBlock::recycleCheck()
@@ -152,7 +142,7 @@ void NetMsg::push_front(BaseLayer* l,const char* buf,const int32_t& size)
 {
 	auto buff = l->GetLayerMsg<BuffBlock>();
 	buff->makeRoom(size);
-	buff->write(const_cast<char*>(buf),size);
+	buff->writeBuff(const_cast<char*>(buf),size);
 	buff->setOffect(0);
 	push_front(buff);
 }
@@ -173,18 +163,18 @@ SHARE<LocalBuffBlock> NetMsg::getCombinBuff()
 	auto mbf = m_buff;
 	while (mbf) {
 		if (mbf->m_buff)
-			buff->write(mbf->m_buff, mbf->getSize());
+			buff->writeBuff(mbf->m_buff, mbf->getSize());
 		mbf = mbf->m_next;
 	}
 	return buff;
 }
 
-void NetMsg::getCombinBuff(LocalBuffBlock* buff)
+void NetMsg::getCombinBuff(BuffBlock* buff)
 {
 	auto mbf = m_buff;
 	while (mbf) {
 		if (mbf->m_buff)
-			buff->write(mbf->m_buff, mbf->getSize());
+			buff->writeBuff(mbf->m_buff, mbf->getSize());
 		mbf = mbf->m_next;
 	}
 }
@@ -210,12 +200,7 @@ void NetMsg::recycleMsg()
 		m_buff = NULL;
 	}
 
-	if (m_isNew)
-		delete this;
-	else
-	{
-		MsgPool::pushMsg(this);
-	}
+	MsgPool::pushMsg(this);
 }
 
 void NetServerMsg::recycleMsg()
@@ -233,7 +218,7 @@ void NetServerMsg::recycle(FactorManager * fm)
 {
 	if(m_buff)
 	{
-		LOOP_RECYCLE(m_buff);
+		LOOP_RECYCLE(dynamic_cast<LocalBuffBlock*>(m_buff));
 		m_buff = NULL;
 	}
 }
@@ -242,28 +227,40 @@ void NetServerMsg::push_front(BaseLayer * l, const char * buf, const int32_t & s
 {
 	auto buff = GET_LOOP(LocalBuffBlock);
 	buff->makeRoom(size);
-	buff->write(const_cast<char*>(buf), size);
+	buff->writeBuff(const_cast<char*>(buf), size);
 	buff->setOffect(0);
 	NetMsg::push_front(buff);
 }
 
 void NetServer::recycleMsg()
 {
-	if (m_isNew)
-		delete this;
-	else
-	{
-		MsgPool::pushMsg(this);
-	}
+	MsgPool::pushMsg(this);
 }
 
 void LogInfo::recycleMsg()
 {
 	log.str("");
-	if (m_isNew)
-		delete this;
-	else
+	MsgPool::pushMsg(this);
+}
+
+void BroadMsg::recycleMsg()
+{
+	if (m_buff)
 	{
-		MsgPool::pushMsg(this);
+		m_buff->recycleMsg();
+		m_buff = NULL;
 	}
+
+	MsgPool::pushMsg(this);
+}
+
+void CoroMsg::recycleMsg()
+{
+	if (m_data)
+	{
+		m_data->recycleMsg();
+		m_data = NULL;
+	}
+
+	MsgPool::pushMsg(this);
 }

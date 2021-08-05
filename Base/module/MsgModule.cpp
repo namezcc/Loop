@@ -1,7 +1,7 @@
 ﻿#include "MsgModule.h"
 #include "ScheduleModule.h"
 
-MsgModule::MsgModule(BaseLayer* l):BaseModule(l), m_coroIndex(0), m_coroCheckTime(0), m_curList(&m_coroList1), m_msgCash(NULL)
+MsgModule::MsgModule(BaseLayer* l):BaseModule(l), m_coroIndex(0), m_coroCheckTime(0)
 {
 }
 
@@ -28,10 +28,10 @@ void MsgModule::Init()
 }
 void MsgModule::Execute()
 {
-	auto dt = GetSecend();
+	auto dt = Loop::GetSecend();
 	if (dt > m_coroCheckTime)
 	{
-		CheckCoroClear(dt);
+		//CheckCoroClear(dt);
 		m_coroCheckTime = dt + 30;	//per second check
 	}
 }
@@ -56,24 +56,23 @@ void MsgModule::MsgCallBack(void* msg)
 {
 	auto smsg = (BaseMsg*)msg;
 
+	auto shamsg = SHARE<BaseMsg>(smsg,[this](BaseMsg* p) {
+		RECYCLE_LAYER_MSG(p);
+	});
+
 	if (smsg->msgId > L_BEGAN && smsg->msgId < N_END)
 	{
 		if (m_arrayCall[smsg->msgId])
-			m_arrayCall[smsg->msgId](smsg);
-		else
-			LOOP_RECYCLE(smsg);
+			m_arrayCall[smsg->msgId](shamsg);
 	}
 	else if(smsg->msgId > CM_MSG_BEGIN && smsg->msgId < CM_MSG_END)
 	{
 		if (m_protoCall[smsg->msgId - CM_MSG_BEGIN])
-			m_protoCall[smsg->msgId - CM_MSG_BEGIN](smsg);
-		else
-			LOOP_RECYCLE(smsg);
+			m_protoCall[smsg->msgId - CM_MSG_BEGIN](shamsg);
 	}
 	else
 	{
 		LP_ERROR << "error misId:" << smsg->msgId;
-		LOOP_RECYCLE(smsg);
 	}
 }
 
@@ -88,18 +87,12 @@ void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
 	if (msg->mid > L_BEGAN && msg->mid < N_END)
 	{
 		if (m_arrayCall[msg->mid])
-		{
-			m_msgCash = smsg;
-			m_arrayCall[msg->mid](NULL);
-		}
+			m_arrayCall[msg->mid](smsg);
 	}
 	else if(msg->mid > CM_MSG_BEGIN && msg->mid<CM_MSG_END)
 	{
 		if (m_protoCall[msg->mid - CM_MSG_BEGIN])
-		{
-			m_msgCash = smsg;
-			m_protoCall[msg->mid - CM_MSG_BEGIN](NULL);
-		}
+			m_protoCall[msg->mid - CM_MSG_BEGIN](smsg);
 	}
 }
 
@@ -129,7 +122,8 @@ SHARE<BaseMsg> MsgModule::ResponseAsynMsg(SHARE<BaseMsg>& msg,BaseData* data,c_p
 SHARE<BaseMsg> MsgModule::PullWait(const int32_t& coid,SHARE<BaseCoro>& coro,c_pull& pull)
 {
 	coro->Refresh(coid);
-	(*m_curList)[coid] = coro;
+	m_coroList[coid] = coro;
+	m_coroLink.push_back(coro.get());
 	pull();
 	return pull.get();
 }
@@ -146,24 +140,16 @@ void MsgModule::ResponseMsg(SHARE<BaseMsg>& msg,BaseData* data,const int32_t& lt
 
 void MsgModule::CheckCoroClear(const int64_t& dt)
 {
-	for (auto it=m_coroList1.begin();it!=m_coroList1.end();)
+	BaseCoro* coro = m_coroLink.begin();
+	while (coro)
 	{
-		if (dt >= it->second->m_endPoint)
+		if (dt >= coro->m_endPoint)
 		{
-			it->second->m_endPoint = -1; //mean fail
-			it->second->Clear();
-			m_coroList1.erase(it++);
-		}
-		else
-			break;
-	}
-	for (auto it = m_coroList2.begin(); it != m_coroList2.end();)
-	{
-		if (dt >= it->second->m_endPoint)
-		{
-			it->second->m_endPoint = -1;	//mean fail
-			it->second->Clear();
-			m_coroList2.erase(it++);
+			coro->m_endPoint = -1;
+			coro->Clear();
+			auto coid = coro->m_coroId;
+			coro = m_coroLink.erase(coro);
+			m_coroList.erase(coid);
 		}
 		else
 			break;
@@ -234,18 +220,12 @@ void MsgModule::DoRequestMsg(SHARE<BaseMsg>& msg)
 	if (cmsg->m_subMsgId > L_BEGAN && cmsg->m_subMsgId < N_END)
 	{
 		if (m_arrayCall[cmsg->m_subMsgId])
-		{
-			m_msgCash = msg;
-			m_arrayCall[cmsg->m_subMsgId](NULL);
-		}
+			m_arrayCall[cmsg->m_subMsgId](msg);
 	}
 	else if(cmsg->m_subMsgId > CM_MSG_BEGIN && cmsg->m_subMsgId < CM_MSG_END)
 	{
 		if (m_protoCall[cmsg->m_subMsgId - CM_MSG_BEGIN])
-		{
-			m_msgCash = msg;
-			m_protoCall[cmsg->m_subMsgId - CM_MSG_BEGIN](NULL);
-		}
+			m_protoCall[cmsg->m_subMsgId - CM_MSG_BEGIN](msg);
 	}
 }
 
@@ -253,14 +233,12 @@ void MsgModule::DoResponseMsg(SHARE<BaseMsg>& msg)
 {
 	CoroMsg* cmsg = (CoroMsg*)msg.get();
 	int32_t coroid = cmsg->m_coroId;
-	auto clist = m_curList;
-	if (coroid > m_coroIndex)
-		clist = GetDiffCurList();
-	auto it = clist->find(coroid);
-	if (it!=clist->end())
+	auto it = m_coroList.find(coroid);
+	if (it!= m_coroList.end())
 	{
 		auto coro = it->second;
-		clist->erase(it);
+		m_coroLink.erase(coro.get());
+		m_coroList.erase(it);
 		auto& corofunc = *coro->m_coro;
 		corofunc(msg);
 	}
@@ -274,13 +252,12 @@ SHARE<CoroMsg> MsgModule::DecodeCoroMsg(SHARE<BaseMsg>& msg)
 		LP_ERROR << "DecodeCoroMsg error m_data not NetMsg*";
 		return NULL;
 	}
-	auto netbuff = netmsg->popBuffBlock();
+	auto netbuff = netmsg->m_buff;
 	
 	auto coromsg = GET_LOOP(CoroMsg);
 	coromsg->m_subMsgId = netbuff->readInt32();
 	coromsg->m_coroId = netbuff->readInt32();
 	coromsg->m_mycoid = netbuff->readInt32();
-	netmsg->push_front(netbuff);
 
 	std::swap(coromsg->m_data,msg->m_data);
 	auto coroShar = SHARE<CoroMsg>(coromsg,[this,msg](CoroMsg* ptr){

@@ -57,7 +57,7 @@ void BattleSceneInfoModule::Init()
 
 void BattleSceneInfoModule::Execute()
 {
-	auto nowms = GetMilliSecend();
+	auto nowms = Loop::GetMilliSecend();
 	int32_t index = nowms % 1000;
 	RunBattleSceneFrame(index);
 }

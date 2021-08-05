@@ -1,7 +1,13 @@
-#ifndef LUA_UTIL_H
+﻿#ifndef LUA_UTIL_H
 #define LUA_UTIL_H
 #include "Reflection.h"
 #include "lua5.3/lua.hpp"
+
+struct LuaBuff
+{
+	char* _buff;
+	int _size;
+};
 
 struct LuaPush
 {
@@ -18,6 +24,11 @@ struct LuaPush
 	static void PushString(lua_State* L, const std::string& val)
 	{
 		lua_pushlstring(L, val.c_str(), val.size());
+	}
+
+	static void PushBuffer(lua_State* L, const LuaBuff& val)
+	{
+		lua_pushlstring(L, val._buff, val._size);
 	}
 
 	static void PushNumber(lua_State* L,const double& val)
@@ -49,7 +60,11 @@ struct LuaPush
 	static std::string LuaToString(lua_State* L, const int32_t& index)
 	{
 		if (lua_isstring(L, index))
-			return lua_tostring(L, index);
+		{
+			size_t len;
+			auto c = lua_tolstring(L, index, &len);
+			return std::string(c, len);
+		}
 		else
 			return "";
 	}
@@ -72,11 +87,10 @@ struct LuaPush
 };
 
 template<typename T>
-struct LuaPushType;
-//{
-//	template<typename V>
-//	static void PushVal(lua_State* L, V&& val) { LuaPush::PushString(L, val); }
-//};
+struct LuaPushType{
+	template<typename V>
+	static void PushVal(lua_State* L, V&& val) { LuaPush::PushString(L, val); }
+};
 
 #define SET_PUSH_FUNC(T,F) \
 template<>	\
@@ -92,7 +106,7 @@ SET_PUSH_FUNC(uint32_t, LuaPush::PushInt)
 SET_PUSH_FUNC(int64_t, LuaPush::PushInt)
 SET_PUSH_FUNC(uint64_t, LuaPush::PushInt)
 SET_PUSH_FUNC(bool, LuaPush::PushBool)
-//SET_PUSH_FUNC(const char*, LuaPush::PushString)
+SET_PUSH_FUNC(LuaBuff, LuaPush::PushBuffer)
 SET_PUSH_FUNC(std::string, LuaPush::PushString)
 SET_PUSH_FUNC(float, LuaPush::PushNumber)
 SET_PUSH_FUNC(double, LuaPush::PushNumber)
@@ -305,15 +319,19 @@ struct PullLuaArgs<std::vector<T>>
 		if (!lua_istable(L, idx))
 			return vec;
 
-		lua_pushvalue(L, idx);
-		int index = lua_gettop(L);
-		lua_pushnil(L);
-		while (lua_next(L, index))
+		if (idx != -1)
+			lua_pushvalue(L, idx);
+
+		int32_t len = lua_rawlen(L, -1);
+
+		for (int32_t i = 0; i < len; i++)
 		{
+			lua_rawgeti(L, -1, i + 1);
 			vec.push_back(PullLuaArgs<T>::PullVal(L));
 			lua_pop(L, 1);
 		}
-		lua_pop(L, 1);
+		if (idx != -1)
+			lua_pop(L, 1);
 		return vec;
 	}
 };
@@ -329,7 +347,9 @@ struct PullLuaArgs<std::map<T1, T2>>
 		if (!lua_istable(L, idx))
 			return _map;
 
-		lua_pushvalue(L, idx);
+		if (idx != -1)
+			lua_pushvalue(L, idx);
+
 		int index = lua_gettop(L);
 		lua_pushnil(L);
 		while (lua_next(L, index))
@@ -340,7 +360,8 @@ struct PullLuaArgs<std::map<T1, T2>>
 			_map[_key] = PullLuaArgs<T2>::PullVal(L);
 			lua_pop(L, 1);
 		}
-		lua_pop(L, 1);
+		if (idx != -1)
+			lua_pop(L, 1);
 		return _map;
 	}
 };

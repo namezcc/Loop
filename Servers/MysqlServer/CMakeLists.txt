@@ -10,14 +10,19 @@ ${PROJECT_SOURCE_DIR}/module
 
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
-set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/GameReflectData.cpp)
+set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/GameReflectData.cpp
+${PROJECT_SOURCE_DIR}/../Common/proto_sql.cpp
+)
+
 file(GLOB_RECURSE OBJECT_RECURSE ${PROJECT_SOURCE_DIR}/../struct/*.cpp)
 
 add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES} ${SQL_DATA} ${OBJECT_RECURSE})
 
 if(WIN32)
 set(mysqllib
+Crypto.lib
 clientpb.lib
+serverpb.lib
 libprotobufd.lib
 mysqlpp_d.lib
 )

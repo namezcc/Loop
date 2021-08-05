@@ -1,13 +1,12 @@
-#ifndef MATCH_MODULE_H
+﻿#ifndef MATCH_MODULE_H
 #define MATCH_MODULE_H
 
 #include "BaseModule.h"
 
 class MsgModule;
-class ProxyNodeModule;
+class NetObjectModule;
 class TransMsgModule;
 class PlayerModule;
-class NetObjectModule;
 
 class MatchModule:public BaseModule
 {
@@ -28,12 +27,11 @@ private:
 
 private:
 	MsgModule * m_msgModule;
-	ProxyNodeModule* m_proxyNode;
 	TransMsgModule* m_transModule;
-	PlayerModule* m_playerModule;
 	NetObjectModule* m_netObjModule;
+	PlayerModule* m_playerModule;
 
-	VecPath m_p_matchState;
+	ServerPath m_p_matchState;
 	
 };
 #endif

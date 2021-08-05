@@ -33,7 +33,7 @@ typedef struct MsgHead :public Head
 		mh.size = PB::GetInt(buf);
 		mh.mid = PB::GetInt(buf + 4);
 		mh.flag = PB::GetInt(buf + 8);
-		return mh.flag == ((mh.size & mh.mid) ^ HEAD_FLAG);
+		return true;//mh.flag == ((mh.size & mh.mid) ^ HEAD_FLAG);
 	}
 }MsgHead;
 

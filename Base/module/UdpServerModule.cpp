@@ -1,4 +1,4 @@
-#include "UdpServerModule.h"
+﻿#include "UdpServerModule.h"
 #include "ScheduleModule.h"
 thread_local int32_t UdpConn::SOCKET = 0;
 
@@ -20,7 +20,7 @@ void UdpServerModule::Init()
 
 void UdpServerModule::Execute()
 {
-	auto dt = GetMilliSecend();
+	auto dt = Loop::GetMilliSecend();
 	SetTick(dt);
 	m_context.poll();
 }

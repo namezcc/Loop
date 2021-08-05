@@ -34,19 +34,11 @@ private:
 
 	void OnClientConnect(const int32_t& sock);
 	void OnTestPing(NetMsg* msg);
+	void onTestAsyncPing(NetMsg* msg , c_pull & pull, SHARE<BaseCoro>& coro);
 	void OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro);
-	void OnGetAccountInfo(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro);
 
-	void CreateAccount(const string& name, const string& pass, c_pull & pull, SHARE<BaseCoro>& coro);
-	void OnCreateAccount(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro);
-
-	bool TryPlayerLogin(SHARE<ClientObj>& client, SHARE<AccoutInfo>& account, c_pull & pull, SHARE<BaseCoro>& coro,bool isCreate=false);
-
-	void SendRoomInfo(SHARE<AccoutInfo>& account, SHARE<ClientObj>& client, RoomServer* room, c_pull & pull, SHARE<BaseCoro>& coro);
 	void RemoveClient(const std::string& account);
 
-	void testSqlMsg(int64_t& dt);
-	void OnSqlMsg(NetMsg* msg);
 private:
 	MsgModule * m_msgModule;
 	NetObjectModule* m_netModule;
@@ -57,8 +49,11 @@ private:
 	EventModule* m_eventModule;
 	ScheduleModule* m_schedule;
 
+	ServerNode m_lock_server;
+	ServerPath m_db_path;
+
 	map<string, SHARE<AccoutInfo>> m_cash;
-	map<string,SHARE<ClientObj>> m_tmpClient;
+	std::map<string,ClientObj> m_tmpClient;
 };
 
 #endif

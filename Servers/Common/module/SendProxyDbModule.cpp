@@ -59,7 +59,7 @@ SHARE<BaseMsg> SendProxyDbModule::RequestToProxyDb(google::protobuf::Message & m
 	forbuff->writeInt32(hash);
 	forbuff->writeInt32(N_REQUEST_CORO_MSG);
 
-	forbuff->write(corobuf->m_buff, corobuf->getSize());
+	forbuff->writeBuff(corobuf->m_buff, corobuf->getSize());
 
 	forbuff->write(msg);
 

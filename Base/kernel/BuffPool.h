@@ -44,7 +44,7 @@ inline int32_t hightestBitIndex(const uint32_t& value)
 template<size_t I>
 struct IndexNum
 {
-	static constexpr size_t value = 1000;
+	static constexpr size_t value = 100;
 };
 
 #define INDEX_NUM(i,n) \
@@ -53,7 +53,7 @@ template<> struct IndexNum<i> \
 	static constexpr size_t value = n;\
 };
 
-INDEX_NUM(0,1000)
+INDEX_NUM(0,10000)
 INDEX_NUM(1, 1000)
 INDEX_NUM(2, 1000)
 INDEX_NUM(3, 1000)

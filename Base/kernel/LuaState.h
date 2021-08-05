@@ -1,12 +1,15 @@
-#ifndef LUA_STATE_H
+﻿#ifndef LUA_STATE_H
 #define LUA_STATE_H
 #include "Utils.h"
 #include "LuaUtil.h"
 #include "Define.h"
 #include <iostream>
 #include <unordered_map>
+#include "LuaValue.h"
 
 class LuaModule;
+
+typedef std::function<int(LuaState*)> LuaCallHandle;
 
 class LOOP_EXPORT LuaState
 {
@@ -31,6 +34,25 @@ public:
 	void RunScript(const std::string& file);
 	void RunString(const std::string& trunk);
 	lua_State* GetLuaState() { return m_L; };
+
+	void initLuaCommonFunc(const std::string& name);
+	void initLToCIndex(uint32_t _began, uint32_t _end);
+	void initCToLIndex(uint32_t _began, uint32_t _end);
+	void bindLToCFunc(int32_t findex, const LuaCallHandle& func);
+
+	bool callLuaCommonFunc(LuaArgs& arg);
+	bool callLuaFunc(int32_t findex, LuaArgs& arg);
+	bool callRegistFunc(int32_t ref, LuaArgs& arg);
+	bool getRefFunc(int32_t ref);
+
+	void setLuaCallFunc(const std::function<int(int32_t, LuaState*)>& func)
+	{
+		m_luaCallFunc = func;
+	}
+	void setLuaBindFunc(const std::function<int(int32_t, LuaState*)>& func)
+	{
+		m_luaBindFunc = func;
+	}
 
 	int32_t RegistGlobalFunc(const std::string& fname,bool loop=true)
 	{
@@ -170,7 +192,7 @@ public:
 		return status;
 	}
 
-	template<typename T, typename F>
+	/*template<typename T, typename F>
 	void BindLuaCall(const std::string& fname, T&&t, F&&f)
 	{
 		auto call = ANY_BIND(t, f);
@@ -182,7 +204,7 @@ public:
 			}
 			return CallTool<FuncArgsType<F>::SIZE>::Call<FuncArgsType<F>::typeR, FuncArgsType<F>::tupleArgs>(L, call);
 		};
-	}
+	}*/
 
 	template<typename ...Args>
 	int32_t PushArgs(Args&&... args)
@@ -191,14 +213,60 @@ public:
 		return sizeof...(Args);
 	}
 
-	void printLuaStack();
-protected:
-	void PrintError()
-	{
-		std::cout << "Lua error:" << lua_tostring(m_L, -1) << std::endl;
-	}
+	//--------- new -------------------
 
-	static int callFunction(lua_State* L);
+	void PushInt32(int32_t val);
+	void PushInt64(int64_t val);
+	void PushString(const std::string& val);
+	void PushFloat(float val);
+	void PushTableBegin();
+	void PushTableBegin(int32_t tabkey);
+	void PushTableBegin(const std::string& tabkey);
+	void PushTableInt32(int32_t idx, int32_t val);
+	void PushTableInt64(int32_t idx, int64_t val);
+	void PushTableString(int32_t idx, const std::string& val);
+	void PushTableFloat(int32_t idx, float val);
+	void PushTableEnd();
+	void PushTableSetValue();
+	void PushTableInt32(const std::string& key, int32_t val);
+	void PushTableInt64(const std::string& key, int64_t val);
+	void PushTableString(const std::string& key, const std::string& val);
+	void PushTableFloat(const std::string& key, float val);
+
+	int32_t PullInt32();
+	int64_t PullInt64();
+	std::string PullString();
+	const char* PullCString(int32_t& size);
+	float Pullfloat();
+	bool IsTable(int32_t argIndex);
+	int32_t GetArgIndex() { return m_argIndex; }
+	bool PullTableBegin();
+	int32_t PullTableLength();
+	int32_t PullTableInt32(int32_t index);
+	int64_t PullTableInt64(int32_t index);
+	std::string PullTableString(int32_t index);
+	float PullTableFloat(int32_t index);
+	bool PullTableTable(int32_t index);
+	int32_t PullTableInt32(const std::string& key);
+	int64_t PullTableInt64(const std::string& key);
+	std::string PullTableString(const std::string& key);
+	float PullTableFloat(const std::string& key);
+	bool PullTableTable(const std::string& key);
+	void PullTableEnd();
+
+	//--------------------------------
+
+	void printLuaStack();
+	static void printLuaFuncStack(lua_State *L, const char* msg);
+protected:
+	void PrintError();
+
+	//static int callFunction(lua_State* L);
+
+	static int callFunction2(lua_State* L);
+	static int bindLuaFunc(lua_State* L);
+	static int printFunction(lua_State* L);
+
 	static int open_callFunc(lua_State* L);
 	static int traceback(lua_State *L);
 	void open_libs();
@@ -210,7 +278,23 @@ private:
 	int32_t m_errIndex;
 	LuaModule* m_module;
 	std::vector<int32_t> m_loopRef;
-	std::unordered_map<std::string, std::function<int(lua_State*)>> m_luaCallFunc;
+	//std::unordered_map<std::string, std::function<int(lua_State*)>> m_luaCallFunc;
+
+	int32_t m_argIndex;
+
+	std::function<int(int32_t, LuaState*)> m_luaCallFunc;
+	std::function<int(int32_t, LuaState*)> m_luaBindFunc;
+
+	int32_t m_beginIndex;
+	int32_t m_endIndex;
+	LuaCallHandle* m_commonCall;
+
+	int32_t m_cToLBegIndex;
+	int32_t m_cToLEndIndex;
+	int32_t* m_cTolRef;
+
+	int32_t m_common_ref;
+
 };
 
 #endif

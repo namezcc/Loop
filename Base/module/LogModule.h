@@ -1,4 +1,4 @@
-#ifndef LOG_MODULE_H
+﻿#ifndef LOG_MODULE_H
 #define LOG_MODULE_H
 #include "BaseModule.h"
 
@@ -11,26 +11,6 @@ namespace spdlog
 {
 	class logger;
 }
-
-static const char* server_name[]{ 
-	"Game",
-	"Proxy-sql",
-	"Login",
-	"Mysql",
-	"Proxy-pp",
-	"Master",
-	"Console",
-	"Proxy-DB",
-	"Room",
-	"RoomState",
-	"LoginLock",
-	"BattleScene",
-	"BattleTrans",
-	"Match",
-	"MatchState",
-	"Team",
-	"TeamState"
-};
 
 class LogModule:public BaseModule
 {
@@ -55,6 +35,8 @@ private:
 
 	SHARE<spdlog::logger> m_console;
 	vector<SHARE<spdlog::logger>> m_daily;
+
+	std::map<int32_t, std::string> m_server_name;
 
 	bool m_showlog;
 };

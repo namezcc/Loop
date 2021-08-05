@@ -3,7 +3,7 @@ PROJECT(Lua)
 
 file(GLOB_RECURSE source ${PROJECT_SOURCE_DIR}/*.c)
 
-add_library(Lua STATIC ${source})
+add_library(Lua SHARED ${source})
 
 set_target_properties( Lua PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${OutPutDir}
@@ -13,4 +13,5 @@ set_target_properties( Lua PROPERTIES
 
 target_compile_definitions(Lua
 PRIVATE   LUA_COMPAT_5_1
+PRIVATE   LUA_BUILD_AS_DLL
 )

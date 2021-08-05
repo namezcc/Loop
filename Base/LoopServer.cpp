@@ -27,13 +27,13 @@ void LoopServer::InitServer(int argc, char** args)
 {
 	cmdline::parser param;
 
-	param.add<int>("port", 'p', "server port", true, 0, cmdline::range(1, 65535));
+	//param.add<int>("port", 'p', "server port", true, 0, cmdline::range(1, 65535));
 	param.add<int>("type", 't', "server type", true, 0);
 	param.add<int>("id", 'n', "server port", true, 0);
 	param.set_program_name("server");
 	param.parse_check(argc, args);
 
-	m_port = param.get<int>("port");
+	//m_port = param.get<int>("port");
 	auto st = param.get<int>("type");
 	auto serid = param.get<int>("id");
 	Init(st, serid);
@@ -97,6 +97,13 @@ void LoopServer::InitConfig()
 		m_config.sql.pass = config["sql"]["pass"].GetString();
 		m_config.sql.dbGroup = config["sql"]["group"].GetInt();
 	}
+
+	if (config.HasMember("redis"))
+	{
+		m_config.sql.ip = config["sql"]["ip"].GetString();
+		m_config.sql.port = config["sql"]["port"].GetInt();
+		m_config.sql.pass = config["sql"]["pass"].GetString();
+	}
 }
 
 void LoopServer::InitServerConfig()
@@ -146,7 +153,8 @@ void LoopServer::InitConnectRule()
 			auto toserver = v["to_server"].GetInt();
 			auto conn_type = v["type"].GetInt();
 			auto param = v["param"].GetInt();
-			m_connect_rule[toserver] = std::make_pair(conn_type, param);
+			if(conn_type > 0)
+				m_connect_rule[toserver] = std::make_pair(conn_type, param);
 		}
 	}
 }

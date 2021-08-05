@@ -1,4 +1,4 @@
-/* redisclient.h -- a C++ client library for redis.
+﻿/* redisclient.h -- a C++ client library for redis.
  *
  * Copyright (c) 2009, Brian Hammond <brian at fictorial dot com>
  * All rights reserved.
@@ -1861,6 +1861,19 @@ namespace redis
       send_(socket, m);
       recv_ok_reply_(socket);
     }
+
+	void hmset(const string_type & key, const std::map<std::string, std::string> & vals)
+	{
+		int socket = get_socket(key);
+		makecmd m("HMSET");
+		m << key;
+
+		for (auto& it: vals)
+			m << it.first << it.second;
+
+		send_(socket, m);
+		recv_ok_reply_(socket);
+	}
     
     void hmget( const string_type & key, const string_vector & fields, string_vector & out)
     {
@@ -1937,6 +1950,16 @@ namespace redis
       for(size_t i = 0; i < s.size(); i+=2)
         out.push_back( make_pair(s[i], s[i+1]) );
     }
+
+	void hgetall(const string_type & key, std::map<std::string, std::string> & out)
+	{
+		int socket = get_socket(key);
+		send_(socket, makecmd("HGETALL") << key);
+		string_vector s;
+		recv_multi_bulk_reply_(socket, s);
+		for (size_t i = 0; i < s.size(); i += 2)
+			out.insert(make_pair(s[i], s[i + 1]));
+	}
     
     void select(int_type dbindex)
     {
@@ -2609,7 +2632,7 @@ namespace redis
         
         if (eol)
         {
-          to_read = eol - buffer + 1;
+          to_read = ssize_t(eol - buffer + 1);
           oss.write(buffer, to_read);
           found_delimiter = true;
         }

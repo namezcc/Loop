@@ -69,8 +69,8 @@ private:
 	EventModule* m_eventModule;
 	TransMsgModule* m_transModule;
 
-	VecPath m_noticePath;
-	VecPath m_nodePath;
+	ServerPath m_noticePath;
+	ServerPath m_nodePath;
 
 
 	std::map<int32_t, SHARE<MatchNode>>* m_curMatchTable;

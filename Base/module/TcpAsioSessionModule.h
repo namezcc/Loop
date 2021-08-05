@@ -17,11 +17,12 @@ struct AsioSession:public LoopObject
 	AsioSession()
 	{
 		m_sockId = 0;
+		m_active = false;
 	}
 
 	virtual void init(FactorManager* fm)
 	{
-		
+		m_active = false;
 	}
 
 	virtual void recycle(FactorManager* fm)
@@ -34,6 +35,7 @@ struct AsioSession:public LoopObject
 	int32_t m_sockId;
 	LocalBuffBlock m_buff;
 	NetBuffer m_decodeBuff;
+	bool m_active;
 };
 
 class TcpAsioSessionModule:public BaseModule
@@ -55,13 +57,14 @@ private:
 	virtual void AfterInit() override;
 	virtual void Execute() override;
 	void DoAccept();
+	void testHandle(boost::system::error_code ec,SHARE<AsioSession>& ss);
 
 	void OnCloseSocket(NetMsg* msg);
 	void OnSocketSendData(NetMsg* nMsg);
 	void OnBroadData(BroadMsg* nMsg);
 	void OnConnectServer(NetServer * ser);
 
-	void DoReadData(AsioSession* session);
+	void DoReadData(SHARE<AsioSession> session);
 	void CloseSession(const int32_t& sock,bool active = false);
 	void pushMsg(NetMsg* msg);
 	void sendMsgToLayer();

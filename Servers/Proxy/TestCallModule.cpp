@@ -13,10 +13,10 @@ void TestCallModule::Init()
 	m_msgModule = GET_MODULE(MsgModule);
 	m_netModule = GET_MODULE(NetObjectModule);
 
-	m_msgModule->AddMsgCall(10001, BIND_CALL(OnGetData, NetMsg));
-	m_msgModule->AddMsgCall(11001, BIND_CALL(OnTestData, NetMsg));
+	//m_msgModule->AddMsgCall(10001, BIND_CALL(OnGetData, NetMsg));
+	//m_msgModule->AddMsgCall(11001, BIND_CALL(OnTestData, NetMsg));
 	
-	m_netModule->SetAccept(true, CONN_CLIENT);
+	//m_netModule->SetAccept(true, CONN_CLIENT);
 
 	/*if (m_send)
 	{
@@ -38,7 +38,7 @@ void TestCallModule::Init()
 
 void TestCallModule::startSend(int64_t & dt)
 {
-	//auto t1 = GetMilliSecend();
+	//auto t1 = Loop::GetMilliSecend();
 
 	//for (size_t i = 0; i < 1000000; i++)
 	//{
@@ -47,7 +47,7 @@ void TestCallModule::startSend(int64_t & dt)
 	//	//m_eventModule->SendEvent(30001, (int32_t)10);
 	//	//m_eventModule->SendEvent2(30001, 10);
 	//}
-	//auto t2 = GetMilliSecend();
+	//auto t2 = Loop::GetMilliSecend();
 	//LP_INFO << "use time " << t2 - t1 << "ms";
 
 	//for (size_t i = 0; i < 1000000; i++)
@@ -57,7 +57,7 @@ void TestCallModule::startSend(int64_t & dt)
 	//	//m_eventModule->SendEvent(30001, (int32_t)10);
 	//	//m_eventModule->SendEvent2(30001, 10);
 	//}
-	//auto t3 = GetMilliSecend();
+	//auto t3 = Loop::GetMilliSecend();
 	//LP_INFO << "use time " << t3 - t2 << "ms";
 	/*auto sock = GET_SHARE(NetSocket);
 	sock->socket = 100;
@@ -81,11 +81,11 @@ void TestCallModule::OnTimeTest(int64_t & dt)
 void TestCallModule::OnGetData(NetMsg * sock)
 {
 	if (sock->socket == 0)
-		m_start = GetMilliSecend();
+		m_start = Loop::GetMilliSecend();
 
 	if (sock->socket == 10 - 1)
 	{
-		auto endtime = GetMilliSecend();
+		auto endtime = Loop::GetMilliSecend();
 		//LP_INFO << " use tme " << endtime - m_start << " ms";
 	}
 }
@@ -93,10 +93,13 @@ void TestCallModule::OnGetData(NetMsg * sock)
 void TestCallModule::OnTestData(NetMsg * msg)
 {
 	//assert(msg != NULL);
-	auto buff = GET_LAYER_MSG(BuffBlock);
-	buff->makeRoom(msg->getLen());
-	buff->write(msg->getNetBuff(), msg->getLen());
-	m_netModule->SendNetMsg(msg->socket, msg->mid, buff);
+	for (size_t i = 0; i < 1; i++)
+	{
+		auto buff = GET_LAYER_MSG(BuffBlock);
+		buff->makeRoom(msg->getLen());
+		buff->write(msg->getNetBuff(), msg->getLen());
+		m_netModule->SendNetMsg(msg->socket, msg->mid, buff);
+	}
 }
 
 void TestCallModule::OnEvent1(const int32_t & arg)

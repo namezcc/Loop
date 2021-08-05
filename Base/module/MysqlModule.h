@@ -62,6 +62,20 @@ struct LMsgSqlParam:public BaseData
 	SqlParam* param;
 };
 
+class SqlResult
+{
+public:
+	virtual int32_t getInt32(const char* f) = 0;
+	virtual uint32_t getUInt32(const char* f) = 0;
+	virtual int64_t getInt64(const char* f) = 0;
+	virtual uint64_t getUInt64(const char* f) = 0;
+	virtual std::string getString(const char* f) = 0;
+	virtual float getFloat(const char* f) = 0;
+	virtual double getDouble(const char* f) = 0;
+	virtual bool eof() = 0;
+	virtual void nextRow() = 0;
+};
+
 class MsgModule;
 
 class LOOP_EXPORT MysqlModule:public BaseModule
@@ -94,6 +108,9 @@ public:
 	}
 
 	bool Query(const string& str);
+	bool Query(const char* str);
+	SHARE<SqlResult> query(const string& str);
+	SHARE<SqlResult> query(const char* str);
 	bool Select(const string& str,MultRow& res,SqlRow& files);
 
 	bool Insert(SqlParam& p);

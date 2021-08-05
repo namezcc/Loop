@@ -1,4 +1,4 @@
-#include "ScheduleModule.h"
+﻿#include "ScheduleModule.h"
 
 
 ScheduleModule::ScheduleModule(BaseLayer* l):BaseModule(l)
@@ -20,7 +20,7 @@ void ScheduleModule::Execute()
 {
 	if (m_timers.size() == 0)
 		return;
-	auto nt = GetMilliSecend();
+	auto nt = Loop::GetMilliSecend();
 	if (nt < m_checkTime)
 		return;
 	m_checkTime = nt + 100;

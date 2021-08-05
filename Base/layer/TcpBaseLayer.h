@@ -1,11 +1,11 @@
-#ifndef TCP_BASE_LAYER_H
+﻿#ifndef TCP_BASE_LAYER_H
 #define TCP_BASE_LAYER_H
 
 #include "BaseLayer.h"
 #include "MsgModule.h"
 #include "ProtoDefine.h"
 
-class TcpBaseLayer:public BaseLayer
+class LOOP_EXPORT TcpBaseLayer:public BaseLayer
 {
 public:
 	TcpBaseLayer(const int32_t& _port, const ProtoType& _potype):BaseLayer(LY_NET),

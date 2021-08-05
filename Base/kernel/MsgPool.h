@@ -5,18 +5,14 @@
 #include "FactorManager.h"
 #include "Block2.h"
 
+SET_T_BLOCK_SIZE_2(BaseMsg,20000)
+
 struct MsgPool
 {
 	template<typename T>
 	static typename std::enable_if<std::is_base_of<BaseData, T>::value, T*>::type popMsg()
 	{
-		T* msg = NULL;
-		msg = Single::GetInstence<Block2<T,10000>>()->allocateNewOnceLimitNum();
-		if (msg == NULL)
-		{
-			msg = new T();
-			msg->m_isNew = true;
-		}	
+		T* msg = Single::GetInstence<Block2<T>>()->allocateNewOnce();
 		msg->initMsg();
 		return msg;
 	}
@@ -24,7 +20,7 @@ struct MsgPool
 	template<typename T>
 	static typename std::enable_if<std::is_base_of<BaseData, T>::value>::type pushMsg(T* t)
 	{
-		Single::GetInstence<Block2<T, 10000>>()->deallcate(t);
+		Single::GetInstence<Block2<T>>()->deallcate(t);
 	}
 };
 

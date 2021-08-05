@@ -10,6 +10,7 @@ class TransMsgModule;
 class GameTableModule;
 
 struct LMsgSqlParam;
+struct SqlOperation;
 
 namespace LPMsg
 {
@@ -19,7 +20,7 @@ namespace LPMsg
 struct SqlReply:public LoopObject
 {
 	LPMsg::PBSqlParam pbMsg;
-	vector<SHARE<ServerNode>> path;
+	ServerPath path;
 
 	// 通过 LoopObject 继承
 	virtual void init(FactorManager * fm) override {};
@@ -40,35 +41,23 @@ private:
 	virtual void Init() override;
 	virtual void AfterInit() override;
 	virtual void BeforExecute() override;
-	
-	void InitTableGroupNum();
-	void CreateMysqlTable(int group = 1);
 
-	void OnGetGroupId(NetServerMsg* msg);
+	void OnGetAccountInfo(NetMsg* msg, c_pull& pull, SHARE<BaseCoro>& coro);
+	void onSqlOperation(NetServerMsg* msg);
+	void onSqlOperationRes(SqlOperation* msg);
+	int32_t getSendLayerId(int64_t uid);
 
-	void OnCreateAccount(NetServerMsg* msg);
-	void OnGetMysqlMsg(NetServerMsg* msg);
-	void OnRequestMysqlMsg(SHARE<BaseMsg>& msg, c_pull& pull, SHARE<BaseCoro>& coro);
-	void OnGetMysqlRes(LMsgSqlParam* msg);
-	void OnUpdateTableGroup(NetMsg* msg);
-	void OnAddTableGroup(NetMsg* msg);
-
-	void SendSqlReply(SHARE<SqlReply>& reply, const int& gid);
-	int GetSendLayerId();
-
-	void onTestMsg(NetServerMsg* msg);
 protected:
 	MysqlModule* m_mysqlmodule;
 	MsgModule*	m_msgmodule;
 	TransMsgModule* m_transModule;
 	GameTableModule* m_gameTableModule;
 
+	char m_sql_buff[4096];
+	ServerNode m_lock_server;
+
 	uint32_t m_index;
 	int m_sqlLayerNum;
-
-	map<uint32_t, SHARE<SqlReply>> m_replay;
-
-	int m_tableGroup;		//table group num
 };
 
 #endif // !MYSQL_MANAGER_MODULE

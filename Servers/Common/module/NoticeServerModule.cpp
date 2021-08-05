@@ -1,4 +1,4 @@
-#include "NoticeServerModule.h"
+﻿#include "NoticeServerModule.h"
 #include "MsgModule.h"
 #include "TransMsgModule.h"
 #include "EventModule.h"
@@ -68,12 +68,12 @@ void NoticeServerModule::OnReqNoticeServer(NetServerMsg * msg)
 		return;
 	}
 
-	VecPath path;
+	ServerPath path;
 	for (auto& n:pbMsg.path())
 	{
-		auto ser = GET_SHARE(ServerNode);
-		ser->serid = n.serid();
-		ser->type = n.sertype();
+		ServerNode ser = {};
+		ser.serid = n.serid();
+		ser.type = n.sertype();
 		path.push_back(ser);
 	}
 
@@ -86,8 +86,8 @@ void NoticeServerModule::OnReqNoticeServer(NetServerMsg * msg)
 	{
 		for (auto& p:it->second)
 		{
-			if (p.size() == path.size() && p.back()->serid == path.back()->serid &&
-				p.back()->type == path.back()->type)
+			if (p.size() == path.size() && p.back().serid == path.back().serid &&
+				p.back().type == path.back().type)
 			{
 				return;
 			}

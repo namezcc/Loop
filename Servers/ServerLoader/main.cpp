@@ -1,4 +1,4 @@
-#include "dllhelp.h"
+﻿#include "dllhelp.h"
 #include "LPFile.h"
 #include <fstream>
 #include <assert.h>
@@ -18,8 +18,8 @@ using namespace std;
 
 typedef void(*DLL_START)(int, char*[]);
 
-#define ARG_NUM 7
-#define ARG_USE_NUM 6
+#define ARG_NUM 5
+#define ARG_USE_NUM 4
 
 void LoadServerConf(map<int,string>& conf)
 {
@@ -27,7 +27,7 @@ void LoadServerConf(map<int,string>& conf)
 	if (!jhelp.ParseFile(LoopFile::GetRootPath().append("commonconf/Server.json")))
 		exit(-1);
 	for (auto& v : jhelp.GetDocument().GetArray())
-		conf[v["type"].GetInt()] = v["name"].GetString();
+		conf[v["type"].GetInt()] = v["dll"].GetString();
 }
 
 void StartInitCrash(const std::string& proname,const int32_t& nid)
@@ -69,7 +69,7 @@ int main(int argc, char* args[])
 			nargs[i] = args[idx + i];
 
 		cmdline::parser param;
-		param.add<int>("port", 'p', "server port", true, 0, cmdline::range(1, 65535));
+		//param.add<int>("port", 'p', "server port", true, 0, cmdline::range(1, 65535));
 		param.add<int>("type", 't', "server type", true, 0);
 		param.add<int>("id", 'n', "server port", true, 0);
 		param.parse_check(ARG_NUM, nargs);
@@ -77,10 +77,10 @@ int main(int argc, char* args[])
 		auto nid = param.get<int>("id");
 		string dllname = serverConf[type];
 		assert(dllname.size() > 0);
-		if (i==0)
+		/*if (i==0)
 		{
 			StartInitCrash(dllname,nid);
-		}
+		}*/
 
 		dllhelp dll(dllname);
 		if (dll.Load())

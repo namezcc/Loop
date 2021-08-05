@@ -1,4 +1,4 @@
-#ifndef PLAYER_MODULE_H
+﻿#ifndef PLAYER_MODULE_H
 #define PLAYER_MODULE_H
 
 #include "BaseModule.h"
@@ -10,14 +10,15 @@
 class MsgModule;
 class TransMsgModule;
 class NetObjectModule;
-class SendProxyDbModule;
 class EventModule;
+class RoomModuloe;
 
 enum READY_STATE
 {
 	RS_NONE,
 	RS_SELECT,
 	RS_CREATE,
+	RS_IN_GAME,
 };
 
 enum PlayerState
@@ -33,6 +34,7 @@ struct ReadyInfo
 	int64_t roleId;
 	int64_t outTime;
 	int8_t state;
+	int32_t sock;
 };
 
 struct MatchInfo
@@ -74,9 +76,12 @@ public:
 protected:
 	virtual void Init() override;
 
-	void OnReadyTakePlayer(SHARE<BaseMsg>& comsg);
+	void OnReadyTakePlayer(NetMsg* msg);
 	void OnPlayerEnter(NetMsg* msg);
-	void OnCreatePlayer(SHARE<BaseMsg>& comsg, c_pull& pull, SHARE<BaseCoro>& coro);
+	void OnCreatePlayer(NetMsg* msg);
+
+	void onGetRoleList(NetMsg* msg);
+
 	void OnClientClose(const int32_t& sock);
 
 	void SendPlayerInfo(SHARE<RoomPlayer>& player);
@@ -97,10 +102,10 @@ private:
 	MsgModule* m_msgModule;
 	TransMsgModule* m_transModule;
 	NetObjectModule* m_netobjModule;
-	SendProxyDbModule* m_sendProxyDb;
 	EventModule* m_eventModule;
+	RoomModuloe* m_room_mod;
 
-	std::unordered_map<int64_t, SHARE<ReadyInfo>> m_readyTable;
+	std::unordered_map<int64_t, ReadyInfo> m_readyTable;
 	std::unordered_map<int64_t, SHARE<RoomPlayer>> m_playerTable;
 	std::unordered_map<int32_t, SHARE<RoomPlayer>> m_sockPlayer;
 };

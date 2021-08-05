@@ -18,6 +18,7 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 	ll->CreateModule<MysqlManagerModule>();
 	ll->CreateModule<MysqlModule>();
 	ll->CreateModule<GameTableModule>();
+	//ll->CreateModule<Coro1Module>();
 
 	ser.BuildPipe(nl, ll);
 

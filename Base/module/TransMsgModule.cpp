@@ -59,8 +59,6 @@ void TransMsgModule::AddServerConn(const NetServer & ser)
 		if (res)
 		{
 			auto connSer = GET_SHARE(NetServer);
-			*connSer = _ser;
-			OnServerConnect(connSer);
 			//registe server
 			auto myser = GetLayer()->GetServer();
 			auto config = GetLayer()->GetLoopServer()->GetConfig();
@@ -70,6 +68,10 @@ void TransMsgModule::AddServerConn(const NetServer & ser)
 			xMsg.set_ip(config.addr.ip);
 			xMsg.set_port(config.addr.port);
 			m_netObjMod->SendNetMsg(_ser.socket, N_REGISTE_SERVER, xMsg);
+
+
+			*connSer = _ser;
+			OnServerConnect(connSer);
 		}
 		else
 		{
@@ -181,28 +183,55 @@ void TransMsgModule::SendToAllServer(const int32_t& stype, const int32_t & mid, 
 	auto it = m_serverList.find(stype);
 	if (it != m_serverList.end())
 	{
-		for (auto& s:it->second)
-			m_netObjMod->SendNetMsg(s.second->socket, mid, msg);
+		if (it->second.empty())
+			return;
+		std::vector<int32_t> socks;
+		for (auto& s : it->second)
+			socks.push_back(s.second->socket);
+		m_netObjMod->BroadNetMsg(socks, mid, msg);
 	}
 }
 
-void TransMsgModule::SendToServer(vector<SHARE<ServerNode>>& path, const int32_t & mid, google::protobuf::Message & msg)
+void TransMsgModule::SendToAllServer(const int32_t & stype, const int32_t & mid, BuffBlock * buff)
+{
+	auto it = m_serverList.find(stype);
+	if (it != m_serverList.end())
+	{
+		if (it->second.empty())
+		{
+			RECYCLE_LAYER_MSG(buff);
+			return;
+		}
+		std::vector<int32_t> socks;
+		for (auto& s : it->second)
+			socks.push_back(s.second->socket);
+		m_netObjMod->BroadNetMsg(socks, mid, buff);
+	}
+}
+
+void TransMsgModule::SendToServer(ServerPath& path, const int32_t & mid, google::protobuf::Message & msg)
 {
 	TransMsgToServer(path, mid, msg);
 }
 
-void TransMsgModule::SendToServer(vector<SHARE<ServerNode>>& path, const int32_t & mid, BuffBlock* buff)
+void TransMsgModule::SendToServer(ServerPath& path, const int32_t & mid, BuffBlock* buff)
 {
 	TransMsgToServer(path, mid, buff);
 }
 
-void TransMsgModule::SendBackServer(vector<SHARE<ServerNode>>& path, const int32_t & mid, google::protobuf::Message& msg)
+void TransMsgModule::SendBackServer(ServerPath& path, const int32_t & mid, google::protobuf::Message& msg)
 {
 	std::reverse(path.begin(), path.end());
 	TransMsgToServer(path, mid, msg);
 }
 
-void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int32_t& mid, google::protobuf::Message& pbmsg)
+void TransMsgModule::SendBackServer(ServerPath & path, const int32_t & mid, BuffBlock * buff)
+{
+	std::reverse(path.begin(), path.end());
+	TransMsgToServer(path, mid, buff);
+}
+
+void TransMsgModule::TransMsgToServer(ServerPath& sers, const int32_t& mid, google::protobuf::Message& pbmsg)
 {
 	auto buff = GET_LAYER_MSG(BuffBlock);
 	buff->makeRoom(pbmsg.ByteSize());
@@ -210,12 +239,12 @@ void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int
 	TransMsgToServer(sers, mid, buff);
 }
 
-void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int32_t & mid,BuffBlock* buffblock)
+void TransMsgModule::TransMsgToServer(ServerPath& sers, const int32_t & mid,BuffBlock* buffblock)
 {
 	bool res = false;
 	ExitCall _call([this,&buffblock,&res]() {
 		if(!res)
-			GetLayer()->RecycleLayerMsg(buffblock);
+			RECYCLE_LAYER_MSG(buffblock);
 	});
 
 	if (sers.size() < 2)	//must >= 2
@@ -224,7 +253,7 @@ void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int
 	int32_t toindex = 1;
 	for (size_t i = 0; i < sers.size()-1; i++)
 	{
-		if (sers[i]->serid == myser->serid && sers[i]->type == myser->type)
+		if (sers[i].serid == myser->serid && sers[i].type == myser->type)
 		{
 			toindex = (int32_t)i+1;
 			break;
@@ -233,23 +262,23 @@ void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int
 
 	auto toser = sers[toindex];
 
-	if (toser->serid != -1)
+	if (toser.serid != -1)
 	{
-		auto toserver = GetServer(toser->type, toser->serid);
+		auto toserver = GetServer(toser.type, toser.serid);
 		if (!toserver)
 			return;
 		
-		sers[toindex]->serid = toserver->serid;
+		sers[toindex].serid = toserver->serid;
 		auto pathbuff = PathToBuff(sers, mid, toindex);
 		pathbuff->m_next = buffblock;
 		m_netObjMod->SendNetMsg(toserver->socket, N_TRANS_SERVER_MSG, pathbuff);
 	}
 	else {
-		auto it = m_serverList.find(toser->type);
+		auto it = m_serverList.find(toser.type);
 		if (it == m_serverList.end())
 			return;
 
-		sers[toindex]->serid = 0;
+		sers[toindex].serid = 0;
 		auto pathbuff = PathToBuff(sers, mid, toindex);
 		pathbuff->m_next = buffblock;
 
@@ -261,7 +290,7 @@ void TransMsgModule::TransMsgToServer(vector<SHARE<ServerNode>>& sers, const int
 	res = true;
 }
 
-int32_t TransMsgModule::GetPathSize(vector<SHARE<ServerNode>>& sers)
+int32_t TransMsgModule::GetPathSize(ServerPath& sers)
 {
 	//headsize + nodesize + mid
 	return static_cast<int32_t>(TransHead::SIZE + sers.size()*ServerNode::SIZE + sizeof(int32_t));
@@ -295,9 +324,9 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 			buffblock->setOffect(TransHead::SIZE);
 			for (size_t i = 0; i < hsize; i++)
 			{
-				auto snode = GET_SHARE(ServerNode);
-				snode->type = buffblock->readInt8();
-				snode->serid = buffblock->readInt16();
+				ServerNode snode;
+				snode.type = buffblock->readInt8();
+				snode.serid = buffblock->readInt16();
 				xMsg->path.push_back(snode);
 			}
 
@@ -328,7 +357,7 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 				broad.push_back(s.second->socket);
 
 			auto sendbuff = GET_LAYER_MSG(BuffBlock);
-			sendbuff->write(buffblock->m_buff, buffblock->getSize());
+			sendbuff->writeBuff(buffblock->m_buff, buffblock->getSize());
 			sendbuff->setOffect(TransHead::SIZE + hindex * ServerNode::SIZE);
 			sendbuff->readInt8();
 			sendbuff->writeInt16(0);
@@ -339,7 +368,7 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 		if (server)
 		{
 			auto sendbuff = GET_LAYER_MSG(BuffBlock);
-			sendbuff->write(buffblock->m_buff, buffblock->getSize());
+			sendbuff->writeBuff(buffblock->m_buff, buffblock->getSize());
 			sendbuff->setOffect(TransHead::SIZE + hindex * ServerNode::SIZE);
 			sendbuff->readInt8();
 			sendbuff->writeInt16(server->serid);
@@ -371,7 +400,7 @@ NetServer* TransMsgModule::GetServer(const int32_t& type, const int32_t& serid)
 	return its->second.get();
 }
 
-BuffBlock* TransMsgModule::PathToBuff(vector<SHARE<ServerNode>>& path,const int32_t& mid, const int32_t& toindex)
+BuffBlock* TransMsgModule::PathToBuff(ServerPath& path,const int32_t& mid, const int32_t& toindex)
 {
 	auto buff = GetLayer()->GetLayerMsg<BuffBlock>();
 	buff->makeRoom(GetPathSize(path));
@@ -381,9 +410,9 @@ BuffBlock* TransMsgModule::PathToBuff(vector<SHARE<ServerNode>>& path,const int3
 
 	for (size_t i = 0; i < path.size(); i++)
 	{
-		auto s = path[i].get();
-		buff->writeInt8(s->type);
-		buff->writeInt16(s->serid);
+		auto s = path[i];
+		buff->writeInt8(s.type);
+		buff->writeInt16(s.serid);
 	}
 	buff->writeInt32(mid);
 	return buff;
@@ -396,18 +425,19 @@ BuffBlock* TransMsgModule::EncodeCoroMsg(BuffBlock* buff,const int32_t& mid,cons
 	corobuff->writeInt32(mid);
 	corobuff->writeInt32(coid);
 	corobuff->writeInt32(mycoid);
+	corobuff->m_next = buff;
 	return corobuff;
 }
 
-SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto coid = m_msgModule->GenCoroIndex();
 	auto corobuff = EncodeCoroMsg(buff,mid,coid);
 	SendToServer(ser,N_REQUEST_CORO_MSG,corobuff);
-	return m_msgModule->PullWait(coid,coro,pull);
+	return dynamic_cast<NetMsg*>(m_msgModule->PullWait(coid,coro,pull)->m_data);
 }
 
-SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto buff = GET_LAYER_MSG(BuffBlock);
 	buff->makeRoom(msg.ByteSize());
@@ -415,15 +445,15 @@ SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(ServerNode& ser, const int32
 	return RequestServerAsynMsg(ser,mid,buff,pull,coro);
 }
 
-SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(VecPath& path, const int32_t& mid, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::RequestServerAsynMsg(ServerPath& path, const int32_t& mid, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto coid = m_msgModule->GenCoroIndex();
 	auto corobuff = EncodeCoroMsg(buff,mid,coid);
 	SendToServer(path,N_REQUEST_CORO_MSG,corobuff);
-	return m_msgModule->PullWait(coid,coro,pull);
+	return dynamic_cast<NetMsg*>(m_msgModule->PullWait(coid,coro,pull)->m_data);
 }
 
-SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(VecPath& path, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::RequestServerAsynMsg(ServerPath& path, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto buff = GET_LAYER_MSG(BuffBlock);
 	buff->makeRoom(msg.ByteSize());
@@ -431,13 +461,13 @@ SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(VecPath& path, const int32_t
 	return RequestServerAsynMsg(path,mid,buff,pull,coro);
 }
 
-SHARE<BaseMsg> TransMsgModule::RequestBackServerAsynMsg(VecPath& path, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::RequestBackServerAsynMsg(ServerPath& path, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	std::reverse(path.begin(), path.end());
 	return RequestServerAsynMsg(path,mid,msg,pull,coro);
 }
 
-SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(ServerNode & ser, const int32_t & mid, gpb::Message & msg, c_pull & pull, SHARE<BaseCoro>& coro, const ReqFail & failCall)
+NetMsg* TransMsgModule::RequestServerAsynMsg(ServerNode & ser, const int32_t & mid, gpb::Message & msg, c_pull & pull, SHARE<BaseCoro>& coro, const ReqFail & failCall)
 {
 	bool res = false;
 	ExitCall call([&res, failCall]() {
@@ -449,7 +479,7 @@ SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(ServerNode & ser, const int3
 	return resmsg;
 }
 
-SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(VecPath & path, const int32_t & mid, gpb::Message & msg, c_pull & pull, SHARE<BaseCoro>& coro, const ReqFail & failCall)
+NetMsg* TransMsgModule::RequestServerAsynMsg(ServerPath & path, const int32_t & mid, gpb::Message & msg, c_pull & pull, SHARE<BaseCoro>& coro, const ReqFail & failCall)
 {
 	bool res = false;
 	ExitCall call([&res,failCall]() {
@@ -461,17 +491,17 @@ SHARE<BaseMsg> TransMsgModule::RequestServerAsynMsg(VecPath & path, const int32_
 	return resmsg;
 }
 
-SHARE<BaseMsg> TransMsgModule::ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto coroMsg = (CoroMsg*)comsg.get();
 	auto coid = coroMsg->m_mycoid >0 ? coroMsg->m_mycoid : coroMsg->m_coroId;
 	auto mycoid = m_msgModule->GenCoroIndex();
 	auto corobuff = EncodeCoroMsg(buff,0,coid,mycoid);
 	SendToServer(ser,N_RESPONSE_CORO_MSG,corobuff);
-	return m_msgModule->PullWait(mycoid,coro,pull);
+	return dynamic_cast<NetMsg*>(m_msgModule->PullWait(mycoid,coro,pull)->m_data);
 }
 
-SHARE<BaseMsg> TransMsgModule::ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto buff = GET_LAYER_MSG(BuffBlock);
 	buff->makeRoom(msg.ByteSize());
@@ -479,17 +509,17 @@ SHARE<BaseMsg> TransMsgModule::ResponseServerAsynMsg(ServerNode& ser, SHARE<Base
 	return ResponseServerAsynMsg(ser,comsg,buff,pull,coro);
 }
 
-SHARE<BaseMsg> TransMsgModule::ResponseServerAsynMsg(VecPath& path, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::ResponseServerAsynMsg(ServerPath& path, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto coroMsg = (CoroMsg*)comsg.get();
 	auto coid = coroMsg->m_mycoid >0 ? coroMsg->m_mycoid : coroMsg->m_coroId;
 	auto mycoid = m_msgModule->GenCoroIndex();
 	auto corobuff = EncodeCoroMsg(buff,0,coid,mycoid);
 	SendToServer(path,N_RESPONSE_CORO_MSG,corobuff);
-	return m_msgModule->PullWait(mycoid,coro,pull);
+	return dynamic_cast<NetMsg*>(m_msgModule->PullWait(mycoid,coro,pull)->m_data);
 }
 
-SHARE<BaseMsg> TransMsgModule::ResponseServerAsynMsg(VecPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::ResponseServerAsynMsg(ServerPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto buff = GET_LAYER_MSG(BuffBlock);
 	buff->makeRoom(msg.ByteSize());
@@ -497,7 +527,7 @@ SHARE<BaseMsg> TransMsgModule::ResponseServerAsynMsg(VecPath& path, SHARE<BaseMs
 	return ResponseServerAsynMsg(path,comsg,buff,pull,coro);
 }
 
-SHARE<BaseMsg> TransMsgModule::ResponseBackServerAsynMsg(VecPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::ResponseBackServerAsynMsg(ServerPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	std::reverse(path.begin(), path.end());
 	return ResponseServerAsynMsg(path,comsg,msg,pull,coro);
@@ -519,7 +549,7 @@ void TransMsgModule::ResponseServerMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, g
 	ResponseServerMsg(ser,comsg,buff);
 }
 
-void TransMsgModule::ResponseServerMsg(VecPath& path, SHARE<BaseMsg>& comsg, BuffBlock* buff)
+void TransMsgModule::ResponseServerMsg(ServerPath& path, SHARE<BaseMsg>& comsg, BuffBlock* buff)
 {
 	auto coroMsg = (CoroMsg*)comsg.get();
 	auto coid = coroMsg->m_mycoid >0 ? coroMsg->m_mycoid : coroMsg->m_coroId;
@@ -527,7 +557,7 @@ void TransMsgModule::ResponseServerMsg(VecPath& path, SHARE<BaseMsg>& comsg, Buf
 	SendToServer(path,N_RESPONSE_CORO_MSG,corobuff);
 }
 
-void TransMsgModule::ResponseServerMsg(VecPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg)
+void TransMsgModule::ResponseServerMsg(ServerPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg)
 {
 	auto buff = GET_LAYER_MSG(BuffBlock);
 	buff->makeRoom(msg.ByteSize());
@@ -535,20 +565,20 @@ void TransMsgModule::ResponseServerMsg(VecPath& path, SHARE<BaseMsg>& comsg, gpb
 	ResponseServerMsg(path,comsg,buff);
 }
 
-void TransMsgModule::ResponseBackServerMsg(VecPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg)
+void TransMsgModule::ResponseBackServerMsg(ServerPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg)
 {
 	std::reverse(path.begin(), path.end());
 	ResponseServerMsg(path,comsg,msg);
 }
 
-VecPath TransMsgModule::GetFromSelfPath(const int32_t& allSize, const int32_t& stype, const int32_t& sid)
+ServerPath TransMsgModule::GetFromSelfPath(const int32_t& allSize, const int32_t& stype, const int32_t& sid)
 {
-	VecPath path;
+	ServerPath path;
 	for (size_t i = 0; i < allSize; i++)
-		path.push_back(GET_SHARE(ServerNode));
+		path.push_back(ServerNode{});
 	
-	*path.front() = *GetLayer()->GetServer();
-	path.back()->type = stype;
-	path.back()->serid = sid;
+	path[0] = *GetLayer()->GetServer();
+	path.back().type = stype;
+	path.back().serid = sid;
 	return path;
 }

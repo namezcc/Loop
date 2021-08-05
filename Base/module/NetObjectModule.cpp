@@ -41,7 +41,7 @@ void NetObjectModule::OnSocketConnet(NetMsg * sock)
 {
 	auto netobj = GET_SHARE(NetObject);
 	netobj->socket = sock->socket;
-	netobj->ctime = GetSecend()+m_outTime;
+	netobj->ctime = Loop::GetSecend()+m_outTime;
 	if (m_acceptNoCheck)
 	{
 		netobj->type = m_noCheckType;
@@ -183,7 +183,7 @@ void NetObjectModule::SendHttpMsg(const int& socket, NetBuffer& buf)
 	auto buffblk = GetLayer()->GetLayerMsg<BuffBlock>();
 	nMsg->socket = socket;
 	buffblk->makeRoom(buf.use);
-	buffblk->write(buf.buf,buf.use);
+	buffblk->writeBuff(buf.buf,buf.use);
 	buf.buf = NULL;
 	nMsg->push_front(buffblk);
 	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
@@ -237,7 +237,7 @@ void NetObjectModule::CheckOutTime()
 {
 	if (m_objects_tmp.size() == 0)
 		return;
-	auto nt = GetSecend();
+	auto nt = Loop::GetSecend();
 	if (nt < m_tmpObjTime)
 		return;
 	m_tmpObjTime = nt + 5;

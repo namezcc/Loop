@@ -51,7 +51,7 @@ struct Write_t:public LoopObject
 		{
 			--block->m_ref;
 			if (block->m_ref <= 0)
-				LOOP_RECYCLE((LocalBuffBlock*)block);
+				LOOP_RECYCLE(block);
 			block = NULL;
 		}
 	}

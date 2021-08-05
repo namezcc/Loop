@@ -29,7 +29,7 @@ public:
 		timer->interval = interval;
 		timer->task = nTask;
 		timer->index = GetTimerIndex();
-		timer->begtime = GetMilliSecend() + delay;
+		timer->begtime = Loop::GetMilliSecend() + delay;
 		m_timers[timer->index] = timer;
 		return timer->index;
 	}

@@ -5,6 +5,7 @@
 
 class MsgModule;
 class MysqlModule;
+class NetObjectModule;
 struct ServerInfo;
 
 class ServerInfoModule:public BaseModule
@@ -21,9 +22,12 @@ private:
 	void InitServers();
 
 	void OnGetMachineList(NetMsg* sock);
+	void onWebTest(NetMsg* msg);
+	void onWebRequest(NetMsg* msg);
 private:
 	MsgModule* m_msgModule;
 	MysqlModule* m_mysqlModule;
+	NetObjectModule* m_net_mod;
 
 	vector<SHARE<ServerInfo>> m_console;
 };
