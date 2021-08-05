@@ -1,0 +1,21 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"options": {
+		"cwd": "${workspaceFolder}/tcp_test/bin"
+	},
+	"problemMatcher": [],
+	"tasks": [
+		{
+			"label": "tcp_test_build",
+			"type": "shell",
+			"command": "go build ../main.go",
+		},
+		{
+			"label": "tcp_test_run",
+			"type": "shell",
+			"command": "./main.exe"
+		}
+	]
+}
