@@ -42,7 +42,15 @@ private:
 //#define GET_LOOP(T) FactorManager::getLoopObj<T>()
 //#define LOOP_RECYCLE(t) FactorManager::recycle(t)
 
-#define GET_LAYER_MSG(T) GetLayer()->GetLayerMsg<T>()
+//#define GET_LAYER_MSG(T) GetLayer()->GetLayerMsg<T>()
+#define GET_LAYER_MSG(T) MsgPool::popMsg<T>()
 #define RECYCLE_LAYER_MSG(t) GetLayer()->RecycleLayerMsg(t)
+
+#define COM_MOD_CLASS class MsgModule;class TransMsgModule;class NetObjectModule;
+#define COM_MOD_OBJ MsgModule* m_msg_mod;TransMsgModule* m_trans_mod;NetObjectModule* m_net_mod;
+
+#define COM_MOD_INIT m_msg_mod = GET_MODULE(MsgModule); \
+m_trans_mod = GET_MODULE(TransMsgModule); \
+m_net_mod = GET_MODULE(NetObjectModule);
 
 #endif

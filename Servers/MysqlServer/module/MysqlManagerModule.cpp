@@ -3,7 +3,6 @@
 #include "MysqlModule.h"
 #include "MsgModule.h"
 #include "TransMsgModule.h"
-#include "GameTableModule.h"
 #include "help_function.h"
 
 #include "ServerMsgDefine.h"
@@ -32,7 +31,6 @@ void MysqlManagerModule::Init()
 	m_mysqlmodule = GET_MODULE(MysqlModule);
 	m_msgmodule = GET_MODULE(MsgModule);
 	m_transModule = GET_MODULE(TransMsgModule);
-	m_gameTableModule = GET_MODULE(GameTableModule);
 
 	
 	m_msgmodule->AddMsgCall(N_TDB_SQL_OPERATION, BIND_SERVER_MSG(onSqlOperation));
@@ -46,11 +44,16 @@ void MysqlManagerModule::Init()
 
 	m_index = 0;
 	auto it = GetLayer()->GetPipes().find(LY_MYSQL);
-	m_sqlLayerNum = (int32_t)it->second.size();
+	if (it != GetLayer()->GetPipes().end())
+		m_sqlLayerNum = (int32_t)it->second.size();
+	else
+		m_sqlLayerNum = 0;
 }
 
 void MysqlManagerModule::AfterInit()
 {
+	if(GetLayer()->GetServer()->type == LOOP_MYSQL)
+		m_msgmodule->SendMsg(LY_MYSQL, 0, L_DB_SAVE_ALL_PLAYER, NULL);
 }
 
 void MysqlManagerModule::BeforExecute()
@@ -105,7 +108,7 @@ void MysqlManagerModule::onSqlOperation(NetServerMsg * msg)
 
 	opt->optId = pack->readInt32();
 	opt->ackId = pack->readInt32();
-	opt->uid = pack->readInt64();
+	opt->pid = pack->readInt64();
 	opt->buff = GET_LAYER_MSG(BuffBlock);
 	int32_t bufsize;
 	auto msgbuff = pack->readBuff(bufsize);
@@ -113,7 +116,7 @@ void MysqlManagerModule::onSqlOperation(NetServerMsg * msg)
 
 	opt->path = std::move(msg->path);
 
-	auto sendid = getSendLayerId(opt->uid);
+	auto sendid = getSendLayerId(opt->pid);
 
 	opt->buff->setOffect(0);
 	m_msgmodule->SendMsg(LY_MYSQL, sendid, L_DB_SQL_OPERATION, opt);

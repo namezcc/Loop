@@ -32,7 +32,7 @@ void TcpAsioSessionModule::Init()
 void TcpAsioSessionModule::AfterInit()
 {
 	DoAccept();
-	LP_WARN << "start listen port:" << m_accptor->local_endpoint().port();
+	LP_INFO << "start listen port:" << m_accptor->local_endpoint().port();
 	m_io_pool.run();
 }
 

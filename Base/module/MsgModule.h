@@ -13,30 +13,24 @@
 typedef std::function<void(SHARE<BaseMsg>&)> MsgCall;
 typedef std::function<void(SHARE<BaseMsg>&, c_pull&, SHARE<BaseCoro>&)> AsynMsgCall;
 
+struct LOOP_EXPORT LogHook
+{
+	LogHook(const int32_t& lv);
+	~LogHook();
+
+	template<typename T>
+	LogHook& operator <<(T&&t)
+	{
+		log->log << std::forward<T>(t);
+		return *this;
+	}
+private:
+	LogInfo* log;
+};
+
 class LOOP_EXPORT MsgModule:public BaseModule
 {
 public:
-
-	struct LOOP_EXPORT LogHook
-	{
-		LogHook(BaseModule* nm,const int32_t& lv):m(nm)
-		{
-			log = nm->GetLayer()->GetLayerMsg<LogInfo>();
-			log->level = lv;
-		}
-
-		~LogHook();
-
-		template<typename T>
-		LogHook& operator <<(T&&t)
-		{
-			log->log << std::forward<T>(t);
-			return *this;
-		}
-	private:
-		BaseModule * m;
-		LogInfo* log;
-	};
 
 	MsgModule(BaseLayer* l);
 	~MsgModule();
@@ -137,6 +131,9 @@ public:
 	}
 
 	void MsgCallBack(void* msg);
+	void setCommonCall(const MsgCall& call) {
+		m_common_call = call;
+	}
 	//void MsgCallBack2(void* msg);
 protected:
 
@@ -150,7 +147,7 @@ protected:
 			if (mdata)
 				call(mdata);
 			else
-				LogHook(this, spdlog::level::err) << __FILE__ << __LINE__ << "Recv Msg cast Null";
+				LogHook(spdlog::level::err) << __FILE__ << __LINE__ << "Recv Msg cast Null";
 		});
 	}
 
@@ -200,17 +197,20 @@ private:
 	MsgCall m_arrayCall[N_END];
 	MsgCall m_protoCall[MAX_CM_MSG_ID];
 
+	MsgCall m_common_call;
+
 	int64_t m_coroCheckTime;
 	int32_t m_coroIndex;
 	coroMap m_coroList;
 	Loop::mlist<BaseCoro> m_coroLink;
 };
 
-#define LP_TRACE MsgModule::LogHook(this,spdlog::level::trace)
-#define LP_DEBUG MsgModule::LogHook(this,spdlog::level::debug)<<__FILE__<<__LINE__<<"\t"
-#define LP_INFO MsgModule::LogHook(this,spdlog::level::info)
-#define LP_WARN MsgModule::LogHook(this,spdlog::level::warn)
-#define LP_ERROR MsgModule::LogHook(this,spdlog::level::err)<<__FILE__<<__LINE__<<"\t"
+#define LP_TRACE LogHook(spdlog::level::trace)
+#define LP_DEBUG LogHook(spdlog::level::debug)<<__FILE__<<__LINE__<<"\t"
+#define LP_INFO LogHook(spdlog::level::info)
+#define LP_WARN LogHook(spdlog::level::warn)
+#define LP_ERROR LogHook(spdlog::level::err)<<__FILE__<<__LINE__<<"\t"
+#define LP_ERROR_SP LogHook(spdlog::level::err)
 
 #define PARSEPB_NAME_IF_FALSE(name,T,msg)\
 	T name; \

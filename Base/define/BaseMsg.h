@@ -76,8 +76,8 @@ struct LOOP_EXPORT CoroMsg:public BaseMsg
 struct LOOP_EXPORT BuffBlock:public BaseData
 {
 	BuffBlock();
-	virtual void makeRoom(const int32_t& size);
-	void extandSize(const int32_t& size)
+	virtual void makeRoom(const size_t& size);
+	void extandSize(int32_t size = 0)
 	{
 		if (m_allsize + size > m_allsize * 2)
 			makeRoom(m_allsize + size);
@@ -156,6 +156,7 @@ struct LOOP_EXPORT BuffBlock:public BaseData
 
 		if (msize + m_offect > m_allsize)
 		{
+			extandSize();
 			//error
 			return;
 		}
@@ -209,6 +210,7 @@ private:
 
 		if (ts + m_offect > m_allsize)
 		{
+			extandSize();
 			//error 
 			return;
 		}

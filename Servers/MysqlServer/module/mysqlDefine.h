@@ -6,7 +6,7 @@
 
 struct SqlOperation:public BaseData
 {
-	SqlOperation() :optId(0),ackId(0), uid(0), buff(NULL)
+	SqlOperation() :optId(0),ackId(0), pid(0), buff(NULL)
 	{
 
 	}
@@ -20,7 +20,7 @@ struct SqlOperation:public BaseData
 	{
 		ackId = 0;
 		optId = 0;
-		uid = 0;
+		pid = 0;
 		path.clear();
 		if (buff)
 			buff->recycleMsg();
@@ -30,7 +30,7 @@ struct SqlOperation:public BaseData
 
 	int32_t optId;
 	int32_t ackId;
-	int64_t uid;
+	int64_t pid;
 	ServerPath path;
 	BuffBlock* buff;
 };

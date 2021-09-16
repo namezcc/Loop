@@ -3,6 +3,8 @@
 #include "TcpNetLayer.h"
 #include "LogicLayer.h"
 #include "RoomTransModule.h"
+#include "RedisModule.h"
+#include "PlayerOnlineModule.h"
 
 EXPORT void DLL_START_NAME(int argc,char* args[])
 {
@@ -12,6 +14,8 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 	auto nl = ser.CreateLayer<TcpNetLayer>(ser.m_port);
 	auto ll = ser.CreateLayer<LogicLayer>(LY_LOGIC);
 	ll->CreateModule<RoomTransModule>();
+	ll->CreateModule<PlayerOnlineModule>();
+	ll->CreateModule<RedisModule>();
 
 	ser.BuildPipe(nl, ll);
 	ser.Run();

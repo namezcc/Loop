@@ -1,6 +1,6 @@
-local Schedule = class()
+Schedule = {}
 
-function Schedule:ctor()
+function Schedule:init()
     self._pl_ms = {}
     self._pl_s = {}
     self._pl_m = {}
@@ -10,10 +10,6 @@ function Schedule:ctor()
     self._pl_M = {}
 
     self.lastMsdt = 0
-end
-
-function Schedule:init()
-    
 end
 
 function Schedule:Run(dt)
@@ -73,5 +69,4 @@ function Schedule:AddIntervalNode(node)
     end
 end
 
-
-return Schedule
+Schedule:init()

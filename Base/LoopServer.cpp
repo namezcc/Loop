@@ -100,9 +100,9 @@ void LoopServer::InitConfig()
 
 	if (config.HasMember("redis"))
 	{
-		m_config.sql.ip = config["sql"]["ip"].GetString();
-		m_config.sql.port = config["sql"]["port"].GetInt();
-		m_config.sql.pass = config["sql"]["pass"].GetString();
+		m_config.redis.ip = config["redis"]["ip"].GetString();
+		m_config.redis.port = config["redis"]["port"].GetInt();
+		m_config.redis.pass = config["redis"]["pass"].GetString();
 	}
 }
 
@@ -161,15 +161,7 @@ void LoopServer::InitConnectRule()
 
 void LoopServer::InitLogLayer()
 {
-	auto l = CreateLayer<LogLayer>();
-
-	for (size_t i = 0; i < m_layers.size()-1; i++)
-		BuildPipe(l, m_layers[i].get());
-}
-
-void LoopServer::InitMsgPool()
-{
-	m_recycle = new RecyclePool[m_layers.size()];
+	LOG_LAYER->start(&m_server);
 }
 
 void LoopServer::BuildPipe(BaseLayer * l1, BaseLayer * l2)
@@ -184,7 +176,6 @@ void LoopServer::Run()
 {
 	//����loglayer
 	InitLogLayer();
-	InitMsgPool();
 	m_pool = SHARE<ThreadPool>(new ThreadPool(m_layers.size()));
 	for (auto& l : m_layers)
 	{
@@ -273,8 +264,8 @@ std::vector<ServerConfigInfo> LoopServer::getConnectServer()
 	}
 	return res;
 }
-void LoopServer::recycle(int32_t index, BaseData* msg)
-{
-	msg->recycleCheck();
-	m_recycle[index].recycle(msg);
-}
+//void LoopServer::recycle(int32_t index, BaseData* msg)
+//{
+//	msg->recycleCheck();
+//	m_recycle[index].recycle(msg);
+//}

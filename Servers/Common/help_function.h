@@ -12,18 +12,18 @@ uint32_t getPlayerHashIndex(const std::string& str)
 //起始时间戳 2019/11/18 00:00:00
 #define UID_BEGIN_TIME_STAMP 1574006400
 
-//16位dbid 30位time 12位num
+//20位dbid 30位time 8位num 4位角色数
 int64_t createPlayerUid(int32_t dbid,int64_t stamp,int32_t addnum)
 {
 	stamp -= UID_BEGIN_TIME_STAMP;
 
-	int64_t res = ((int64_t)(dbid & 0xFFFF) << 42) | ((stamp & 0x3FFFFFFF) << 12) | (addnum & 0xFFF);
+	int64_t res = ((int64_t)(dbid & 0xFFFFF) << 42) | ((stamp & 0x3FFFFFFF) << 12) | ((addnum & 0xFF) << 4);
 	return res;
 }
 
 int32_t getPlayerDbIndexFromUid(int64_t uid)
 {
-	return (uid >> 42) & 0xFFFF;
+	return (uid >> 42) & 0xFFFFF;
 }
 
 

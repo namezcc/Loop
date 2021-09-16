@@ -12,4 +12,5 @@ message RoomInfo
 	string     ip = 1;
 	int32      port = 2;
     int64      pid = 3; 
+	int32		key = 4;
 }

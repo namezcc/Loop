@@ -1,17 +1,7 @@
-local SendPackModule = class()
+local SendPackModule = {}
 
-function SendPackModule:ctor( ... )
-    
-end
-
-function SendPackModule:init( mods )
-    self._Net = mods.NetModule
-    self._pack = {}
-end
-
-function SendPackModule:afterInit()
-
-
+function SendPackModule:init()
+	
 end
 
 -------------------- cmds----------
@@ -33,7 +23,7 @@ function SendPackModule:SendPack( cmdstr )
         local mid = tonumber(mids)
         local data = StrToTable(ds)
         -- printTable(data)
-        self._Net:SendGameData(mname,mid,data)
+        self:SendGameData(mname,mid,data)
     elseif ml == "read" then
         local _1,mids,mname = string.match( cmdstr, "([%w]+)%s+([0-9]+)%s+([%w_]+)")
         self:ParsePack(tonumber(mids),mname)

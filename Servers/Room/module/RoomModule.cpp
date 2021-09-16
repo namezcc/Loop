@@ -16,6 +16,17 @@ RoomModuloe::~RoomModuloe()
 {
 }
 
+void RoomModuloe::setRoomState(int32_t state)
+{
+	m_room_state = state;
+
+	auto pack = GET_LAYER_MSG(BuffBlock);
+	pack->writeInt32(GetLayer()->GetServer()->serid);
+	pack->writeInt32(m_room_state);
+	ServerNode sernode{ LOOP_ROOM_MANAGER,1 };
+	m_trans_mod->SendToServer(sernode, N_ROOM_STATE, pack);
+}
+
 void RoomModuloe::Init()
 {
 	m_msg_mod = GET_MODULE(MsgModule);
@@ -26,6 +37,7 @@ void RoomModuloe::Init()
 
 	m_event_mod->AddEventCall(E_SERVER_CONNECT, BIND_EVENT(onServerConnect, SHARE<NetServer>&));
 
+	m_room_state = SBS_NORMAL;
 
 	m_db_path.push_back(*GetLayer()->GetServer());
 	m_db_path.push_back(ServerNode{ SERVER_TYPE::LOOP_PROXY_DB,0 });
@@ -37,8 +49,8 @@ void RoomModuloe::onServerConnect(SHARE<NetServer>& ser)
 	if (ser->type == LOOP_ROOM_MANAGER)
 	{
 		auto pack = GET_LAYER_MSG(BuffBlock);
-		pack->writeInt32(ser->serid);
-		pack->writeInt32(SBS_NORMAL);
+		pack->writeInt32(GetLayer()->GetServer()->serid);
+		pack->writeInt32(m_room_state);
 		ServerNode sernode{ LOOP_ROOM_MANAGER,1 };
 		m_trans_mod->SendToServer(sernode, N_ROOM_STATE, pack);
 	}
@@ -64,22 +76,67 @@ void RoomModuloe::doSqlOperation(int64_t uid, int32_t opt, google::protobuf::Mes
 	m_trans_mod->SendToServer(getDbPath(uid), N_TDB_SQL_OPERATION, pack);
 }
 
-void RoomModuloe::updatePlayerData(int64_t uid, int32_t rid, google::protobuf::Message & pb, int32_t table, int32_t key1, int32_t key2)
+void RoomModuloe::doSqlOperation(int64_t uid, int32_t opt, BuffBlock * buf, int32_t ackId)
 {
 	auto pack = GET_LAYER_MSG(BuffBlock);
-	pack->makeRoom(sizeof(int32_t) * 2 + sizeof(int64_t) + sizeof(int32_t)*6 + pb.ByteSize());
-	pack->writeInt32(SOP_UPDATE_PLAYER_DATA);
-	pack->writeInt32(0);
+	pack->makeRoom(sizeof(int32_t) * 2 + sizeof(int64_t));
+	pack->writeInt32(opt);
+	pack->writeInt32(ackId);
 	pack->writeInt64(uid);
-	pack->writeInt32(rid);
-	pack->writeInt32(table);
-
-	pack->writeInt32(1);
-	pack->writeInt32(key1);
-	pack->writeInt32(key2);
-	pack->writeString(pb);
+	pack->m_next = buf;
 
 	m_trans_mod->SendToServer(getDbPath(uid), N_TDB_SQL_OPERATION, pack);
+}
+
+void RoomModuloe::updatePlayerData(int64_t pid, google::protobuf::Message & pb, int32_t table, std::string key1, std::string key2)
+{
+	auto pack = GET_LAYER_MSG(BuffBlock);
+	pack->makeRoom(pb.ByteSize() + 100);
+	pack->writeInt32(SOP_UPDATE_PLAYER_DATA);
+	pack->writeInt32(0);
+	pack->writeInt64(pid);
+
+	pack->writeInt32(table);
+	pack->writeInt32(1);
+	pack->writeString(key1);
+	pack->writeString(key2);
+	pack->writeString(pb);
+
+	m_trans_mod->SendToServer(getDbPath(pid), N_TDB_SQL_OPERATION, pack);
+}
+
+void RoomModuloe::updatePlayerData(int64_t pid, const std::string & pb, int32_t table, std::string key1, std::string key2)
+{
+	auto pack = GET_LAYER_MSG(BuffBlock);
+	pack->makeRoom(pb.size() + 100);
+	pack->writeInt32(SOP_UPDATE_PLAYER_DATA);
+	pack->writeInt32(0);
+	pack->writeInt64(pid);
+
+	pack->writeInt32(table);
+	pack->writeInt32(1);
+	pack->writeString(key1);
+	pack->writeString(key2);
+	pack->writeString(pb);
+
+	m_trans_mod->SendToServer(getDbPath(pid), N_TDB_SQL_OPERATION, pack);
+}
+
+void RoomModuloe::deletePlayerData(int64_t pid, const std::string & pb, int32_t table, std::string key1, std::string key2)
+{
+	auto pack = GET_LAYER_MSG(BuffBlock);
+	pack->makeRoom(pb.size() + 100);
+	pack->writeInt32(SOP_DELETE_PLAYER_DATA);
+	pack->writeInt32(0);
+	pack->writeInt64(pid);
+
+	pack->writeInt32(table);
+	pack->writeInt32(1);
+	pack->writeString(key1);
+	pack->writeString(key2);
+	pack->writeString(pb);
+
+	m_trans_mod->SendToServer(getDbPath(pid), N_TDB_SQL_OPERATION, pack);
 }
 
 void RoomModuloe::deletePlayerData(int64_t uid, int32_t rid, int32_t table, int32_t key1, int32_t key2)
@@ -117,7 +174,7 @@ void RoomModuloe::updatePlayerData(int64_t uid, int32_t rid, int32_t table, std:
 	pack->writeInt64(uid);
 	pack->writeInt32(rid);
 	pack->writeInt32(table);
-	pack->writeInt32(keys.size());
+	pack->writeInt32((int32_t)keys.size());
 
 	for (size_t i = 0; i < keys.size(); i++)
 	{
@@ -141,7 +198,7 @@ void RoomModuloe::deletePlayerData(int64_t uid, int32_t rid, int32_t table, std:
 	pack->writeInt64(uid);
 	pack->writeInt32(rid);
 	pack->writeInt32(table);
-	pack->writeInt32(keys.size());
+	pack->writeInt32((int32_t)keys.size());
 
 	for (size_t i = 0; i < keys.size(); i++)
 	{

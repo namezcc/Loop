@@ -38,7 +38,8 @@ private:
 	void OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<BaseCoro>& coro);
 
 	void RemoveClient(const std::string& account);
-
+	int32_t getRoomFromRedis(int64_t pid);
+	void saveLoginToRedis(int64_t pid, int32_t roomid);
 private:
 	MsgModule * m_msgModule;
 	NetObjectModule* m_netModule;

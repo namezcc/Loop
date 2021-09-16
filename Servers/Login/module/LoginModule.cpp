@@ -30,7 +30,7 @@ void LoginModule::Init()
 	m_msgModule= GET_MODULE(MsgModule);
 	m_netModule= GET_MODULE(NetObjectModule);
 	m_sendProxyDb = GET_MODULE(SendProxyDbModule);
-//	m_redisModule = GET_MODULE(RedisModule);
+	m_redisModule = GET_MODULE(RedisModule);
 	m_roomModule = GET_MODULE(RoomStateModule);
 	m_transModule = GET_MODULE(TransMsgModule);
 	m_eventModule = GET_MODULE(EventModule);
@@ -132,7 +132,15 @@ void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Base
 
 		LP_INFO << ackpb.ShortDebugString();
 
-		auto room = m_roomModule->GetRandRoom();
+		ServerInfoState* room = NULL;
+
+		auto roomid = getRoomFromRedis(ackpb.game_uid());
+		if (roomid > 0)
+			room = m_roomModule->getRoom(roomid);
+
+		if(room == NULL)
+			room = m_roomModule->GetRandRoom();
+
 		if (room == NULL)
 		{
 			LP_ERROR << "no room server";
@@ -143,6 +151,9 @@ void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Base
 		roominfo.set_ip(room->ip);
 		roominfo.set_port(room->port);
 		roominfo.set_pid(ackpb.game_uid());
+		roominfo.set_key((int32_t)std::hash<int64_t>()(Loop::GetSecend()));
+
+		saveLoginToRedis(ackpb.game_uid(), room->server_id);
 
 		m_transModule->SendToServer(m_roomModule->GetRoomPath(room->server_id), N_ROOM_READY_TAKE_PLAYER, roominfo);
 		m_netModule->SendNetMsg(msg->socket, LPMsg::SM_LOGIN_RES, roominfo);
@@ -159,5 +170,39 @@ void LoginModule::RemoveClient(const std::string & account)
 		return;
 	m_netModule->CloseNetObject(it->second.sock);
 	m_tmpClient.erase(it);
+}
+
+int32_t LoginModule::getRoomFromRedis(int64_t pid)
+{
+	auto key = "login:" + Loop::Cvto<std::string>(pid);
+	std::map<std::string, std::string> res;
+	if (!m_redisModule->HGetAll(key, res))
+		return 0;
+
+	if (res.empty())
+		return 0;
+
+	auto lastroom = Loop::Cvto<int32_t>(res["room"]);
+	if (lastroom == 0)
+		return 0;
+
+	auto lastlogin = Loop::Cvto<int32_t>(res["last_login"]);
+	auto lastlogout = Loop::Cvto<int32_t>(res["last_logout"]);
+
+	if (lastlogin > lastlogout)	//还在线
+		return lastroom;
+	else
+		return 0;				//下线
+}
+
+void LoginModule::saveLoginToRedis(int64_t pid, int32_t roomid)
+{
+	auto key = "login:" + Loop::Cvto<std::string>(pid);
+	std::map<std::string, std::string> res;
+
+	res["last_login"] = Loop::to_string(Loop::GetSecend());
+	res["room"] = Loop::to_string(roomid);
+
+	m_redisModule->HMSet(key, res);
 }
 

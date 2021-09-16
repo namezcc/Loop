@@ -1,37 +1,30 @@
-local NetModule = class()
+NetModule = {}
 local SockMap = {}
 local SOCK_INDEX = 0
 
 LoopState:callFunction("BindTcpCall","OnRead",function(sock, ... )
-    local netmod = SockMap[sock]
-    if netmod then
-        netmod:OnSocketRead(sock,...)
-    end
+    NetModule:OnSocketRead(sock,...)
 end)
 LoopState:callFunction("BindTcpCall","OnClose",function(sock, ... )
-    local netmod = SockMap[sock]
-    if netmod then
-        netmod:OnSocketClose(sock,...)
-    end
+	NetModule:OnSocketClose(sock,...)
 end)
 
-function NetModule:init(mods)
+function NetModule:init()
     self._conn = {}
     self._handle = {}
-    self._Event = mods.Event
-    self._PM = mods.SendPackModule
 end
 
-function NetModule:Connect(ip,port,eid)
+function NetModule:Connect(ip,port,eid,ply)
     local res = LoopState:callFunction("AddTcpConnect",SOCK_INDEX+1,ip,port)
-    if res == false then
-        return 0
-    else
+	
+    if res then
         SOCK_INDEX = SOCK_INDEX + 1
-        SockMap[SOCK_INDEX] = self
+        SockMap[SOCK_INDEX] = ply
         self._conn[SOCK_INDEX] = true
-        self._Event:DoEvent(eid,SOCK_INDEX)
+        Event:DoEvent(ply,eid,SOCK_INDEX)
     end
+
+	return res
 end
 
 function NetModule:SetGameSock( sock )
@@ -43,15 +36,17 @@ function NetModule:SendData(sock,pbStruct,mid,data)
     LoopState:callFunction("SendStreamData",sock,mid,s)
 end
 
-function NetModule:SendGameData( pbStruct,mid,data )
-    self:SendData(self._gameSock,pbStruct,mid,data)
-end
-
 function NetModule:OnSocketRead(sock,mid,data)
+	local ply = SockMap[sock]
+	if ply == nil then
+		print("sock ply nil ",sock)
+		return
+	end
+
     if GameType == GAME_TYPE.SEND_PACK then
-        print("recv msgId ------ > ",mid)
+        -- print("recv msgId ------ > ",mid)
         -- print("msgdata -----> ",data)
-        self._PM:OnPack(mid,data)
+        ply:OnPack(mid,data)
         return
 	end
 	
@@ -65,30 +60,33 @@ function NetModule:OnSocketRead(sock,mid,data)
         if handle.pbstr then
             data = TPB.decode("LPMsg."..handle.pbstr,data)
         end
-        if handle.caller then
-            handle.func(handle.caller,data,handle.extra)
-        else
-            handle.func(data,handle.extra)
-        end
+
+		handle.func(ply,data,handle.extra)
     end
 end
 
 function NetModule:OnSocketClose(sock)
-    self._Event:DoEvent(EventID.ON_SERVER_CONN_CLOSE,sock)
-    print("sock close ",sock)
+	local ply = SockMap[sock]
+	if ply == nil then
+		print("sock close ply nil ",sock)
+		return
+	end
+
+    Event:DoEvent(ply,EventID.ON_SERVER_CONN_CLOSE,sock)
+
+	if IS_SINGLE then
+		print("sock close ",sock)
+	end
 end
 
-function NetModule:AddMsgCallBack(mid,_func,_caller,_pbstr,_extra)
+function NetModule:AddMsgCallBack(mid,_func,_pbstr,_extra)
     if GameType == GAME_TYPE.SEND_PACK then
         return
     end
 
     self._handle[mid] = {
         func = _func,
-        caller = _caller,
 		pbstr = _pbstr,
 		extra = _extra,
     }
 end
-
-return NetModule

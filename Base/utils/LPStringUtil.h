@@ -25,11 +25,18 @@ namespace Loop{
 		}
 	};
 
+	template<typename T>
+	std::string to_string(const T& v)
+	{
+		return std::to_string(v);
+	}
+
 	template<>
 	struct cvto<int>
 	{
 		static int To(string s)
 		{
+			if (s.empty()) return 0;
 			return std::stoi(s);
 		}
 	};
@@ -39,7 +46,18 @@ namespace Loop{
 	{
 		static long To(string s)
 		{
+			if (s.empty()) return 0;
 			return std::stol(s);
+		}
+	};
+
+	template<>
+	struct cvto<int64_t>
+	{
+		static int64_t To(string s)
+		{
+			if (s.empty()) return 0;
+			return std::stoll(s);
 		}
 	};
 
@@ -48,6 +66,7 @@ namespace Loop{
 	{
 		static float To(string s)
 		{
+			if (s.empty()) return 0.f;
 			return std::stof(s);
 		}
 	};
@@ -57,6 +76,7 @@ namespace Loop{
 	{
 		static double To(string s)
 		{
+			if (s.empty()) return 0.0;
 			return std::stod(s);
 		}
 	};

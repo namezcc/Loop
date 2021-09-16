@@ -4,6 +4,33 @@
 #include "BaseModule.h"
 #include "LuaState.h"
 
+COM_MOD_CLASS;
+
+#define HOLD_1 std::placeholders::_1
+#define HOLD_2 std::placeholders::_1,std::placeholders::_2
+
+enum CTOL_INDEX
+{
+	CTOL_NONE = 0,
+	CTOL_NET_MSG = 1,
+	CTOL_MSG = 2,
+
+	CTOL_EXPAND = 10,
+
+	CTOL_MAX = 100,
+};
+
+enum LTOC_INDEX
+{
+	LTOC_NONE = 0,
+	LTOC_SEND_MSG = 1,
+	LTOC_SEND_SERVER = 2,
+
+	LTOC_EXPAND,
+
+	LTOC_MAX = 100,
+};
+
 class LOOP_EXPORT LuaModule:public BaseModule
 {
 public:
@@ -14,49 +41,31 @@ public:
 	virtual void Init() override;
 	virtual void Execute() override;
 
-	int32_t CreateLuaState();
-	SHARE<LuaState> GetLuaState(const int32_t& index);
-	
-	template<typename T,typename F>
-	void BindLuaCall(const std::string& fname, T&&t, F&&f)
-	{
-		auto call = ANY_BIND(t, f);
-		m_luaCallFunc[fname] = [this,call](LuaState* ls,lua_State* L) {
-			if (lua_gettop(L) - 2 != FuncArgsType<F>::SIZE)
-			{
-				std::cout << "error args num expect:" << FuncArgsType<F>::SIZE << std::endl;
-				return 0;
-			}
-			m_curState = ls;
-			return CallTool<FuncArgsType<F>::SIZE>::Call<FuncArgsType<F>::typeR, FuncArgsType<F>::tupleArgs>(L, call);
-		};
-	}
+	void runScript(const std::string& f);
+	void setUpdateFunc(const std::string& f);
+	void callGlobalFunc(const std::string& f,LuaArgs& arg);
+	void setLuaCallFunc(const std::function<int32_t(int32_t, LuaState*)>& f);
+	bool callLuaFunc(int32_t findex, LuaArgs& arg);
+	bool callLuaMsg(LuaArgs& arg);
+	void addCashSendBuff(BuffBlock* b);
+	void removeSendBuff(BuffBlock* b);
+protected:
+	LuaState* CreateLuaState();
 
-	template<typename T, typename F>
-	void BindLuaOrgCall(const std::string& fname, T&&t, F&&f)
-	{
-		auto call = ANY_BIND(t, f);
-		m_luaCallFunc[fname] = [this, call](LuaState* ls,lua_State* L) {
-			m_curState = ls;
-			return call(L);
-		};
-	}
+	void onNetMsg(NetMsg* msg);
+	int onLuaSendMsg(LuaState* l);
+	int onLuaSendServerMsg(LuaState* l);
 
-	template<typename ...Args>
-	int32_t PushArgs(Args&&... args)
-	{
-		if(m_curState)
-			return m_curState->PushArgs(std::forward<Args>(args)...);
-		return 0;
-	}
-
-	int32_t CallFunc(LuaState* ls,const std::string& fname);
-	void SetLoopFunc(const int32_t& index, const std::string& fname);
 
 private:
 	LuaState* m_curState;
 	std::vector<SHARE<LuaState>> m_stats;
-	std::unordered_map<std::string, std::function<int(LuaState*,lua_State*)>> m_luaCallFunc;
+	ServerPath m_send_path;
+	//防止lua脚本报错没发消息导致内存泄露
+	//lua发送消息的地方都要调用 remove
+	std::set<BuffBlock*> m_buff_send_cash;
+
+	COM_MOD_OBJ;
 };
 
 #endif

@@ -24,10 +24,28 @@ ServerInfoState * RoomStateModule::GetRandRoom()
 	return &m_roomArray[idx];
 }
 
+ServerInfoState * RoomStateModule::getRoom(int32_t roomid)
+{
+	if (!isRoomOpen(roomid))
+		return NULL;
+
+	for (size_t i = 0; i < m_roomArray.size(); i++)
+	{
+		if (m_roomArray[i].server_id == roomid)
+			return &m_roomArray[i];
+	}
+	return NULL;
+}
+
 ServerPath& RoomStateModule::GetRoomPath(const int32_t & roomId)
 {
 	m_roomPath[2].serid = roomId;
 	return m_roomPath;
+}
+
+bool RoomStateModule::isRoomOpen(int32_t roomId)
+{
+	return m_opemRoom.find(roomId) != m_opemRoom.end();
 }
 
 void RoomStateModule::Init()
@@ -52,14 +70,25 @@ void RoomStateModule::OnRoomState(NetMsg * msg)
 	for (auto& m : pbMsg.list())
 	{
 		if (m.state() != SBS_NORMAL)
+		{
 			RemoveRoom(m.id());
+			if (m.state() == SBS_CLOSE)
+				m_opemRoom.erase(m.id());
+			else
+				m_opemRoom[m.id()] = SBS_BUSY;
+		}
 		else
 		{
+			auto it = m_opemRoom.find(m.id());
+			if (it != m_opemRoom.end() && it->second == SBS_NORMAL)
+				continue;
+
 			ServerInfoState s = {};
 			s.ip = m.ip();
 			s.port = m.port();
 			s.server_id = m.id();
 			m_roomArray.push_back(s);
+			m_opemRoom[s.server_id] = SBS_NORMAL;
 		}
 	}
 }

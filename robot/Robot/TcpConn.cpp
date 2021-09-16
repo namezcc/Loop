@@ -144,7 +144,7 @@ bool TcpConn::DoReadHead()
 bool TcpConn::DoReadBody()
 {
 	if(m_onRead)
-		m_onRead(m_msghead.mid, m_msghead.size, m_recvBuff.buf);
+		m_onRead(m_msghead.mid, m_msghead.size - MsgHead::HEAD_SIZE, m_recvBuff.buf);
 	return true;
 }
 

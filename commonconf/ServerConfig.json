@@ -2,7 +2,26 @@
 	"comment1":"Login type 2",
 	"2":{
 		"1":{
-			"addr":{"ip":"127.0.0.1","port":22001}
+			"addr":{"ip":"127.0.0.1","port":22001},
+			"redis":{
+				"ip":"127.0.0.1",
+				"port":6379,
+				"pass":""
+			}
+		}
+	},
+	"server 17":"Mysql account type 17",
+	"17":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":37001},
+			"sql":{
+				"ip":"127.0.0.1",
+				"port":3306,
+				"database":"lp_account",
+				"user":"root",
+				"pass":"123456",
+				"group":1
+			}
 		}
 	},
 	"comment2":"MysqlServer type 3",
@@ -12,32 +31,15 @@
 			"sql":{
 				"ip":"127.0.0.1",
 				"port":3306,
-				"database":"game",
+				"database":"lp_game",
 				"user":"root",
 				"pass":"123456",
 				"group":1
-			}
-		},
-		"2":{
-			"addr":{"ip":"127.0.0.1","port":23002},
-			"sql":{
+			},
+			"redis":{
 				"ip":"127.0.0.1",
-				"port":3306,
-				"database":"game",
-				"user":"root",
-				"pass":"123456",
-				"group":1
-			}
-		},
-		"3":{
-			"addr":{"ip":"127.0.0.1","port":23003},
-			"sql":{
-				"ip":"127.0.0.1",
-				"port":3306,
-				"database":"game",
-				"user":"root",
-				"pass":"123456",
-				"group":1
+				"port":6379,
+				"pass":""
 			}
 		}
 	},
@@ -54,30 +56,46 @@
 	"7":{
 		"1":{
 			"addr":{"ip":"127.0.0.1","port":27001}
-		},
-		"2":{
-			"addr":{"ip":"127.0.0.1","port":27002}
-		},
-		"3":{
-			"addr":{"ip":"127.0.0.1","port":27003}
+		}
+	},
+	"comment4":"team proxy type 18",
+	"18":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":38001}
 		}
 	},
 	"comment8":"Room Server",
 	"8":{
 		"1":{
 			"addr":{"ip":"127.0.0.1","port":28001}
+		},
+		"2":{
+			"addr":{"ip":"127.0.0.1","port":28002}
 		}
 	},
 	"comment9":"RoomState Server",
 	"9":{
 		"1":{
-			"addr":{"ip":"127.0.0.1","port":29001}
+			"addr":{"ip":"127.0.0.1","port":29001},
+			"redis":{
+				"ip":"127.0.0.1",
+				"port":6379,
+				"pass":""
+			}
 		}
 	},
 	"comment10":"LoginLock Server",
 	"10":{
 		"1":{
-			"addr":{"ip":"127.0.0.1","port":30001}
+			"addr":{"ip":"127.0.0.1","port":30001},
+			"sql":{
+				"ip":"127.0.0.1",
+				"port":3306,
+				"database":"lp_player_num",
+				"user":"root",
+				"pass":"123456",
+				"group":1
+			}
 		}
 	},
 	"comment11":"BattleScene Server",
@@ -109,6 +127,12 @@
 	"4":{
 		"1":{
 			"addr":{"ip":"127.0.0.1","port":24001}
+		}
+	},
+	"comment15":"Team Server 15",
+	"15":{
+		"1":{
+			"addr":{"ip":"127.0.0.1","port":35001}
 		}
 	}
 

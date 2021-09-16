@@ -67,6 +67,8 @@ void LogModule::AfterInit()
 		}else
 			m_daily.push_back(m_daily[0]);
 	}
+
+	m_console->log(spdlog::level::level_enum::info, "log init ...");
 }
 
 void LogModule::Execute()

@@ -8,6 +8,7 @@ enum LAYER_MSG
 	L_MSG_BEGIN = L_END_BEFOR,
 
 	L_DB_SQL_OPERATION,
+	L_DB_SAVE_ALL_PLAYER,
 
 
 	L_MSG_END = L_END,
@@ -26,9 +27,34 @@ enum SERVER_MSG
 
 	//----------- to room --------------
 
-	N_TROM_GET_ROLE_LIST,
+	N_TROM_GET_ROLE_LIST = 502,
+	N_TROM_LOAD_ROLE_DATA = 503,
+	N_TROM_DB_PLAYER_OPERATION = 504,
+	N_TROM_ASK_ADD_FRIEND = 505,
+	N_TROM_TEAM_INFO = 506,
+	N_TROM_TEAM_DISBAND = 507,
+
+	// room lua 650 - 700
 
 	//----------- to room <<<<<<<<<<<<<<
+
+	//----------- to room manager --------------
+
+	N_TRMM_PLAYER_ONLINE = 704,
+	N_TRMM_PLAYER_LOGOUT = 705,
+	N_TRMM_CHECK_PLAYER_ONLINE = 706,
+	N_TRMM_TRANS_MSG_TO_PLAYER = 707,
+
+	//----------- to room manager <<<<<<<<<<<<
+
+	//----------- to team ---------------
+
+	N_TEAM_CREATE_TEAM = 901,
+	N_TEAM_JOIN_TEAM = 902,
+	N_TEAM_QUIT_TEAM = 903,
+	N_TEAM_DISBAND_TEAM = 904,
+
+	//----------- to team <<<<<<<<<<<<<<<
 
 	N_REQ_NOTICE_SERVER,
 	N_ACK_NOTICE_SERVER,
@@ -54,7 +80,7 @@ enum SERVER_MSG
 	N_ACK_BATTLE_SCENE_OVER,
 	N_ACK_SELF_ROLE_INFO,
 
-	N_SERVER_MSG_END = N_END,
+	N_SERVER_MSG_END = 2000,
 };
 
 enum WEB_MSG

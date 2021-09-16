@@ -1558,6 +1558,13 @@ namespace redis
       send_(socket, makecmd("SMEMBERS") << key);
       return recv_multi_bulk_reply_(socket, out);
     }
+
+	int_type smembers(const string_type & key, string_vector & out)
+	{
+		int socket = get_socket(key);
+		send_(socket, makecmd("SMEMBERS") << key);
+		return recv_multi_bulk_reply_(socket, out);
+	}
     
     string_type srandmember(const string_type & key)
     {

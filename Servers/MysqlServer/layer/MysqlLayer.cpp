@@ -3,6 +3,7 @@
 #include "MsgModule.h"
 #include "ExecuteMysqlModule.h"
 #include "Coro2Module.h"
+#include "RedisModule.h"
 
 MysqlLayer::MysqlLayer():BaseLayer(LY_MYSQL)
 {
@@ -18,6 +19,7 @@ void MysqlLayer::init()
 	CreateModule<MsgModule>();
 	CreateModule<ExecuteMysqlModule>();
 	CreateModule<Coro2Module>();
+	CreateModule<RedisModule>();
 }
 
 void MysqlLayer::loop()

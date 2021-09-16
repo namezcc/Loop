@@ -49,6 +49,7 @@
 #define DLL_START_NAME DllStart
 
 #define MAX_CONN 5000
+#define MAX_CLIENT_CONN 20000
 
 #define TOSTR(S) TOSTR1(S)
 #define TOSTR1(S) #S

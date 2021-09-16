@@ -70,6 +70,17 @@ struct LOOP_EXPORT LuaVNumber :public LuaValue
 	double m_val;
 };
 
+struct LOOP_EXPORT LuaVUdata :public LuaValue
+{
+	LuaVUdata() :m_val(NULL)
+	{}
+	// 通过 LuaValue 继承
+	virtual void pushValue(lua_State * L) override;
+	virtual bool pullValue(lua_State * L, int index) override;
+
+	void* m_val;
+};
+
 struct LOOP_EXPORT LuaVBool :public LuaValue
 {
 	LuaVBool() :m_val(false)
@@ -105,6 +116,7 @@ struct LOOP_EXPORT LuaArgs
 	void pushArg(bool val);
 	void pushArg(double val);
 	void pushArg(const std::string& val);
+	void pushArg(void* val);
 	void pushArg(const char* val, int32_t _size);
 
 	LuaVInt32* getInt32Res();

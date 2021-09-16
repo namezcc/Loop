@@ -7,7 +7,7 @@ GAME_TYPE = {
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 22001
 
-SHOW_MID = true
+SHOW_MID = false
 MID_MAP = {}
 
 ACCOUNT_SID = {
@@ -18,24 +18,16 @@ ACCOUNT_SID = {
 }
 
 GAME_ADDR = {
-	[0] = {
+	[1] = {
 		ip = "127.0.0.1",
 		port = 22001,
 		uid = "zcc1",
 	},
 	[2] = {
 		ip = "127.0.0.1",
-		port = 18004,
-		uid = "zilong22",
+		port = 22001,
+		uid = "zcc2",
 	},
-	[3] = {
-		ip = "192.168.5.189",
-		port = 8004,
-	},
-	[4] = {
-		ip = "10.40.2.82",
-		port = 8004,
-	}
 }
 
 ENTITY_TYPE = {

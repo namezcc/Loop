@@ -55,14 +55,14 @@ void NetModule::StartListen()
 	m_hand.data = this;
 	r = uv_listen((uv_stream_t*)&m_hand, SOMAXCONN, Connection_cb);
 	ASSERT(r == 0);
-	LP_WARN << "start listen port:" << m_port;
+	LP_INFO << "start listen port:" << m_port;
 }
 
 void NetModule::Connection_cb(uv_stream_t * serhand, int status)
 {
 	if (status != 0)
 	{
-		fprintf(stderr, "Connect error %s\n", uv_err_name(status));
+		LP_ERROR << "Connect error " << uv_err_name(status);
 		return;
 	}
 

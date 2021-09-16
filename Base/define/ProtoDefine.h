@@ -43,8 +43,6 @@ enum ProtoType
 	PT_HTTP,
 };
 
-
-#define MAX_CLIENT_CONN 20000
 #define CHECK_SOCK_INDEX(sock) (sock >= 0 && sock < MAX_CLIENT_CONN)
 
 #endif

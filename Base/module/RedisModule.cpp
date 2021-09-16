@@ -5,28 +5,28 @@
 #define  _REDIS_CATCH_(function, line)     catch(redis::connection_error er)\
 {\
     m_enable = false;\
-    LP_ERROR << " Function:" << function << " Line:" << line;\
+    LP_ERROR << " Function:" << function << " Line:" << line << er.what();\
     return false;\
 }\
 catch(redis::timeout_error er)\
 {\
     m_enable = false;\
-    LP_ERROR << " Function:" << function << " Line:" << line;\
+    LP_ERROR << " Function:" << function << " Line:" << line  << er.what();\
     return false;\
 }\
 catch(redis::protocol_error er)\
 {\
-    LP_ERROR << " Function:" << function << " Line:" << line;\
+    LP_ERROR << " Function:" << function << " Line:" << line  << er.what();\
     return false;\
 }\
 catch(redis::key_error er)\
 {\
-    LP_ERROR << " Function:" << function << " Line:" << line;\
+    LP_ERROR << " Function:" << function << " Line:" << line  << er.what();\
     return false;\
 }\
 catch(redis::value_error er)\
 {\
-    LP_ERROR << " Function:" << function << " Line:" << line;\
+    LP_ERROR << " Function:" << function << " Line:" << line  << er.what();\
     return false;\
 }\
 catch (...)\
@@ -63,7 +63,7 @@ void RedisModule::Init()
 void RedisModule::AfterInit()
 {
 	if (Reconnect())
-		LP_WARN << "Connect redis " << m_host << " " << m_port << " success";
+		LP_INFO << "Connect redis " << m_host << " " << m_port << " success";
 	else
 		LP_ERROR << "Connect redis " << m_host << " " << m_port << " Fail";
 }
@@ -208,6 +208,9 @@ bool RedisModule::HDel(const string & key, const string & f)
 
 bool RedisModule::HMDel(const string & key, const vec_str & f)
 {
+	if (f.empty())
+		return false;
+	
 	REDIS_CHECK;
 	try
 	{
@@ -296,6 +299,64 @@ bool RedisModule::ZAdd(const string & key, const string & m, const double & s)
 	{
 		m_redis->zadd(key,s,m);
 		return true;
+	}
+	REDIS_CATCH;
+	return false;
+}
+
+bool RedisModule::SAdd(const string & key, const string & val)
+{
+	REDIS_CHECK;
+	try
+	{
+		return m_redis->sadd(key, val);
+	}
+	REDIS_CATCH;
+	return false;
+}
+
+bool RedisModule::SMembers(const string & key, vec_str & r)
+{
+	REDIS_CHECK;
+	try
+	{
+		m_redis->smembers(key, r);
+		return true;
+	}
+	REDIS_CATCH;
+	return false;
+}
+
+bool RedisModule::SRem(const string & key, const string & val)
+{
+	REDIS_CHECK;
+	try
+	{
+		m_redis->srem(key,val);
+		return true;
+	}
+	REDIS_CATCH;
+	return false;
+}
+
+bool RedisModule::expire(const string & key, uint32_t sec)
+{
+	REDIS_CHECK;
+	try
+	{
+		m_redis->expire(key,sec);
+		return true;
+	}
+	REDIS_CATCH;
+	return false;
+}
+
+bool RedisModule::haveKey(const string & key)
+{
+	REDIS_CHECK;
+	try
+	{
+		return m_redis->exists(key);
 	}
 	REDIS_CATCH;
 	return false;

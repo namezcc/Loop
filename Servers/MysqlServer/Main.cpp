@@ -7,6 +7,7 @@
 #include "MysqlLayer.h"
 #include "Coro1Module.h"
 #include "GameTableModule.h"
+#include "RedisModule.h"
 
 EXPORT void DLL_START_NAME(int argc,char* args[])
 {
@@ -17,15 +18,19 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 	auto ll = ser.CreateLayer<LogicLayer>(LY_LOGIC);
 	ll->CreateModule<MysqlManagerModule>();
 	ll->CreateModule<MysqlModule>();
-	ll->CreateModule<GameTableModule>();
+	//ll->CreateModule<GameTableModule>();
 	//ll->CreateModule<Coro1Module>();
 
 	ser.BuildPipe(nl, ll);
 
-	for (size_t i = 0; i < 4; i++)
+	
+	if (ser.getServerNode().type == LOOP_MYSQL)
 	{
-		auto ml = ser.CreateLayer<MysqlLayer>();
-		ser.BuildPipe(ll, ml);
+		for (size_t i = 0; i < 4; i++)
+		{
+			auto ml = ser.CreateLayer<MysqlLayer>();
+			ser.BuildPipe(ll, ml);
+		}
 	}
 
 	ser.Run();

@@ -3,6 +3,7 @@
 #include "TcpNetLayer.h"
 #include "LogicLayer.h"
 #include "TransMsgModule.h"
+#include "TeamModule.h"
 
 EXPORT void DLL_START_NAME(int argc, char* args[])
 {
@@ -10,6 +11,8 @@ EXPORT void DLL_START_NAME(int argc, char* args[])
 	ser.InitServer(argc, args);
 	auto nl = ser.CreateLayer<TcpNetLayer>(ser.m_port);
 	auto ll = ser.CreateLayer<LogicLayer>(LY_LOGIC);
+	ll->CreateModule<TeamModule>();
+
 
 	ser.BuildPipe(nl, ll);
 

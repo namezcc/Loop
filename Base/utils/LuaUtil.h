@@ -322,9 +322,9 @@ struct PullLuaArgs<std::vector<T>>
 		if (idx != -1)
 			lua_pushvalue(L, idx);
 
-		int32_t len = lua_rawlen(L, -1);
+		size_t len = lua_rawlen(L, -1);
 
-		for (int32_t i = 0; i < len; i++)
+		for (size_t i = 0; i < len; i++)
 		{
 			lua_rawgeti(L, -1, i + 1);
 			vec.push_back(PullLuaArgs<T>::PullVal(L));

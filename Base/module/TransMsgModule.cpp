@@ -112,7 +112,7 @@ void TransMsgModule::OnServerRegiste(NetMsg * msg)
 	server->activeLink = false;
 	OnServerConnect(server);
 
-	LP_WARN << "Server registe type:" << server->type << " ID:" << server->serid;
+	LP_INFO << "Server registe type:" << server->type << " ID:" << server->serid;
 }
 
 void TransMsgModule::OnServerClose(int32_t sock)
@@ -125,7 +125,7 @@ void TransMsgModule::OnServerClose(int32_t sock)
 	m_serverList[ser->type].erase(ser->serid);
 	m_allServer.erase(ser->socket);
 	RemoveRand(ser->type, ser->serid);
-	m_eventModule->SendEvent(E_SOCKET_CLOSE, ser);
+	//m_eventModule->SendEvent(E_SOCKET_CLOSE, ser);
 	//reconnect server
 	LP_ERROR << "Server close type:" << ser->type << " ID:" << ser->serid;
 	if (ser->activeLink)

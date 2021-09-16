@@ -1,13 +1,19 @@
-GM_MODULE = {}
+MOD = {}
+require "NetModule"
+NetModule:init()
+
 local mdname = {
     "LoginModule",
-    "NetModule",
     "PlayerModule",
-    "MapModule",
     "SendPackModule",
 }
 
 for i,v in ipairs(mdname) do
-    GM_MODULE[v] = require(v)
-    GM_MODULE[v].MOD_NAME = v
+	local m = require(v)
+    MOD[v] = m
+	bind_player_func(m)
+end
+
+for k, v in pairs(MOD) do
+	v:init()
 end

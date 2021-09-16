@@ -12,6 +12,7 @@ class TransMsgModule;
 class NetObjectModule;
 class EventModule;
 class RoomModuloe;
+class RoomLuaModule;
 
 enum READY_STATE
 {
@@ -32,9 +33,9 @@ struct ReadyInfo
 {
 	int64_t pid;
 	int64_t roleId;
-	int64_t outTime;
-	int8_t state;
+	int32_t key;
 	int32_t sock;
+	int32_t state;
 };
 
 struct MatchInfo
@@ -48,23 +49,33 @@ struct MatchInfo
 	int64_t m_key;
 };
 
+struct RoleInfo
+{
+	int64_t pid;
+	std::string name;
+	int32_t level;
+};
+
 struct RoomPlayer:public LoopObject
 {
-	int32_t sock;
-	SHARE<Player> m_player;
-	SHARE<AccoutInfo> m_account;
-	SHARE<MatchInfo> m_matchInfo;
-
 	virtual void init(FactorManager*f)
 	{
+		sock = 0;
+		uid = 0;
+		enter_pid = 0;
+		m_roles.clear();
 	}
 
 	virtual void recycle(FactorManager*f)
 	{
-		m_player = NULL;
-		m_account = NULL;
-		m_matchInfo = NULL;
+		
 	}
+
+	int32_t sock;
+	int64_t uid;
+	int64_t enter_pid;
+	std::map<int64_t,RoleInfo> m_roles;
+
 };
 
 class PlayerModule:public BaseModule
@@ -79,23 +90,17 @@ protected:
 	void OnReadyTakePlayer(NetMsg* msg);
 	void OnPlayerEnter(NetMsg* msg);
 	void OnCreatePlayer(NetMsg* msg);
+	void onEnterGame(NetMsg* msg);
 
 	void onGetRoleList(NetMsg* msg);
 
 	void OnClientClose(const int32_t& sock);
 
-	void SendPlayerInfo(SHARE<RoomPlayer>& player);
 
-	SHARE<RoomPlayer> AddPlayer(const int32_t& sock, SHARE<Player>& player);
-	void RemovePlayer(const int64_t& pid);
-	void KickChangePlayer(const int32_t& newSock, const int64_t& pid);
-
+	RoomPlayer* getPlayerData(int32_t sock);
+	void removePlayer(int32_t sock);
 public:
-	SHARE<RoomPlayer> GetRoomPlayer(const int32_t& sock);
-	SHARE<RoomPlayer> GetRoomPlayer(const int64_t& pid);
-	SHARE<Player> GetPlayer(const int32_t& sock);
-	SHARE<Player> GetPlayer(const int64_t& pid);
-	SHARE<RoomPlayer> CheckRoomPlayer(const int32_t& sock);
+	
 
 private:
 	
@@ -104,10 +109,12 @@ private:
 	NetObjectModule* m_netobjModule;
 	EventModule* m_eventModule;
 	RoomModuloe* m_room_mod;
+	RoomLuaModule* m_room_lua;
 
 	std::unordered_map<int64_t, ReadyInfo> m_readyTable;
-	std::unordered_map<int64_t, SHARE<RoomPlayer>> m_playerTable;
-	std::unordered_map<int32_t, SHARE<RoomPlayer>> m_sockPlayer;
+	
+	RoomPlayer* m_player[MAX_CLIENT_CONN];
+
 };
 
 #endif

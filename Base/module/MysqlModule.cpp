@@ -194,7 +194,7 @@ bool MysqlModule::Reconnect()
 	if (!res)
 		LP_ERROR << "Mysql Connect Error "<<"db:"<<m_dbname<<" ip:"<<m_ip<<" user:"<<m_user<<" pass:"<<m_pass<<" port:"<<m_port;
 	else
-		LP_WARN << "Mysql Connect Success " << "db:" << m_dbname << " ip:" << m_ip << " port:" << m_port;
+		LP_INFO << "Mysql Connect Success " << "db:" << m_dbname << " ip:" << m_ip << " port:" << m_port;
 	return res;
 }
 

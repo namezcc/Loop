@@ -31,6 +31,7 @@ public:
 
 	void Run(int64_t dt);
 	inline void Init(LuaModule* m) { m_module = m; };
+	LuaModule* luaModule() { return m_module; }
 	void RunScript(const std::string& file);
 	void RunString(const std::string& trunk);
 	lua_State* GetLuaState() { return m_L; };
@@ -43,6 +44,7 @@ public:
 	bool callLuaCommonFunc(LuaArgs& arg);
 	bool callLuaFunc(int32_t findex, LuaArgs& arg);
 	bool callRegistFunc(int32_t ref, LuaArgs& arg);
+	bool callGloableFunc(const std::string& f, LuaArgs& arg);
 	bool getRefFunc(int32_t ref);
 
 	void setLuaCallFunc(const std::function<int(int32_t, LuaState*)>& func)
@@ -236,10 +238,11 @@ public:
 	int32_t PullInt32();
 	int64_t PullInt64();
 	std::string PullString();
+	void* PullUserData();
 	const char* PullCString(int32_t& size);
 	float Pullfloat();
 	bool IsTable(int32_t argIndex);
-	int32_t GetArgIndex() { return m_argIndex; }
+	int32_t nextArgIndex() { return ++m_argIndex; }
 	bool PullTableBegin();
 	int32_t PullTableLength();
 	int32_t PullTableInt32(int32_t index);
@@ -278,6 +281,9 @@ private:
 	int32_t m_errIndex;
 	LuaModule* m_module;
 	std::vector<int32_t> m_loopRef;
+
+	LuaVInt64* m_dt;
+	LuaArgs m_update_arg;
 	//std::unordered_map<std::string, std::function<int(lua_State*)>> m_luaCallFunc;
 
 	int32_t m_argIndex;

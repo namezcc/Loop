@@ -31,11 +31,14 @@ struct ServerInfoState
 enum SQL_OPRATION
 {
 	SOP_NONE = 0,
-	SOP_ROLE_SELET,
-	SOP_CREATE_ROLE,
-	SOP_LOAD_PLAYER_DATA,
-	SOP_UPDATE_PLAYER_DATA,
-	SOP_DELETE_PLAYER_DATA,
+	SOP_ROLE_SELET = 1,
+	SOP_CREATE_ROLE = 2,
+	SOP_LOAD_PLAYER_DATA = 3,
+	SOP_UPDATE_PLAYER_DATA = 4,
+	SOP_DELETE_PLAYER_DATA = 5,
+	SOP_SEARCH_PLAYER = 6,
+	SOP_SAVE_PlAYER_TO_DB = 7,
+
 
 
 
@@ -59,6 +62,26 @@ union Int32Struct
 	struct
 	{
 		int8_t bit8[4];
+	};
+};
+
+union Int64Struct
+{
+	Int64Struct() :i64(0)
+	{}
+
+	Int64Struct(int64_t n) :i64(n)
+	{}
+
+	Int64Struct(int32_t h, int32_t l) : height32(h), lower32(l)
+	{
+	}
+
+	int64_t i64;
+	struct
+	{
+		int32_t lower32;
+		int32_t height32;
 	};
 };
 

@@ -91,12 +91,17 @@ void NetObjectModule::NoticeSocketClose(NetObject* obj)
 void NetObjectModule::AcceptConn(const int & socket, const int32_t& connType)
 {
 	auto it = m_objects_tmp.find(socket);
-	if (it == m_objects_tmp.end())
-		return;
-
-	it->second->type = connType;
-	m_objects[socket] = it->second;
-	m_objects_tmp.erase(it);
+	if (it != m_objects_tmp.end())
+	{
+		it->second->type = connType;
+		m_objects[socket] = it->second;
+		m_objects_tmp.erase(it);
+	}
+	else {
+		auto it2 = m_objects.find(socket);
+		if (it2 != m_objects.end())
+			it2->second->type = connType;
+	}
 }
 
 void NetObjectModule::SendNetMsg(const int & socket, const int & mid, google::protobuf::Message & pbmsg)
@@ -220,7 +225,7 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 
 	if (ser->state == CONN_STATE::CONNECT)
 	{
-		LP_WARN << "connect server " << ser->serid << "success ip:" << ser->ip << " port: " << ser->port;
+		LP_INFO << "connect server " << ser->serid << "success ip:" << ser->ip << " port: " << ser->port;
 		auto netobj = GET_SHARE(NetObject);
 		netobj->socket = ser->socket;
 		m_objects_tmp[netobj->socket] = netobj;

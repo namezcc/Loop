@@ -82,7 +82,7 @@ class BuffPool
 	friend class Single;
 public:
 	
-	char* getBuff(const int32_t& nsize, int32_t& rsize)
+	char* getBuff(const size_t& nsize,int32_t& rsize)
 	{
 		int32_t base = BASE_BUFF_SIZE;
 		int32_t idx = 0;
@@ -113,7 +113,7 @@ public:
 		case 9: return GET_BUFF_BLOCK(9);
 		case 10: return GET_BUFF_BLOCK(10);
 		default:
-			rsize = nsize;
+			rsize = (int32_t)nsize;
 			return (char*)malloc(nsize);
 			break;
 		}

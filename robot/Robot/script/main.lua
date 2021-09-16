@@ -5,26 +5,27 @@ LoopState = CLuaState
 TPB = require "pb"
 assert(TPB.loadfile("./proto/allproto.pb"))
 
+require "function"
 require "Log"
 require "class"
 persent = require "persent"
-Schedule = require "schedule"
+require "schedule"
 pbparse = require "parse"
-Event = require "eventManager"
+require "eventManager"
 require "EventDefine"
 require "Math"
 require "GameDefine"
 require "CfgData"
 CMD = require "CmdManager"
-require "modules"
-local GameClient = require "GameClient"
-
 
 pbparse:SetProtoPath("../../proto/client/")
 pbparse:ParseFile("define.proto")
 
 CMCODE = pbparse:GetMessage("LP_CM_MSG_ID")
 SMCODE = pbparse:GetMessage("LP_SM_MSG_ID")
+
+
+require "modules"
 
 -- printTable(CMCODE)
 
@@ -35,14 +36,27 @@ end
 
 local games = {}
 local nid = 1
-local checkNum = 1
+local checkNum = 500
 local function CreateGame()
-    games[nid] = GameClient.new("zcc"..(GAME_INDEX*checkNum+nid))
+
+	local account = "zcc"..(GAME_INDEX*checkNum+nid)
+	local player = {}
+
+    games[nid] = player
+	setPlayerImpFunc(player)
+
+	if IS_SINGLE and GAME_ADDR[GAME_INDEX] and GAME_ADDR[GAME_INDEX].uid then
+		account = GAME_ADDR[GAME_INDEX].uid
+	end
+
+	player:onNewPlayer(account)
+
     nid = nid + 1
 end
 
 if checkNum == 1 then
     GameType = GAME_TYPE.SINGLE     --单人 模式
+	IS_SINGLE = true
 else
     GameType = GAME_TYPE.MUILT
 end
@@ -51,18 +65,20 @@ end
 -- GameType = GAME_TYPE.SEND_PACK
 
 if GameType == GAME_TYPE.SEND_PACK then
-    GAME_INDEX = 2
+    -- GAME_INDEX = 2
 end
 
 collectgarbage("setpause",200)  --200
 collectgarbage("setstepmul",5000)
 
 
+DELAY_START = 3000
+
 NOW_TICK = 0
 BEG_TIME = 0
 NOW_SEC = 0
 
-ADD_INT = 100
+ADD_INT = 1
 
 FINISH_TABLE = {}
 
@@ -85,14 +101,20 @@ function UpdateGame( dt )
     end
     NOW_TICK = dt
 
-    for i,v in ipairs(games) do
-        v:Run(dt)
-    end
+	if DELAY_START > 0 then
+		if NOW_TICK - BEG_TIME < DELAY_START then
+			return
+		end
+		BEG_TIME = dt
+		DELAY_START = 0
+	end
 
     if nid <= checkNum and NOW_SEC < dt then
         CreateGame()
         NOW_SEC = dt + ADD_INT
     end
+
+	Schedule:Run(dt)
 end
 
 function SplitPam( pam )
@@ -148,10 +170,10 @@ function DoCmdFunction( pamstr )
         end
     else
         local game = games[gid]
-        if game == nil then
-            print("error game id")
+        if player == nil then
+            print("error player id")
             return
         end
-        CMD:DoCmd(cmdname,game,cmd)
+        CMD:DoCmd(cmdname,player,cmd)
     end
 end

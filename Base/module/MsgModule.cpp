@@ -1,5 +1,6 @@
 ﻿#include "MsgModule.h"
 #include "ScheduleModule.h"
+#include "LogLayer.h"
 
 MsgModule::MsgModule(BaseLayer* l):BaseModule(l), m_coroIndex(0), m_coroCheckTime(0)
 {
@@ -64,11 +65,15 @@ void MsgModule::MsgCallBack(void* msg)
 	{
 		if (m_arrayCall[smsg->msgId])
 			m_arrayCall[smsg->msgId](shamsg);
+		else if (m_common_call)
+			m_common_call(shamsg);
 	}
 	else if(smsg->msgId > CM_MSG_BEGIN && smsg->msgId < CM_MSG_END)
 	{
 		if (m_protoCall[smsg->msgId - CM_MSG_BEGIN])
 			m_protoCall[smsg->msgId - CM_MSG_BEGIN](shamsg);
+		else if (m_common_call)
+			m_common_call(shamsg);
 	}
 	else
 	{
@@ -88,11 +93,15 @@ void MsgModule::TransMsgCall(SHARE<NetServerMsg>& msg)
 	{
 		if (m_arrayCall[msg->mid])
 			m_arrayCall[msg->mid](smsg);
+		else if (m_common_call)
+			m_common_call(smsg);
 	}
 	else if(msg->mid > CM_MSG_BEGIN && msg->mid<CM_MSG_END)
 	{
 		if (m_protoCall[msg->mid - CM_MSG_BEGIN])
 			m_protoCall[msg->mid - CM_MSG_BEGIN](smsg);
+		else if (m_common_call)
+			m_common_call(smsg);
 	}
 }
 
@@ -282,11 +291,17 @@ void MsgModule::DoNetResponseMsg(SHARE<BaseMsg>& msg)
 		DoResponseMsg(comsg);
 }
 
-MsgModule::LogHook::~LogHook()
+LogHook::LogHook(const int32_t& lv)
 {
-	//m->SendMsg(LY_LOG, 0, L_LOG_INFO, log);
-	auto msg = m->GET_LAYER_MSG(BaseMsg);
+	log = GET_LAYER_MSG(LogInfo);
+	log->level = lv;
+}
+
+LogHook::~LogHook()
+{
+	auto msg = GET_LAYER_MSG(BaseMsg);
 	msg->msgId = L_LOG_INFO;
 	msg->m_data = log;
-	m->GetLayer()->writePipe(LY_LOG, 0, msg);
+	LOG_LAYER->log(msg);
+	//m->GetLayer()->writePipe(LY_LOG, 0, msg);
 }

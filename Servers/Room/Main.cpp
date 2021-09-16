@@ -5,6 +5,8 @@
 #include "PlayerModule.h"
 #include "MatchModule.h"
 #include "RoomModule.h"
+#include "LuaModule.h"
+#include "RoomLuaModule.h"
 
 EXPORT void DLL_START_NAME(int argc,char* args[])
 {
@@ -15,6 +17,8 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 	auto ll = ser.CreateLayer<LogicLayer>(LY_LOGIC);
 
 	ll->CreateModule<RoomModuloe>();
+	ll->CreateModule<LuaModule>();
+	ll->CreateModule<RoomLuaModule>();
 	ll->CreateModule<PlayerModule>();
 	//ll->CreateModule<MatchModule>();
 

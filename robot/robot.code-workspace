@@ -4,5 +4,12 @@
 			"path": "Robot\\script"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"git.autorefresh": false,
+		"git.decorations.enabled": false,
+		"git.autoRepositoryDetection": false,
+		"git.countBadge": "off",
+		"git.detectSubmodules": false,
+		"git.enabled": false
+	}
 }

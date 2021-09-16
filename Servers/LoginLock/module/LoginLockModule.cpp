@@ -92,7 +92,7 @@ void LoginLockModule::onGetDbIndex(SHARE<BaseMsg>& msg)
 	}
 
 	m_add_num++;
-	if (m_add_num >= 4096)
+	if (m_add_num >= 0xFF)
 	{
 		m_add_num = 0;
 		m_now_stamp++;
@@ -180,15 +180,15 @@ void LoginLockModule::showTestNum(int64_t & dt)
 
 		m_schedulModule->AddInterValTask([this](int64_t& tt) {
 		
-			m_msgModule->DoCoroFunc([this](c_pull& pull, SHARE<BaseCoro>& coro) {
+			/*m_msgModule->DoCoroFunc([this](c_pull& pull, SHARE<BaseCoro>& coro) {
 				ServerNode ser{SERVER_TYPE::LOOP_LOGIN,1};
 				ServerPath path;
 				path.push_back(*GetLayer()->GetServer());
 				path.push_back(ser);
 				m_trans_mod->RequestServerAsynMsg(path, 500, LPMsg::LoginLock{},pull,coro);
-			});
-			//m_trans_mod->SendToServer(ser, 501, LPMsg::LoginLock{});
-		}, 50, 1);
+			});*/
+			m_trans_mod->SendToServer(ServerNode{ SERVER_TYPE::LOOP_LOGIN,1 }, 501, LPMsg::LoginLock{});
+		}, 50, 1000);
 	}
 	else {
 		auto pernum = m_pp_num * 1000 / 5000;

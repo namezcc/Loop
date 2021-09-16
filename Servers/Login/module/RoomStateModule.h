@@ -16,8 +16,10 @@ public:
 	~RoomStateModule();
 
 	ServerInfoState* GetRandRoom();
+	ServerInfoState* getRoom(int32_t roomid);
 
 	ServerPath& GetRoomPath(const int32_t& roomId);
+	bool isRoomOpen(int32_t roomId);
 protected:
 	virtual void Init() override;
 
@@ -32,6 +34,7 @@ private:
 	NetObjectModule* m_netobjModule;
 
 	std::vector<ServerInfoState> m_roomArray;
+	std::map<int32_t, int32_t> m_opemRoom;
 
 	ServerPath m_roomPath;
 };

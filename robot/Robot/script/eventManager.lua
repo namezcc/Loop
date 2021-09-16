@@ -1,14 +1,12 @@
-local Event = class()
-
-function Event:ctor()
-    self._events = {}
-end
+Event = {
+	_events = {}
+}
 
 function Event:init()
     
 end
 
-function Event:AddEvent(evId,_func,_caller)
+function Event:AddEvent(evId,_func)
     local etab = self._events[evId]
     if etab == nil then
         etab = {}
@@ -16,21 +14,14 @@ function Event:AddEvent(evId,_func,_caller)
     end
     table.insert( etab,{
         func = _func,
-        caller = _caller
     })
 end
 
-function Event:DoEvent(evId ,...)
+function Event:DoEvent(caller,evId ,...)
     local etab = self._events[evId]
     if etab then
         for i,v in ipairs(etab) do
-            if v.caller then
-                v.func(v.caller,...)
-            else
-                v.func(...)
-            end
+			v.func(caller,...)
         end
     end
 end
-
-return Event

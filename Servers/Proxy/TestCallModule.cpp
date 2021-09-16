@@ -97,7 +97,7 @@ void TestCallModule::OnTestData(NetMsg * msg)
 	{
 		auto buff = GET_LAYER_MSG(BuffBlock);
 		buff->makeRoom(msg->getLen());
-		buff->write(msg->getNetBuff(), msg->getLen());
+		buff->writeBuff(msg->getNetBuff(), msg->getLen());
 		m_netModule->SendNetMsg(msg->socket, msg->mid, buff);
 	}
 }

@@ -32,10 +32,10 @@ local conf = {
     {
         _table = "lp_player",
         _proto = "DB_player",
-        _key = {1,2},
+        _key = {2},
         _field = {
             [1] = {"uid","uid",SQL_INT64},
-            [2] = {"rid","rid",SQL_INT},
+            [2] = {"pid","pid",SQL_INT64},
             [3] = {"name","name",SQL_STRING},
             [4] = {"level","level",SQL_INT},
             [5] = {"gold","gold",SQL_INT},
@@ -47,6 +47,25 @@ local conf = {
             {_type = SQL_TYPE_SELECT,_vec=false},
         },
     },
+	{
+		_table = "lp_player_relation",
+		_proto = "DB_player_relation",
+		_field = {
+			[1] = {"pid","pid",SQL_INT64},
+			[2] = {"rpid","rpid",SQL_INT64},
+			[3] = {"name","name",SQL_STRING},
+			[4] = {"level","level",SQL_INT},
+			[5] = {"time","time",SQL_INT},
+			[6] = {"type","type",SQL_INT},
+		},
+		_key = {1,2},
+		_sql = {
+			{_type = SQL_TYPE_SELECT,_vec=true,_key={1}},
+			{_type = SQL_TYPE_INSERT,_vec=false,_update=true},
+			{_type = SQL_TYPE_UPDATE,_vec=false},
+			{_type = SQL_TYPE_DELETE,_vec=false},
+		}
+	},
 
 }
 

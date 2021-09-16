@@ -1,7 +1,7 @@
 build/
 _out/Debug/
 protoPB/
-proto/
+/proto/
 Base/.vscode/
 *.exp
 *.pdb

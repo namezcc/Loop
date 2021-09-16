@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "_out\\Debug\\lua"
+		},
+		{
+			"path": "tool\\luatool"
+		}
+	],
+	"settings": {
+		"git.autorefresh": false,
+		"git.decorations.enabled": false
+	}
+}

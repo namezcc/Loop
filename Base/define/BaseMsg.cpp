@@ -18,7 +18,7 @@ BuffBlock::BuffBlock():m_size(0),m_allsize(0), m_next(NULL),m_buff(NULL)
 {
 }
 
-void BuffBlock::makeRoom(const int32_t & size)
+void BuffBlock::makeRoom(const size_t & size)
 {
 	if (m_buff)
 	{

@@ -102,12 +102,12 @@ void DBProxyModule::OnServerClose(SHARE<NetServer>& ser)
 
 void DBProxyModule::OnCheckProxy(int64_t & dt)
 {
-	for (auto& it:m_tmpProxy)
+	/*for (auto& it:m_tmpProxy)
 	{
 		m_getGrouppath[1]->serid = it.second->serid;
 		LPMsg::EmptyPB msg;
 		m_tranModule->SendToServer(m_getGrouppath, N_GET_MYSQL_GROUP, msg);
-	}
+	}*/
 }
 
 void DBProxyModule::OnGetMysqlGroup(NetMsg * msg)
@@ -194,8 +194,8 @@ void DBProxyModule::SendToProxy(int group, const int& mid, NetMsg * msg)
 	m_path[0]->type = head->type;
 	*m_path[2] = *proxy;
 	
-	auto buff = msg->getNetBuff();
+	/*auto buff = msg->getNetBuff();
 	auto sendbuff = GET_LAYER_MSG(BuffBlock);
 	sendbuff->write(buff + sizeof(int32_t) * 2, msg->getLen() - sizeof(int32_t) * 2);
-	m_tranModule->SendToServer(m_path, mid, sendbuff);
+	m_tranModule->SendToServer(m_path, mid, sendbuff);*/
 }

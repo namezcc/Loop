@@ -4,6 +4,9 @@
 		"mpb"
 	],
 	"Lua.diagnostics.disable": [
-		"lowercase-global"
+		"lowercase-global",
+		"deprecated",
+		"trailing-space",
+		"undefined-global"
 	]
 }

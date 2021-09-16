@@ -50,6 +50,14 @@ public:
 	bool HGetAll(const string& key, std::map<std::string, std::string>& res);
 
 	bool ZAdd(const string& key, const string& m, const double& s);
+
+	bool SAdd(const string& key, const string& val);
+	bool SMembers(const string& key, vec_str& r);
+	bool SRem(const string& key, const string& val);
+
+	//设置多少秒后过期
+	bool expire(const string& key, uint32_t sec);
+	bool haveKey(const string& key);
 private:
 	// 通过 BaseModule 继承
 	virtual void Init() override;

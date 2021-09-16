@@ -16,6 +16,8 @@ public:
 	RoomModuloe(BaseLayer* l);
 	~RoomModuloe();
 
+	void setRoomState(int32_t state);
+
 private:
 	virtual void Init() override;
 
@@ -25,7 +27,11 @@ private:
 public:
 
 	void doSqlOperation(int64_t uid, int32_t opt, google::protobuf::Message& pb, int32_t ackId = 0);
-	void updatePlayerData(int64_t uid, int32_t rid, google::protobuf::Message& pb, int32_t table, int32_t key1 = 0, int32_t key2 = 0);
+	void doSqlOperation(int64_t uid, int32_t opt, BuffBlock* buf, int32_t ackId = 0);
+	void updatePlayerData(int64_t pid, google::protobuf::Message& pb, int32_t table, std::string key1 = "0", std::string key2 = "0");
+	void updatePlayerData(int64_t pid,const std::string& pb, int32_t table, std::string key1 = "0", std::string key2 = "0");
+
+	void deletePlayerData(int64_t pid, const std::string& pb, int32_t table, std::string key1 = "0", std::string key2 = "0");
 	void deletePlayerData(int64_t uid, int32_t rid, int32_t table, int32_t key1 = 0, int32_t key2 = 0);
 	void updatePlayerData(int64_t uid, int32_t rid, int32_t table,std::vector<int32Pair>& keys,std::vector<gpb::Message>& pb);
 	void deletePlayerData(int64_t uid, int32_t rid, int32_t table, std::vector<int32Pair>& keys);
@@ -39,6 +45,7 @@ private:
 	EventModule* m_event_mod;
 
 	ServerPath m_db_path;
+	int32_t m_room_state;
 };
 
 

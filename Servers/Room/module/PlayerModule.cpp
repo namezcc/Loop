@@ -5,6 +5,7 @@
 #include "EventModule.h"
 #include "RoomMsgDefine.h"
 #include "RoomModule.h"
+#include "RoomLuaModule.h"
 
 #include "CommonDefine.h"
 #include "ServerMsgDefine.h"
@@ -17,6 +18,7 @@
 
 PlayerModule::PlayerModule(BaseLayer * l):BaseModule(l)
 {
+	memset(m_player, 0, sizeof(m_player));
 }
 
 PlayerModule::~PlayerModule()
@@ -30,27 +32,37 @@ void PlayerModule::Init()
 	m_netobjModule = GET_MODULE(NetObjectModule);
 	m_eventModule = GET_MODULE(EventModule);
 	m_room_mod = GET_MODULE(RoomModuloe);
-
-	m_msgModule->AddMsgCall(N_ROOM_READY_TAKE_PLAYER, BIND_NETMSG(OnReadyTakePlayer));
-	m_msgModule->AddMsgCall(LPMsg::CM_ENTER_ROOM, BIND_NETMSG(OnPlayerEnter));
-	m_msgModule->AddMsgCall(LPMsg::CM_CREATE_ROLE, BIND_NETMSG(OnCreatePlayer));
-
-	m_msgModule->AddMsgCall(N_TROM_GET_ROLE_LIST, BIND_NETMSG(onGetRoleList));
+	m_room_lua = GET_MODULE(RoomLuaModule);
 
 	m_eventModule->AddEventCall(E_SOCKET_CLOSE,BIND_EVENT(OnClientClose,int32_t));
+
+	m_msgModule->AddMsgCall(N_ROOM_READY_TAKE_PLAYER, BIND_NETMSG(OnReadyTakePlayer));
+	m_msgModule->AddMsgCall(N_TROM_GET_ROLE_LIST, BIND_NETMSG(onGetRoleList));
+	
+
+	m_msgModule->AddMsgCall(LPMsg::CM_ENTER_ROOM, BIND_NETMSG(OnPlayerEnter));
+	m_msgModule->AddMsgCall(LPMsg::CM_CREATE_ROLE, BIND_NETMSG(OnCreatePlayer));
+	m_msgModule->AddMsgCall(LPMsg::CM_ENTER_GAME, BIND_NETMSG(onEnterGame));
+
 }
 
 void PlayerModule::OnReadyTakePlayer(NetMsg* msg)
 {
 	TRY_PARSEPB(LPMsg::RoomInfo, msg);
 
+	LP_INFO << "take ready pid:" << pbMsg.pid();
+
 	auto it = m_readyTable.find(pbMsg.pid());
 	if (it == m_readyTable.end())
 	{
 		ReadyInfo ready = {};
 		ready.pid = pbMsg.pid();
-		ready.outTime = Loop::GetSecend() + ROOM_READY_OUT_TIME;
+		ready.key = pbMsg.key();
 		m_readyTable[pbMsg.pid()] = ready;
+	}
+	else
+	{
+		it->second.key = pbMsg.key();
 	}
 }
 
@@ -58,36 +70,67 @@ void PlayerModule::OnPlayerEnter(NetMsg * msg)
 {
 	TRY_PARSEPB(LPMsg::ReqEnterRoom, msg);
 
-	auto it = m_readyTable.find(pbMsg.pid());
+	auto it = m_readyTable.find(pbMsg.uid());
 	if (it == m_readyTable.end())
+	{
+		LP_INFO << "player enter no ready uid:" << pbMsg.uid();
+		m_netobjModule->CloseNetObject(msg->socket);
+		return;
+	}
+
+	if (it->second.key != pbMsg.key())
 	{
 		m_netobjModule->CloseNetObject(msg->socket);
 		return;
 	}
-	else if(it->second.sock != msg->socket)
-	{//顶号
 
+	RoomPlayer* player = NULL;
+	//顶号
+	if (it->second.sock != msg->socket)
+	{
 		if (it->second.sock > 0)
 		{
+			auto oldply = m_player[it->second.sock];
+			m_player[it->second.sock] = NULL;
+			if (oldply == NULL)
+			{
+				LP_ERROR << "player enter oldplayer == NULL";
+			}
+			else
+			{
+				player = oldply;
+			}
 			m_netobjModule->CloseNetObject(it->second.sock);
-
-			
 		}
 
-		m_netobjModule->AcceptConn(msg->socket);
+		if (m_player[msg->socket] != NULL)
+		{
+			LP_ERROR << "player enter error have player";
+			LOOP_RECYCLE(m_player[msg->socket]);
+			m_player[msg->socket] = NULL;
+		}
 		it->second.sock = msg->socket;
 	}
-
-	if (it->second.state != READY_STATE::RS_NONE)
+	else
 	{
-		LP_WARN << "in doing select or create pid:"<< pbMsg.pid();
-		return;
+		if (m_player[msg->socket] != NULL)		//已加载角色
+			return;
 	}
 
-	//get role list
-	it->second.state = RS_SELECT;
-	m_room_mod->doSqlOperation(pbMsg.pid(), SOP_ROLE_SELET, LPMsg::propertyInt32{}, N_TROM_GET_ROLE_LIST);
+	if (player == NULL)
+		player = GET_LOOP(RoomPlayer);
 
+	player->uid = pbMsg.uid();
+	player->sock = msg->socket;
+	m_player[msg->socket] = player;
+
+	it->second.state = RS_SELECT;
+	m_netobjModule->AcceptConn(msg->socket);
+	//get role list
+	m_room_mod->doSqlOperation(pbMsg.uid(), SOP_ROLE_SELET, LPMsg::propertyInt32{}, N_TROM_GET_ROLE_LIST);
+
+	//设置lua uid -> sock
+	m_room_lua->setPlayerSock(pbMsg.uid(), msg->socket);
 }
 
 void PlayerModule::OnCreatePlayer(NetMsg* msg)
@@ -99,6 +142,9 @@ void PlayerModule::OnCreatePlayer(NetMsg* msg)
 		m_netobjModule->CloseNetObject(msg->socket);
 		return;
 	}
+
+	if (it->second.sock != msg->socket)
+		return;
 
 	if (pbMsg.name().size() >= 30)
 	{
@@ -115,10 +161,34 @@ void PlayerModule::OnCreatePlayer(NetMsg* msg)
 	it->second.state = READY_STATE::RS_CREATE;
 	LPMsg::DB_player spb;
 	spb.set_uid(pbMsg.pid());
-	spb.set_rid(1);
+	spb.set_pid(pbMsg.pid());
 	spb.set_level(1);
 	spb.set_name(pbMsg.name());
 	m_room_mod->doSqlOperation(pbMsg.pid(), SOP_CREATE_ROLE, spb, N_TROM_GET_ROLE_LIST);
+}
+
+void PlayerModule::onEnterGame(NetMsg * msg)
+{
+	TRY_PARSEPB(LPMsg::propertyInt64, msg);
+
+	auto player = getPlayerData(msg->socket);
+	if (player == NULL)
+		return;
+
+	auto it = player->m_roles.find(pbMsg.data());
+	if (it == player->m_roles.end())
+		return;
+
+	if (player->enter_pid > 0)
+	{
+		LP_ERROR << "have role in game uid:" << player->uid;
+		return;
+	}
+
+	LP_INFO << "player enter rid:" << it->second.pid;
+
+	player->enter_pid = pbMsg.data();
+	m_room_mod->doSqlOperation(pbMsg.data(), SOP_LOAD_PLAYER_DATA, pbMsg, N_TROM_LOAD_ROLE_DATA);
 }
 
 void PlayerModule::onGetRoleList(NetMsg * msg)
@@ -129,16 +199,28 @@ void PlayerModule::onGetRoleList(NetMsg * msg)
 		return;
 
 	it->second.state = RS_NONE;
-	TRY_PARSEPB(LPMsg::DB_roleList, msg);
+	auto player = getPlayerData(it->second.sock);
+	if (player == NULL)
+	{
+		LP_ERROR << "getrole player == null uid:" << it->second.pid;
+		return;
+	}
 
+	TRY_PARSEPB(LPMsg::DB_roleList, msg);
 	LPMsg::RoleList spb;
 
 	for (auto r:pbMsg.roles())
 	{
 		auto role = spb.add_roles();
-		role->set_rid(r.rid());
+		role->set_pid(r.pid());
 		role->set_name(r.name());
 		role->set_level(r.level());
+
+		RoleInfo rinfo = {};
+		rinfo.pid = r.pid();
+		rinfo.name = r.name();
+		rinfo.level = r.level();
+		player->m_roles[rinfo.pid] = rinfo;
 	}
 
 	m_netobjModule->SendNetMsg(it->second.sock, LPMsg::SM_SELF_ROLE_INFO, spb);
@@ -146,124 +228,40 @@ void PlayerModule::onGetRoleList(NetMsg * msg)
 
 void PlayerModule::OnClientClose(const int32_t & sock)
 {
-	auto it = m_sockPlayer.find(sock);
-	if (it == m_sockPlayer.end())
+	auto ply = getPlayerData(sock);
+	if (ply == NULL)
 		return;
 
-	auto server = GetLayer()->GetServer();
-	
-	Reflect<AccoutInfo> rf(it->second->m_account.get());
-	rf.Set_lastLogoutTime(Loop::GetStringTime());
-	rf.Set_lastRoomId(server->serid);
-
-	LP_INFO << "player offLine id:" << it->second->m_player->id << " name:" << it->second->m_player->Get_name();
-
-	it->second->sock = -1;
-	if(it->second->m_matchInfo->m_state == PlayerState::PS_NONE)
-		m_playerTable.erase(it->second->m_player->Get_id());
-	m_sockPlayer.erase(it);
-}
-
-void PlayerModule::SendPlayerInfo(SHARE<RoomPlayer>& player)
-{
-	LPMsg::GameObject msg;
-	player->m_player->ParsePB(msg);
-	m_netobjModule->SendNetMsg(player->sock, LPMsg::SM_ENTER_ROOM, msg);
-
-	if (player->m_matchInfo->m_key > 0)
+	auto it = m_readyTable.find(ply->uid);
+	if (it == m_readyTable.end() || it->second.sock != sock)
 	{
-		//send reEnter scene
-
-		LPMsg::AckEnterBattle ackmsg;
-		auto match = player->m_matchInfo;
-
-		ackmsg.set_ip(match->m_battleIp);
-		ackmsg.set_port(match->m_battlePort);
-		ackmsg.set_sceneid(match->m_sceneId);
-		ackmsg.set_key(match->m_key);
-		m_netobjModule->SendNetMsg(player->sock, LPMsg::SM_OLD_BATTLE_INFO, ackmsg);
-	}
-}
-
-SHARE<RoomPlayer> PlayerModule::AddPlayer(const int32_t & sock, SHARE<Player>& player)
-{
-	auto rmplayer = GET_SHARE(RoomPlayer);
-	rmplayer->m_player = player;
-	rmplayer->sock = sock;
-	rmplayer->m_matchInfo = GET_SHARE(MatchInfo);
-	rmplayer->m_matchInfo->m_state = PlayerState::PS_NONE;
-	rmplayer->m_matchInfo->m_key = 0;
-
-	m_playerTable[player->Get_id()] = rmplayer;
-	m_sockPlayer[sock] = rmplayer;
-	return rmplayer;
-}
-
-void PlayerModule::RemovePlayer(const int64_t & pid)
-{
-	auto it = m_playerTable.find(pid);
-	if (it == m_playerTable.end())
+		removePlayer(sock);
+		LP_ERROR << "client close diff ready uid:" << ply->uid;
 		return;
-
-	m_netobjModule->CloseNetObject(it->second->sock);
-	m_sockPlayer.erase(it->second->sock);
-	m_playerTable.erase(it);
-}
-
-void PlayerModule::KickChangePlayer(const int32_t & newSock, const int64_t & pid)
-{
-	auto ply = GetRoomPlayer(pid);
-	if (!ply || ply->sock == newSock)
-		return;
-	if (ply->sock != -1)
-	{
-		m_sockPlayer.erase(ply->sock);
-		m_netobjModule->CloseNetObject(ply->sock);
 	}
 
-	ply->sock = newSock;
-	m_sockPlayer[newSock] = ply;
+	LP_INFO << "player offLine id:" << ply->uid;
+
+	removePlayer(sock);
+	m_readyTable.erase(it);
 }
 
-SHARE<RoomPlayer> PlayerModule::GetRoomPlayer(const int32_t & sock)
+RoomPlayer * PlayerModule::getPlayerData(int32_t sock)
 {
-	auto it = m_sockPlayer.find(sock);
-	if (it == m_sockPlayer.end())
-		return NULL;
-	return it->second;
+	return m_player[sock];
 }
 
-SHARE<RoomPlayer> PlayerModule::GetRoomPlayer(const int64_t & pid)
+void PlayerModule::removePlayer(int32_t sock)
 {
-	auto it = m_playerTable.find(pid);
-	if (it == m_playerTable.end())
-		return NULL;
-	return it->second;
-}
-
-SHARE<Player> PlayerModule::GetPlayer(const int32_t & sock)
-{
-	auto it = m_sockPlayer.find(sock);
-	if (it == m_sockPlayer.end())
-		return NULL;
-	return it->second->m_player;
-}
-
-SHARE<Player> PlayerModule::GetPlayer(const int64_t & pid)
-{
-	auto it = m_playerTable.find(pid);
-	if (it == m_playerTable.end())
-		return NULL;
-	return it->second->m_player;
-}
-
-SHARE<RoomPlayer> PlayerModule::CheckRoomPlayer(const int32_t & sock)
-{
-	auto player = GetRoomPlayer(sock);
-	if (!player)
+	auto ply = m_player[sock];
+	if (ply)
 	{
-		m_netobjModule->CloseNetObject(sock);
-		return NULL;
+		LuaArgs arg;
+		arg.pushArg(ply->uid);
+		arg.pushArg(sock);
+		m_room_lua->callLuaMsg(CTOL_PLAYER_OFFLINE, arg);
+
+		LOOP_RECYCLE(ply);
+		m_player[sock] = NULL;
 	}
-	return player;
 }

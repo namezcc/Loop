@@ -62,6 +62,21 @@ bool LuaVNumber::pullValue(lua_State * L, int index)
 	return false;
 }
 
+void LuaVUdata::pushValue(lua_State * L)
+{
+	lua_pushlightuserdata(L, m_val);
+}
+
+bool LuaVUdata::pullValue(lua_State * L, int index)
+{
+	if (lua_isuserdata(L, index))
+	{
+		m_val = lua_touserdata(L, index);
+		return true;
+	}
+	return false;
+}
+
 void LuaVBool::pushValue(lua_State * L)
 {
 	lua_pushboolean(L, m_val);
@@ -129,6 +144,11 @@ void LuaArgs::pushArg(const std::string & val)
 	PUSH_LUA_ARG(LuaVString);
 }
 
+void LuaArgs::pushArg(void * val)
+{
+	PUSH_LUA_ARG(LuaVUdata);
+}
+
 void LuaArgs::pushArg(const char * val, int32_t _size)
 {
 	auto arg = new LuaVCharString();
@@ -185,3 +205,4 @@ LuaArgs::~LuaArgs()
 	m_arg.clear();
 	m_res.clear();
 }
+

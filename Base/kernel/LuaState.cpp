@@ -1,5 +1,6 @@
 ﻿#include "LuaState.h"
 #include "LuaModule.h"
+#include "MsgModule.h"
 extern "C" {
 #include "lua5.3/mpb.h"
 }
@@ -15,6 +16,9 @@ LuaState::LuaState():m_module(NULL)
 	RegistCallFunc();
 	PushSelf();
 	lua_settop(m_L, 0);
+
+	m_dt = new LuaVInt64();
+	m_update_arg.m_arg.push_back(m_dt);
 }
 
 LuaState::~LuaState()
@@ -24,9 +28,11 @@ LuaState::~LuaState()
 
 void LuaState::Run(int64_t dt)
 {
+	m_dt->m_val = dt;
 	for (auto& ref: m_loopRef)
 	{
-		CallRegistFunc(ref,dt);
+		callRegistFunc(ref, m_update_arg);
+		//CallRegistFunc(ref,dt);
 	}
 }
 
@@ -54,7 +60,7 @@ void LuaState::initLuaCommonFunc(const std::string & name)
 	lua_getglobal(m_L, name.c_str());
 	if (!lua_isfunction(m_L, -1))
 	{
-		//LOG_ERROR("initLuaCommonFunc error can not find func %s\n", name.c_str());
+		LP_ERROR<<"initLuaCommonFunc error can not find func " << name;
 		return;
 	}
 	m_common_ref = luaL_ref(m_L, LUA_REGISTRYINDEX);
@@ -68,11 +74,6 @@ void LuaState::initLToCIndex(uint32_t _began, uint32_t _end)
 	m_beginIndex = _began;
 	m_endIndex = _end;
 	m_commonCall = new LuaCallHandle[_end - _began];
-
-	if (m_luaCallFunc)
-	{
-		m_luaCallFunc = NULL;
-	}
 }
 
 void LuaState::initCToLIndex(uint32_t _began, uint32_t _end)
@@ -90,13 +91,13 @@ void LuaState::bindLToCFunc(int32_t findex, const LuaCallHandle & func)
 {
 	if (m_commonCall == NULL)
 	{
-		//LOG_ERROR("need call initLToCIndex  first\n");
+		LP_ERROR << "need call initLToCIndex  first";
 		return;
 	}
 
 	if (findex < m_beginIndex || findex >= m_endIndex)
 	{
-		//LOG_ERROR("bind LToc index out of rang %d\n", findex);
+		LP_ERROR << "bind LToc index out of rang" << findex;
 		return;
 	}
 	m_commonCall[findex] = func;
@@ -111,13 +112,13 @@ bool LuaState::callLuaFunc(int32_t findex, LuaArgs & arg)
 {
 	if (m_cTolRef == NULL)
 	{
-		//LOG_ERROR("need init initCToLIndex or callRegistFunc\n");
+		LP_ERROR << "need init initCToLIndex or callRegistFunc";
 		return false;
 	}
 
 	if (findex < m_cToLBegIndex || findex >= m_cToLEndIndex)
 	{
-		//LOG_ERROR("findex out of range %d\n", findex);
+		LP_ERROR << "findex out of range " << findex;
 		return false;
 	}
 
@@ -152,46 +153,47 @@ bool LuaState::callRegistFunc(int32_t ref, LuaArgs & arg)
 	return true;
 }
 
+bool LuaState::callGloableFunc(const std::string & f, LuaArgs & arg)
+{
+	lua_rawgeti(m_L, LUA_REGISTRYINDEX, m_errIndex);
+	lua_getglobal(m_L, f.c_str());
+	if (!lua_isfunction(m_L, -1))
+	{
+		return false;
+	}
+
+	int32_t rnum = (int32_t)arg.m_res.size();
+	int32_t anum = (int32_t)arg.m_arg.size();
+
+	int es = -2 - anum;
+
+	for (auto& v : arg.m_arg)
+	{
+		v->pushValue(m_L);
+	}
+	if (lua_pcall(m_L, anum, rnum, es) != LUA_OK)
+	{
+		PrintError();
+		return false;
+	}
+	for (int32_t i = 0; i < rnum; i++)
+	{
+		arg.m_res[i]->pullValue(m_L, -rnum + i);
+	}
+	return false;
+}
+
 bool LuaState::getRefFunc(int32_t ref)
 {
 	lua_rawgeti(m_L, LUA_REGISTRYINDEX, m_errIndex);
 	lua_rawgeti(m_L, LUA_REGISTRYINDEX, ref);
 	if (!lua_isfunction(m_L, -1))
 	{
-		//LOG_ERROR("lua func not a function\n");
+		LP_ERROR << "lua func not a function";
 		return false;
 	}
 	return true;
 }
-
-//int LuaState::callFunction(lua_State* L)
-//{
-//	if (lua_gettop(L) < 2)
-//	{
-//		std::cout << "args num < 2 " << std::endl;
-//		return 0;
-//	}
-//	if (!lua_islightuserdata(L, 1))
-//	{
-//		std::cout << "get null " << std::endl;
-//		return 0;
-//	}
-//	auto ptr = (LuaState*)lua_touserdata(L, 1);
-//	if (ptr->m_module == NULL)
-//		return 0;
-//	if (!lua_isstring(L, 2))
-//	{
-//		std::cout << "error arg 2 not string " << std::endl;
-//		return 0;
-//	}
-//	auto fname = lua_tostring(L, 2);
-//	/*auto it = ptr->m_luaCallFunc.find(fname);
-//	if (it != ptr->m_luaCallFunc.end())
-//		return it->second(L);*/
-//
-//	return ptr->m_module->CallFunc(ptr,fname);
-//	return 0;
-//}
 
 int LuaState::open_callFunc(lua_State* L)
 {
@@ -214,18 +216,253 @@ int LuaState::traceback(lua_State * L)
 	return 1;
 }
 
+int net_readint8(lua_State * L)
+{
+	if (lua_islightuserdata(L, -1))
+	{
+		auto msg = (NetMsg*)lua_touserdata(L, -1);
+		lua_pushinteger(L, msg->m_buff->readInt8());
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "readerror not netMsg*");
+		lua_pushinteger(L, 0);
+	}
+	return 1;
+}
+
+int net_readint16(lua_State * L)
+{
+	if (lua_islightuserdata(L, -1))
+	{
+		auto msg = (NetMsg*)lua_touserdata(L, -1);
+		lua_pushinteger(L, msg->m_buff->readInt16());
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "readerror not netMsg*");
+		lua_pushinteger(L, 0);
+	}
+	return 1;
+}
+
+int net_readint32(lua_State * L)
+{
+	if (lua_islightuserdata(L, -1))
+	{
+		auto msg = (NetMsg*)lua_touserdata(L, -1);
+		lua_pushinteger(L, msg->m_buff->readInt32());
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "readerror not netMsg*");
+		lua_pushinteger(L, 0);
+	}
+	return 1;
+}
+
+int net_readint64(lua_State * L)
+{
+	if (lua_islightuserdata(L, -1))
+	{
+		auto msg = (NetMsg*)lua_touserdata(L, -1);
+		lua_pushinteger(L, msg->m_buff->readInt64());
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "readerror not netMsg*");
+		lua_pushinteger(L, 0);
+	}
+	return 1;
+}
+
+int net_readstring(lua_State * L)
+{
+	if (lua_islightuserdata(L, -1))
+	{
+		auto msg = (NetMsg*)lua_touserdata(L, -1);
+		int32_t len = 0;
+		auto buf = msg->m_buff->readString(len);
+		lua_pushlstring(L, buf, len);
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "readerror not netMsg*");
+		lua_pushstring(L, "");
+	}
+	return 1;
+}
+
+int net_readbuff(lua_State * L)
+{
+	if (lua_islightuserdata(L, -1))
+	{
+		auto msg = (NetMsg*)lua_touserdata(L, -1);
+		int32_t len = 0;
+		auto buf = msg->m_buff->readBuff(len);
+		lua_pushlstring(L, buf, len);
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "readerror not netMsg*");
+		lua_pushstring(L, "");
+	}
+	return 1;
+}
+
+int net_make_buff(lua_State * L)
+{
+	if (!lua_islightuserdata(L,-2))
+		return 0;
+
+	auto ptr = (LuaState*)lua_touserdata(L, -2);
+
+	size_t len = 0;
+
+	if (lua_isinteger(L, -1))
+	{
+		len = (size_t)lua_tointeger(L, -1);
+		if (len > (1 << 20))
+		{
+			LuaState::printLuaFuncStack(L, "net_make_buff size error");
+			return 0;
+		}
+	}
+
+	auto pack = GET_LAYER_MSG(BuffBlock);
+	ptr->luaModule()->addCashSendBuff(pack);
+	if (len > 0)
+		pack->makeRoom(len);
+	lua_pushlightuserdata(L, pack);
+	return 1;
+}
+
+int net_writeint8(lua_State * L)
+{
+	if (lua_islightuserdata(L, -2))
+	{
+		auto num = luaL_checkinteger(L, -1);
+		auto pack = (BuffBlock*)lua_touserdata(L, -2);
+		pack->writeInt8((int8_t)num);
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "write not BuffBlock*");
+	}
+	return 0;
+}
+
+int net_writeint16(lua_State * L)
+{
+	if (lua_islightuserdata(L, -2))
+	{
+		auto num = luaL_checkinteger(L, -1);
+		auto pack = (BuffBlock*)lua_touserdata(L, -2);
+		pack->writeInt16((int16_t)num);
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "write not BuffBlock*");
+	}
+	return 0;
+}
+
+int net_writeint32(lua_State * L)
+{
+	if (lua_islightuserdata(L, -2))
+	{
+		auto num = luaL_checkinteger(L, -1);
+		auto pack = (BuffBlock*)lua_touserdata(L, -2);
+		pack->writeInt32((int32_t)num);
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "write not BuffBlock*");
+	}
+	return 0;
+}
+
+int net_writeint64(lua_State * L)
+{
+	if (lua_islightuserdata(L, -2))
+	{
+		auto num = luaL_checkinteger(L, -1);
+		auto pack = (BuffBlock*)lua_touserdata(L, -2);
+		pack->writeInt64((int64_t)num);
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "write not BuffBlock*");
+	}
+	return 0;
+}
+
+int net_writestring(lua_State * L)
+{
+	if (lua_islightuserdata(L, -2))
+	{
+		if (!lua_isstring(L, -1))
+		{
+			LuaState::printLuaFuncStack(L, "write arg not string");
+			return 0;
+		}
+		size_t len;
+		auto buf = lua_tolstring(L, -1, &len);
+		auto pack = (BuffBlock*)lua_touserdata(L, -2);
+		pack->writeString(std::string(buf, len));
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "write not BuffBlock*");
+	}
+	return 0;
+}
+
+int net_writebuff(lua_State * L)
+{
+	if (lua_islightuserdata(L, -2))
+	{
+		if (!lua_isstring(L, -1))
+		{
+			LuaState::printLuaFuncStack(L, "write arg not string");
+			return 0;
+		}
+		size_t len;
+		auto buf = lua_tolstring(L, -1, &len);
+		auto pack = (BuffBlock*)lua_touserdata(L, -2);
+		pack->writeBuff(buf, (int32_t)len);
+	}
+	else
+	{
+		LuaState::printLuaFuncStack(L, "write not BuffBlock*");
+	}
+	return 0;
+}
+
 void LuaState::open_libs()
 {
-	/*luaL_Reg lib_s[] = {
-		{ "Loop",open_callFunc },
+	luaL_Reg lib_s[] = {
+		{ "readint8",net_readint8 },
+		{ "readint16",net_readint16 },
+		{ "readint32",net_readint32 },
+		{ "readint64",net_readint64 },
+		{ "readstring",net_readstring },
+		{ "readbuff",net_readbuff },
+		{ "makepack",net_make_buff},
+		{ "writeint8",net_writeint8},
+		{ "writeint16",net_writeint16},
+		{ "writeint32",net_writeint32},
+		{ "writeint64",net_writeint64},
+		{ "writestring",net_writestring},
+		{ "writebuff",net_writebuff},
 	{ NULL,NULL }
 	};
-	const luaL_Reg* lib = lib_s;
-	for (; lib->func != NULL; lib++)
-	{
-		luaL_requiref(m_L, lib->name, lib->func, 1);
-		lua_settop(m_L, 0);
-	}*/
+
+	lua_newtable(m_L);
+	lua_setglobal(m_L, "NetMsg");
+	lua_getglobal(m_L, "NetMsg");
+	luaL_setfuncs(m_L, lib_s, 0);
+	lua_settop(m_L,0);
 }
 
 void LuaState::RegistCallFunc()
@@ -276,7 +513,7 @@ void LuaState::printLuaStack()
 void LuaState::printLuaFuncStack(lua_State * L, const char * msg)
 {
 	luaL_traceback(L, L, msg, 1);
-	//LOG_ERROR("Lua error: %s\n", lua_tostring(L, -1));
+	LP_INFO << "Lua error:" << lua_tostring(L, -1);
 	lua_pop(L, 1);
 }
 
@@ -284,7 +521,7 @@ void LuaState::PrintError()
 {
 	LuaVString str;
 	str.pullValue(m_L, -1);
-	std::cout << "Lua error:" << str.m_val << std::endl;
+	LP_ERROR_SP << "Lua error:" << str.m_val;
 }
 
 int LuaState::callFunction2(lua_State * L)
@@ -317,7 +554,7 @@ int LuaState::callFunction2(lua_State * L)
 		}
 		else
 		{
-			//LOG_ERROR("common func not bind %d\n", findex);
+			LP_ERROR << "common func not bind " << findex;
 		}
 	}
 	else {
@@ -400,7 +637,7 @@ int LuaState::printFunction(lua_State * L)
 	int32_t level = (int32_t)lua_tointeger(L, 1);
 	int i;
 	lua_getglobal(L, "tostring");
-	std::string log;
+	std::string log("LUA:");
 	for (i = 2; i <= n; i++) {
 		const char *s;
 		size_t l;
@@ -417,9 +654,22 @@ int LuaState::printFunction(lua_State * L)
 		log.append(" ");
 		lua_pop(L, 1);  /* pop result */
 	}
-	log.append("\n");
+	//log.append("\n");
+	if (level == 1)
 	{
-		//Net::Logger::print(Net::LogLevel(level), log.c_str());
+		LP_DEBUG << log;
+	}
+	else if (level == 2)
+	{
+		LP_INFO << log;
+	}
+	else if (level == 3)
+	{
+		LP_WARN << log;
+	}
+	else if (level == 4)
+	{
+		LP_ERROR_SP << log;
 	}
 	return 0;
 }
@@ -525,20 +775,19 @@ void LuaState::PushTableFloat(const std::string & key, float val)
 
 int32_t LuaState::PullInt32()
 {
-	if (lua_isinteger(m_L, m_argIndex + 1))
+	++m_argIndex;
+	if (lua_isinteger(m_L, m_argIndex))
 	{
-		++m_argIndex;
 		return (int32_t)lua_tointeger(m_L, m_argIndex);
 	}
-	else if (lua_isnumber(m_L, m_argIndex + 1))
+	else if (lua_isnumber(m_L, m_argIndex))
 	{
-		++m_argIndex;
 		double tmpV = lua_tonumber(m_L, m_argIndex);
 		return (int32_t)std::lround(tmpV);
 	}
 	else
 	{
-		//LOG_ERROR("PullInt32 not a number: %d\n", (m_argIndex + 1));
+		LP_ERROR << "PullInt32 not a number: " << m_argIndex;
 	}
 
 	return 0;
@@ -546,29 +795,28 @@ int32_t LuaState::PullInt32()
 
 int64_t LuaState::PullInt64()
 {
-	if (lua_isinteger(m_L, m_argIndex + 1))
+	++m_argIndex;
+	if (lua_isinteger(m_L, m_argIndex))
 	{
-		++m_argIndex;
 		return lua_tointeger(m_L, m_argIndex);
 	}
-	else if (lua_isnumber(m_L, m_argIndex + 1))
+	else if (lua_isnumber(m_L, m_argIndex))
 	{
-		++m_argIndex;
 		double tmpV = lua_tonumber(m_L, m_argIndex);
 		return std::llroundl(tmpV);
 	}
 	else
 	{
-		//LOG_ERROR("PullInt64 not a number: %d\n", (m_argIndex + 1));
+		LP_ERROR << "PullInt64 not a number: " << m_argIndex;
 	}
 	return 0;
 }
 
 std::string LuaState::PullString()
 {
-	if (lua_isstring(m_L, m_argIndex + 1))
+	++m_argIndex;
+	if (lua_isstring(m_L, m_argIndex))
 	{
-		++m_argIndex;
 		size_t len;
 		auto c = lua_tolstring(m_L, m_argIndex, &len);
 		return std::string(c, len);
@@ -576,11 +824,21 @@ std::string LuaState::PullString()
 	return "";
 }
 
+void * LuaState::PullUserData()
+{
+	++m_argIndex;
+	if (lua_islightuserdata(m_L,m_argIndex))
+	{
+		return lua_touserdata(m_L, m_argIndex);
+	}
+	return NULL;
+}
+
 const char * LuaState::PullCString(int32_t & size)
 {
-	if (lua_isstring(m_L, m_argIndex + 1))
+	++m_argIndex;
+	if (lua_isstring(m_L, m_argIndex))
 	{
-		++m_argIndex;
 		size_t len;
 		auto c = lua_tolstring(m_L, m_argIndex, &len);
 		size = (int32_t)len;
@@ -591,9 +849,9 @@ const char * LuaState::PullCString(int32_t & size)
 
 float LuaState::Pullfloat()
 {
-	if (lua_isnumber(m_L, m_argIndex + 1))
+	++m_argIndex;
+	if (lua_isnumber(m_L, m_argIndex))
 	{
-		++m_argIndex;
 		return (float)lua_tonumber(m_L, m_argIndex);
 	}
 	return 0.0f;

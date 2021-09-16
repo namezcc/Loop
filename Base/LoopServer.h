@@ -62,25 +62,25 @@ public:
 	{
 		return MsgPool::popMsg<T>();
 	}
-	void recycle(int32_t index, BaseData* msg);
+	//void recycle(int32_t index, BaseData* msg);
 	std::vector<ServerConfigInfo> getConnectServer();
 
 	int m_port;
+	const ServerNode& getServerNode() { return m_server; }
 protected:
 	void Init(const int& stype, const int& serid);
 	void InitConfig();
 	void InitServerConfig();
 	void InitConnectRule();
 	void InitLogLayer();//
-	void InitMsgPool();
+	//void InitMsgPool();
 private:
 	SHARE<ThreadPool> m_pool;
 	vector<SHARE<BaseLayer>> m_layers;
 	ServerNode m_server;
 	ServerConfig m_config;
 
-	MsgPool* m_msgPool;
-	RecyclePool* m_recycle;
+	//RecyclePool* m_recycle;
 	std::map<int32_t, std::vector<ServerConfigInfo>> m_all_server;
 	std::map<int32_t, std::pair<int32_t, int32_t>> m_connect_rule;
 

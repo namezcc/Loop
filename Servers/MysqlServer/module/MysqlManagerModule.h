@@ -7,7 +7,6 @@
 class MysqlModule;
 class MsgModule;
 class TransMsgModule;
-class GameTableModule;
 
 struct LMsgSqlParam;
 struct SqlOperation;
@@ -51,7 +50,6 @@ protected:
 	MysqlModule* m_mysqlmodule;
 	MsgModule*	m_msgmodule;
 	TransMsgModule* m_transModule;
-	GameTableModule* m_gameTableModule;
 
 	char m_sql_buff[4096];
 	ServerNode m_lock_server;
