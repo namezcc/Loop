@@ -88,7 +88,7 @@ public:
 		auto it = m_modules.find(typeid(T).hash_code());
 		if (it == m_modules.end())
 		{
-#ifdef PLATFORM == PLATFORM_WIN
+#if PLATFORM == PLATFORM_WIN
 			std::cout << "Null module " << typeid(T).name() << "  " << typeid(T).raw_name() << std::endl;
 #endif // _WIN
 			assert(0);
