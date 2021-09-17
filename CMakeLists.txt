@@ -16,8 +16,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251 /wd4819")
 
 endif()
 
+if(WIN32)
 set(LPOutDir ${PROJECT_SOURCE_DIR}/_out/)
 set(LPBaseOut ${PROJECT_SOURCE_DIR}/_out/)
+else()
+set(LPOutDir ${PROJECT_SOURCE_DIR}/_out/Debug)
+set(LPBaseOut ${PROJECT_SOURCE_DIR}/_out/Debug)
+endif()
 
 include_directories(
 ${PROJECT_SOURCE_DIR} 
@@ -94,7 +99,7 @@ if(WIN32)
 set(lib_link ${lib_link} anet.lib libboost_filesystem-vc141-mt-gd-x64-1_66.lib Lua.lib)
 set(LoopLib Loop.lib libuv.lib jsoncpp.lib)
 else()
-set(lib_link anet.a Lua.a boost_filesystem boost_context.a uv.a jsoncpp.a protobuf mysqlclient mysqlpp)
+set(lib_link anet.a lua.a boost_filesystem boost_context.a uv.a jsoncpp.a protobuf mysqlclient mysqlpp)
 set(LoopLib Loop)
 endif()
 

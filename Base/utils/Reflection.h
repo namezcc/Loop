@@ -8,6 +8,8 @@
 #include <sstream>
 #include <functional>
 #include <stdint.h>
+#include <cstddef>
+
 using namespace std;
 
 #define TO_STRING( x ) TO_STRING1( x )

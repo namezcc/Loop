@@ -12,6 +12,11 @@ namespace as = boost::asio;
 class MsgModule;
 class Protocol;
 
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique_m(Args&&... args) {
+	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
 struct AsioSession:public LoopObject
 {
 	AsioSession()
@@ -48,7 +53,7 @@ public:
 	void SetProtoType(ProtoType ptype);
 	void SetBind(int port)
 	{
-		m_accptor = std::make_unique<tcp::acceptor>(m_context, tcp::endpoint(tcp::v4(), port));
+		m_accptor = make_unique_m<tcp::acceptor>(m_context, tcp::endpoint(tcp::v4(), port));
 	}
 private:
 

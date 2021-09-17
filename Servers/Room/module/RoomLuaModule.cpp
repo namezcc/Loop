@@ -12,7 +12,7 @@ void RoomLuaModule::Init()
 
 void RoomLuaModule::AfterInit()
 {
-	m_lua_mod->runScript("./lua/room/main.lua");
+	m_lua_mod->runScript("../../lua/room/main.lua");
 	m_lua_mod->setLuaCallFunc(std::bind(&RoomLuaModule::onLuaCallFunc, this, HOLD_2));
 	m_lua_mod->setUpdateFunc("update");
 

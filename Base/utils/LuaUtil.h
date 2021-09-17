@@ -173,7 +173,7 @@ struct PushTool<std::vector<T>, false>
 		lua_newtable(L);
 		for (size_t i = 0; i < val.size(); i++)
 		{
-			PushTool<T, LuaReflect<std::decay<T>::type>::have_type>::PushVal(L, val[i]);
+			PushTool<T, LuaReflect<typename std::decay<T>::type>::have_type>::PushVal(L, val[i]);
 			lua_rawseti(L, -2, i + 1);
 		}
 	}
@@ -187,8 +187,8 @@ struct PushTool<std::map<T1, T2>, false>
 		lua_newtable(L);
 		for (auto& it : val)
 		{
-			PushTool<T1, LuaReflect<std::decay<T1>::type>::have_type>::PushVal(L, it.first);
-			PushTool<T2, LuaReflect<std::decay<T2>::type>::have_type>::PushVal(L, it.second);
+			PushTool<T1, LuaReflect<typename std::decay<T1>::type>::have_type>::PushVal(L, it.first);
+			PushTool<T2, LuaReflect<typename std::decay<T2>::type>::have_type>::PushVal(L, it.second);
 			lua_settable(L, -3);
 		}
 	}
@@ -206,7 +206,7 @@ struct PushLuaArgs
 	template<typename T>
 	static void PushVal(lua_State* L, T&& val)
 	{
-		PushTool<std::decay<T>::type, LuaReflect<typename std::decay<T>::type>::have_type>::PushVal(L, std::forward<T>(val));
+		PushTool<typename std::decay<T>::type, LuaReflect<typename std::decay<T>::type>::have_type>::PushVal(L, std::forward<T>(val));
 	}
 
 	static void PushVal(lua_State* L)
@@ -404,7 +404,7 @@ template<> struct LuaReflect<T>{	\
 	constexpr array<int,LuaReflect<T>::SIZE> LuaReflect<T>::arr_func;	\
 	constexpr array<int,LuaReflect<T>::SIZE> LuaReflect<T>::arr_pushfunc;	
 
-
+/*
 template<int32_t N>
 struct CallTool
 {
@@ -425,5 +425,6 @@ struct CallTool<0>
 		return f();
 	}
 };
+*/
 
 #endif

@@ -33,8 +33,8 @@ struct PropertyEvent
 	template<typename T, typename F>
 	void AddPropertyEvent(T&&t, int32_t pid, F&&f)
 	{
-		BasePropertyCall* call = new PropertyCall<FuncArgsType<F>::arg1, FuncArgsType<F>::arg3>(ANY_BIND(t, f));
-		m_procall[typeid(PointType<FuncArgsType<F>::arg1>::type).hash_code()][pid].push_back(std::shared_ptr<BasePropertyCall>(call));
+		BasePropertyCall* call = new PropertyCall<typename FuncArgsType<F>::arg1, typename FuncArgsType<F>::arg3>(ANY_BIND(t, f));
+		m_procall[typeid(PointType<typename FuncArgsType<F>::arg1>::type).hash_code()][pid].push_back(std::shared_ptr<BasePropertyCall>(call));
 	}
 
 	template<typename T, typename V>

@@ -8,6 +8,7 @@
 #include "LPStringUtil.h"
 #include "ToolFunction.h"
 #include <iostream>
+#include <list>
 
 using namespace std;
 class LOOP_EXPORT BaseModule

@@ -78,7 +78,7 @@ private:
 	Call m_call;
 };
 
-template<typename int, typename T>
+template<int n, typename T>
 struct ArgType;
 #define ARG_TYPE_N(n) template<typename T>\
 struct ArgType<n,T>{ using arg##n = T; };

@@ -78,6 +78,10 @@ public:
 
 class MsgModule;
 
+#if PLATFORM == PLATFORM_LINUX
+#define sprintf_s snprintf
+#endif // PLATF
+
 class LOOP_EXPORT MysqlModule:public BaseModule
 {
 public:
@@ -95,7 +99,7 @@ public:
 		SqlRow fiels;
 		char sql[256];
 		std::string tabName = newName.empty() ? Reflect<T>::Name() : newName;
-		sprintf_s(sql, "select COLUMN_NAME from information_schema.COLUMNS where table_name = '%s';", tabName.c_str());
+		sprintf_s(sql,sizeof(sql), "select COLUMN_NAME from information_schema.COLUMNS where table_name = '%s';", tabName.c_str());
 		Select(sql, res, fiels);
 		std::set<std::string> repeate;
 		for (auto vec:res)

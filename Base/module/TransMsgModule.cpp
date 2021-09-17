@@ -32,7 +32,7 @@ void TransMsgModule::Init()
 
 void TransMsgModule::BeforExecute()
 {
-	auto& config = GetLayer()->GetLoopServer()->getConnectServer();
+	auto config = GetLayer()->GetLoopServer()->getConnectServer();
 
 	for (auto& scfg : config)
 	{

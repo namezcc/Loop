@@ -1,0 +1,10 @@
+{
+	"Lua.diagnostics.disable": [
+		"undefined-global",
+		"deprecated",
+		"lowercase-global",
+		"unused-local",
+		"unused-function",
+		"trailing-space"
+	]
+}
