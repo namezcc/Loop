@@ -6,6 +6,7 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
+#include <stdexcept>
 
 using namespace rapidjson;
 
@@ -19,7 +20,7 @@ public:
 	{
 		FILE* fp = fopen(file.c_str(), "r");
 		if (fp == NULL)
-			throw std::exception("JsonHelp open file error");
+			throw std::logic_error("JsonHelp open file error");
 
 		char readBuffer[65535];
 		FileReadStream is(fp, readBuffer, 65535);

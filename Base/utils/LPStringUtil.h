@@ -42,16 +42,6 @@ namespace Loop{
 	};
 
 	template<>
-	struct cvto<long>
-	{
-		static long To(string s)
-		{
-			if (s.empty()) return 0;
-			return std::stol(s);
-		}
-	};
-
-	template<>
 	struct cvto<int64_t>
 	{
 		static int64_t To(string s)

@@ -189,21 +189,21 @@ private:
 	template<typename T>
 	T read()
 	{
-		auto ts = sizeof(T);
+		auto ts = (int32_t)sizeof(T);
 		if (ts + m_offect > m_size)
 		{
 			//error 
 			return T();
 		}
 		T t = *(T*)(m_buff + m_offect);
-		m_offect += (int32_t)ts;
+		m_offect += ts;
 		return t;
 	}
 
 	template<typename T>
 	void write(const T& t)
 	{
-		auto ts = sizeof(T);
+		auto ts = (int32_t)sizeof(T);
 
 		if (m_buff == NULL)
 			makeRoom(64);
@@ -218,8 +218,8 @@ private:
 		*pt = t;
 
 		if (m_offect == m_size)
-			m_size += (int32_t)ts;
-		m_offect += (int32_t)ts;
+			m_size += ts;
+		m_offect += ts;
 	}
 
 protected:

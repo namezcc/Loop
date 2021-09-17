@@ -142,7 +142,7 @@ void LoopServer::InitConnectRule()
 	JsonHelp jhelp;
 	if (!jhelp.ParseFile(file))
 		exit(-1);
-	auto& root = jhelp.GetDocument().GetArray();
+	auto root = jhelp.GetDocument().GetArray();
 
 	for (auto& v:root)
 	{
