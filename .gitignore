@@ -1,6 +1,5 @@
 build/
 _out/Debug/
-protoPB/
 Base/.vscode/
 *.exp
 *.pdb
@@ -9,3 +8,4 @@ Base/.vscode/
 robot/Robot2/Debug/
 robot/Robot2/x64/
 Servers/Master/goweb/tcp_test/vendor/
+protoPB/solution/
