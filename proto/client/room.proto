@@ -1,0 +1,79 @@
+syntax = "proto3";
+package LPMsg;
+
+message ReqEnterRoom
+{
+	int64	uid = 1;
+	int32	key = 2;
+}
+
+message ReqCreateRole
+{
+    int64   pid = 1;
+    string  name = 2;
+}
+
+message AckMatchState
+{
+    int32   state = 1;
+}
+
+message AckEnterBattle
+{
+    string  ip = 1;
+    int32   port = 2;
+    int32   sceneId = 3;
+    int64   key = 4;
+}
+
+message RoleInfo
+{
+	int64	pid		= 1;
+	string	name	= 2;
+	int32	level	= 3;
+}
+
+message PlayerSimpleInfo
+{
+	int64	pid		= 1;
+	string	name	= 2;
+	int32	level	= 3;
+	int32	online	= 4;
+	int32	type	= 5;
+}
+
+message PlayerSimpleInfoList
+{
+	repeated	PlayerSimpleInfo	data = 1;
+}
+
+message RoleList
+{
+	repeated	RoleInfo	roles = 1;
+}
+
+message ReplyFriend
+{
+	int64	pid		= 1;
+	int32	res		= 2;
+}
+
+message ReplyTeamJoin
+{
+	int64	pid		= 1;
+	int32	res		= 2;
+}
+
+message TeamPlayer
+{
+	int32		gameid = 1;
+	int64		pid = 2;
+	string		name = 3;
+	int32		level = 4;
+}
+
+message TeamInfo
+{
+	int64		leader	= 1;
+	repeated	TeamPlayer	player = 2;
+}

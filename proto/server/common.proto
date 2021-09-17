@@ -1,0 +1,26 @@
+syntax = "proto3";
+package LPMsg;
+
+message Int32Value
+{
+    int32   value = 1;
+}
+
+message PathNode
+{
+    int32   sertype = 1;
+    int32   serid = 2;
+}
+
+message ReqNoticeServer
+{
+    int32   serverType = 1;
+    repeated  PathNode    path = 2;
+}
+
+message AckNoticeServer
+{
+    int32               state = 1;
+    int32               sertype = 2;
+    repeated int32      serid = 3;
+}

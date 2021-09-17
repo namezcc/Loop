@@ -1,0 +1,26 @@
+syntax = "proto3";
+package LPMsg;
+
+message AoiInfo
+{
+    int32           objId = 1;
+    repeated int32  addlist = 2;
+    repeated int32  remlist = 3;
+}
+
+message AoiSceneInfo
+{
+    int32               sceneId = 1;
+    repeated AoiInfo    list = 2;
+}
+
+message AoiSceneList
+{
+    repeated AoiSceneInfo       list = 1;
+}
+
+message FinishFrame
+{
+    repeated int32      sceneId = 1;
+    repeated int32      frame = 2;
+}

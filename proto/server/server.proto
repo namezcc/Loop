@@ -1,0 +1,26 @@
+syntax = "proto3";
+package LPMsg;
+
+message LoginLock
+{
+    int64   pid = 1;
+}
+
+message RoomState
+{
+    int32   state = 1;
+    int32   id = 2;
+    string  ip = 3;
+    int32   port = 4;
+}
+
+message RoomStateList
+{
+    repeated RoomState list = 1;
+}
+
+message RoomReadyInfo
+{
+    int64   pid = 1;
+    int64   roleid = 2;
+}

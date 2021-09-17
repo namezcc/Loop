@@ -1,0 +1,62 @@
+syntax = "proto3";
+package LPMsg;
+
+message ProxyNode
+{
+    int32   proxyid = 1;
+    int32   serid = 2;
+}
+
+message PlayerNode
+{
+    int64   playerid = 1;
+    int32   proxyid = 2;
+    int32   serid = 3;
+}
+
+message BatPlayerInfo
+{
+    PlayerNode          pnode = 1;
+    string              name = 2;
+    int32               sceneId = 3;
+}
+
+message BatPlayerRes
+{
+    int64 playerid = 1;
+    int64 key = 2;
+}
+
+message ReqGetMatchServer
+{
+    int64   playerid = 1;
+    int32   num = 2;
+}
+
+message ReqMatch
+{
+    repeated    int64   players = 1;
+}
+
+message AckMatchRes
+{
+    int64       playerid    = 1;
+    ProxyNode   battleNode  = 2;
+    string      battleIp    = 3;
+    int32       battlePort  = 4;
+    int32       sceneId     = 5;
+}
+
+message AckFreeScene
+{
+    string      ip              = 1;
+    int32       port            = 2;
+    ProxyNode   battle          = 3;
+    repeated  int32  scene      = 4;
+}
+
+message TeamNode
+{
+	int32		team_sid = 1;
+	int32		team_id = 2;
+}

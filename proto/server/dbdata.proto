@@ -1,0 +1,41 @@
+syntax = "proto3";
+package LPMsg;
+
+message DB_account
+{
+	string	platform_uid	= 1;
+	int32	hash_index		= 2;
+	int64	game_uid		= 3;
+	int32	dbindex			= 4;
+}
+
+message DB_player
+{
+	int64	uid		= 1;
+	int64	pid		= 2;
+	string	name	= 3;
+	int32	level	= 4;
+	int32	gold	= 5;
+}
+
+message DB_roleList
+{
+	repeated	DB_player	roles = 1;
+	repeated	int32		i32ll = 2;
+}
+
+message DB_player_relation
+{
+	int64	pid		= 1;
+	int64	rpid	= 2;
+	int32	time	= 3;
+	int32	type	= 4;
+	string	name	= 5;
+	int32	level	= 6;
+}
+
+message DB_player_all_data
+{
+	DB_player		player = 1;
+	repeated	DB_player_relation		relation = 2;
+}

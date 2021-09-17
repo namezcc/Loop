@@ -1,0 +1,84 @@
+syntax = "proto3";
+package LPMsg;
+
+message Operation
+{
+    int32           type = 1;
+    repeated int32  value = 2;
+}
+
+message PlyOpt
+{
+    int32               frame = 1;
+    repeated Operation  opts = 2;
+}
+
+message CmdList
+{
+    int32               objId = 1;
+    repeated PlyOpt     list = 2;
+}
+
+message SceneCmd
+{
+    int32               sceneid = 1;
+    repeated CmdList    list = 2;
+}
+
+message SceneCmdList
+{
+    repeated SceneCmd   sceneCmd = 1;
+}
+
+message FixFrame
+{
+    int32           frame = 1;
+}
+
+message EntityPro
+{
+    int32           type = 1;
+    int32           value = 2;
+}
+
+message SceneEntity
+{
+    int32               id = 1;
+    int32               frame = 2;
+    repeated EntityPro  props = 3;
+}
+
+message OneSceneEntity
+{
+    int32               sceneid = 1;
+    SceneEntity         entity = 2;
+}
+
+message AoiEntity
+{
+    repeated int32      views = 1;
+    SceneEntity         entity = 2;
+}
+
+message AoiEntityList
+{
+    int32               sceneid = 1;
+    repeated AoiEntity  list = 2;
+}
+
+message AoiSceneEntityList
+{
+    repeated AoiEntityList      list = 1;
+}
+
+message EntityList
+{
+    int32                   sceneid = 1;
+    repeated int32          views = 2;
+    repeated SceneEntity    list = 3;
+}
+
+message ReqEnterBattleScene
+{
+    int64               playerId = 1;
+}
