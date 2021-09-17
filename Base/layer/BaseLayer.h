@@ -70,7 +70,7 @@ public:
 	{
 		if (m_modules.find(typeid(T).hash_code()) != m_modules.end())
 		{
-#ifdef PLATFORM_WIN
+#if PLATFORM == PLATFORM_WIN
 			std::cout << "double Moudle " << typeid(T).name() << "  " << typeid(T).raw_name() << std::endl;
 #endif // _WIN
 
@@ -88,7 +88,7 @@ public:
 		auto it = m_modules.find(typeid(T).hash_code());
 		if (it == m_modules.end())
 		{
-#ifdef PLATFORM_WIN
+#ifdef PLATFORM == PLATFORM_WIN
 			std::cout << "Null module " << typeid(T).name() << "  " << typeid(T).raw_name() << std::endl;
 #endif // _WIN
 			assert(0);
