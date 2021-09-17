@@ -28,7 +28,7 @@ do
     esac
 done
 
-cmake -DCMAKE_BUILD_TYPE=${libType} -DBUILD_SHARED_LIBS=${libShared} ..
+cmake3 -DCMAKE_BUILD_TYPE=${libType} -DBUILD_SHARED_LIBS=${libShared} ..
 echo "press any key to make"
 read -n 1
 make

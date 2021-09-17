@@ -20,7 +20,7 @@ public:
 	{
 		FILE* fp = fopen(file.c_str(), "r");
 		if (fp == NULL)
-			throw std::logic_error("JsonHelp open file error");
+			throw std::logic_error("JsonHelp open file error" + file);
 
 		char readBuffer[65535];
 		FileReadStream is(fp, readBuffer, 65535);

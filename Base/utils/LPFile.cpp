@@ -2,6 +2,8 @@
 #include "DataDefine.h"
 #include <boost/filesystem.hpp>
 
+std::string LoopFile::root_path;
+
 LoopFile::LoopFile()
 {
 }
@@ -41,7 +43,7 @@ int LoopFile::GetContent(const string& file, NetBuffer & context)
 
 std::string LoopFile::GetRootPath()
 {
-	try
+	/*try
 	{
 		boost::filesystem::path p = boost::filesystem::initial_path();
 		while (p.has_parent_path())
@@ -57,8 +59,9 @@ std::string LoopFile::GetRootPath()
 	catch (const std::exception& e)
 	{
 		std::cerr << e.what() << '\n';
-	}
-	return "";
+	}*/
+	//return "";
+	return root_path;
 }
 
 string LoopFile::GetExecutePath()
@@ -81,4 +84,23 @@ void LoopFile::MakeDir(const string & path)
 	{
 		std::cerr << e.what() << '\n';
 	}
+}
+
+void LoopFile::setRootPath(const string & path)
+{
+	boost::filesystem::path p(path);
+
+	while (p.has_parent_path())
+	{
+		if (p.leaf() == "_out")
+		{
+			p.remove_leaf();
+			break;
+		}
+		p.remove_leaf();
+	}
+	auto res = p.string();
+	res.append("/");
+
+	root_path = res;
 }

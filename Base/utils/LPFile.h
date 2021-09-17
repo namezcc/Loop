@@ -19,8 +19,10 @@ public:
 	static std::string GetRootPath();
 	static string GetExecutePath();
 	static void MakeDir(const string& path);
+	static void setRootPath(const string& path);
 private:
 
+	static std::string root_path;
 };
 
 #endif 

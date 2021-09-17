@@ -54,6 +54,8 @@ int main(int argc, char* args[])
 		assert(0);
 	}
 
+	LoopFile::setRootPath(args[0]);
+
 	map<int, string> serverConf;
 	LoadServerConf(serverConf);
 
