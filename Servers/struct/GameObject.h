@@ -40,7 +40,7 @@ struct PropertyEvent
 	template<typename T, typename V>
 	void SendEvent(T&&t, int32_t pid,const V& v1,const V& v2)
 	{
-		auto it = m_procall.find(typeid(PointType<T>::type).hash_code());
+		auto it = m_procall.find(typeid(typename PointType<T>::type).hash_code());
 		if (it == m_procall.end())
 			return;
 		auto itf = it->second.find(pid);
@@ -103,7 +103,7 @@ public:
 
 	void ParsePB(LPMsg::GameObject& pb)
 	{
-		for (int32_t i = 0; i < m_props.size(); i++)
+		for (int32_t i = 0; i < (int32_t)m_props.size(); i++)
 		{
 			if (m_props[i]->UpPrivate())
 			{

@@ -157,7 +157,7 @@ SHARE<NetServer> TransMsgModule::GetServerConn(const int32_t & sock)
 	return it->second;
 }
 
-void TransMsgModule::SendToServer(ServerNode & ser, const int32_t & mid, BuffBlock* buff)
+void TransMsgModule::SendToServer(const ServerNode & ser, const int32_t & mid, BuffBlock* buff)
 {
 	auto toser = GetServer(ser.type, ser.serid);
 	if (toser)
@@ -168,7 +168,7 @@ void TransMsgModule::SendToServer(ServerNode & ser, const int32_t & mid, BuffBlo
 	RECYCLE_LAYER_MSG(buff);
 }
 
-void TransMsgModule::SendToServer(ServerNode & ser, const int32_t & mid, google::protobuf::Message & msg)
+void TransMsgModule::SendToServer(const ServerNode & ser, const int32_t & mid, google::protobuf::Message & msg)
 {
 	auto toser = GetServer(ser.type, ser.serid);
 	if (toser)

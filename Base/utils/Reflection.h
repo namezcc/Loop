@@ -427,13 +427,13 @@ enum SQL_FIELD_TYPE
 
 struct FieldDesc
 {
-	char* name;
+	char const * name;
 	char type;
 	short len;
 	bool nullable;
-	char* defval;
+	char const* defval;
 	bool index;
-	char* comment;
+	char const* comment;
 };
 
 

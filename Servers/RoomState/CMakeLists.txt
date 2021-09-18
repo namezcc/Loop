@@ -23,7 +23,7 @@ libprotobufd.lib
 )
 else()
 set(DBProxylib
-serverpb.a
+serverpb.so
 )
 endif()
 

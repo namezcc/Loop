@@ -88,7 +88,7 @@ void LoopFile::MakeDir(const string & path)
 
 void LoopFile::setRootPath(const string & path)
 {
-	boost::filesystem::path p(path);
+	boost::filesystem::path p = boost::filesystem::initial_path();
 
 	while (p.has_parent_path())
 	{
