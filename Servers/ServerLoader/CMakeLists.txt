@@ -27,11 +27,11 @@ include_directories(
 )
 
 #breakpad_client.a
-#pthread
 
 set(Serverlib 
 boost_filesystem
 boost_system
+pthread
 dl
 )
 endif()
