@@ -1,10 +1,10 @@
-package.path = package.path..";./lua/room/?.lua;"
+package.path = package.path..";../../lua/room/?.lua;"
 
 collectgarbage("setpause", 200)  --200
 collectgarbage("setstepmul", 5000)
 
 --------- load proto
-pb.loadfile("./lua/room/proto/allproto.pb")
+pb.loadfile("../../lua/room/proto/allproto.pb")
 
 PLAYER_SOCK = {}
 ALL_PLAYER = {}

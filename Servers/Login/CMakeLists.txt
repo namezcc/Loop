@@ -15,7 +15,7 @@ file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
 set(COM_RECURSE ${PROJECT_SOURCE_DIR}/../Common/module/SendProxyDbModule.cpp)
 
-set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/GameReflectData.cpp)
+#set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/GameReflectData.cpp)
 
 if(WIN32)
 set(Loginlib

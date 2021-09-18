@@ -2,7 +2,7 @@
 #include "NetObjectModule.h"
 #include "MsgModule.h"
 #include "Crypto/crchash.h"
-#include "GameReflectData.h"
+//#include "GameReflectData.h"
 #include "MysqlModule.h"
 #include "SendProxyDbModule.h"
 #include "RedisModule.h"

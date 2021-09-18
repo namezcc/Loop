@@ -8,7 +8,7 @@ ${PROJECT_SOURCE_DIR}/
 
 if(WIN32)
 include_directories(
-E:/git/breakpad/src/ 
+#E:/git/breakpad/src/ 
 )
 
 link_directories(
@@ -17,19 +17,21 @@ E:/git/breakpad/src/client/windows/Debug/lib
 
 set(Serverlib 
 jsoncpp.lib
-exception_handler.lib
-crash_generation_client.lib
+#exception_handler.lib
+#crash_generation_client.lib
 common.lib
 )
 else()
 include_directories(
-/usr/local/include/breakpad/
+#/usr/local/include/breakpad/
 )
+
+#breakpad_client.a
+#pthread
+
 set(Serverlib 
-breakpad_client.a
 boost_filesystem
 boost_system
-pthread
 dl
 )
 endif()

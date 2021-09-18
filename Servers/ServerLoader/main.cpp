@@ -5,7 +5,7 @@
 #include <map>
 #include <thread>
 #include "cmdline.h"
-#include "dump.h"
+//#include "dump.h"
 #include "JsonHelp.h"
 
 #if PLATFORM != PLATFORM_WIN
@@ -32,9 +32,9 @@ void LoadServerConf(map<int,string>& conf)
 
 void StartInitCrash(const std::string& proname,const int32_t& nid)
 {
-	auto path = LoopFile::GetExecutePath();
+	/*auto path = LoopFile::GetExecutePath();
 	path.append("dump/");
-	InitCrash(path, proname+"_"+std::to_string(nid));
+	InitCrash(path, proname+"_"+std::to_string(nid));*/
 
 #if PLATFORM == PLATFORM_WIN
 	//set title
@@ -79,10 +79,10 @@ int main(int argc, char* args[])
 		auto nid = param.get<int>("id");
 		string dllname = serverConf[type];
 		assert(dllname.size() > 0);
-		/*if (i==0)
+		if (i==0)
 		{
 			StartInitCrash(dllname,nid);
-		}*/
+		}
 
 		dllhelp dll(dllname);
 		if (dll.Load())

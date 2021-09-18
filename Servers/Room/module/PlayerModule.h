@@ -2,7 +2,7 @@
 #define PLAYER_MODULE_H
 
 #include "BaseModule.h"
-#include "GameReflectData.h"
+//#include "GameReflectData.h"
 #include "ConfigObjects.h"
 
 #define ROOM_READY_OUT_TIME 60	//second

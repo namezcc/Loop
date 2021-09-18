@@ -6,7 +6,6 @@
 #include "MysqlModule.h"
 #include "MysqlLayer.h"
 #include "Coro1Module.h"
-#include "GameTableModule.h"
 #include "RedisModule.h"
 
 EXPORT void DLL_START_NAME(int argc,char* args[])
