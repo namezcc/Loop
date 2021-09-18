@@ -19,9 +19,9 @@ public:
 	virtual void Execute() override;
 
 	void AcceptConn(const int& socket,const int32_t& connType = CONN_CLIENT);
-	void SendNetMsg(const int& socket,const int& mid,google::protobuf::Message& pbmsg);
+	void SendNetMsg(const int& socket,const int& mid, const google::protobuf::Message& pbmsg);
 	void SendNetMsg(const int& socket,const int32_t & mid, BuffBlock* buff);
-	void BroadNetMsg(const std::vector<int32_t>& socks, const int32_t & mid, gpb::Message& pbmsg);
+	void BroadNetMsg(const std::vector<int32_t>& socks, const int32_t & mid, const  gpb::Message& pbmsg);
 	void BroadNetMsg(const std::vector<int32_t>& socks, const int32_t & mid, BuffBlock* buff);
 
 	SHARE<BaseMsg> ResponseAsynMsg(const int32_t& socket, SHARE<BaseMsg>& comsg, gpb::Message& pbmsg, c_pull& pull, SHARE<BaseCoro>& coro);

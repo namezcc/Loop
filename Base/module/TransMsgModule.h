@@ -16,34 +16,34 @@ public:
 
 	SHARE<NetServer> GetServerConn(const int32_t& sock);
 	void SendToServer(const ServerNode& ser, const int32_t& mid, BuffBlock* buff);
-	void SendToServer(const ServerNode& ser, const int32_t& mid, google::protobuf::Message& msg);
-	void SendToAllServer(const int32_t& stype, const int32_t& mid, google::protobuf::Message& msg);
+	void SendToServer(const ServerNode& ser, const int32_t& mid, const google::protobuf::Message& msg);
+	void SendToAllServer(const int32_t& stype, const int32_t& mid, const google::protobuf::Message& msg);
 	void SendToAllServer(const int32_t& stype, const int32_t& mid, BuffBlock* buff);
-	void SendToServer(ServerPath& path, const int32_t& mid, google::protobuf::Message& msg);
+	void SendToServer(ServerPath& path, const int32_t& mid, const google::protobuf::Message& msg);
 	void SendToServer(ServerPath& path, const int32_t& mid,BuffBlock* buff);
-	void SendBackServer(ServerPath& path, const int32_t& mid, google::protobuf::Message& msg);
+	void SendBackServer(ServerPath& path, const int32_t& mid,const google::protobuf::Message& msg);
 	void SendBackServer(ServerPath& path, const int32_t& mid, BuffBlock* buff);
 
 	NetMsg* RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro);
-	NetMsg* RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+	NetMsg* RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, const gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
 	NetMsg* RequestServerAsynMsg(ServerPath& path, const int32_t& mid, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro);
-	NetMsg* RequestServerAsynMsg(ServerPath& path, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
-	NetMsg* RequestBackServerAsynMsg(ServerPath& path, const int32_t& mid, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+	NetMsg* RequestServerAsynMsg(ServerPath& path, const int32_t& mid, const gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+	NetMsg* RequestBackServerAsynMsg(ServerPath& path, const int32_t& mid, const gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
 
-	NetMsg* RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, gpb::Message& msg, c_pull& pull, SHARE<BaseCoro>& coro, const ReqFail& failCall);
-	NetMsg* RequestServerAsynMsg(ServerPath& path, const int32_t& mid, gpb::Message& msg, c_pull& pull, SHARE<BaseCoro>& coro,const ReqFail& failCall);
+	NetMsg* RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, const gpb::Message& msg, c_pull& pull, SHARE<BaseCoro>& coro, const ReqFail& failCall);
+	NetMsg* RequestServerAsynMsg(ServerPath& path, const int32_t& mid, const gpb::Message& msg, c_pull& pull, SHARE<BaseCoro>& coro,const ReqFail& failCall);
 
 	NetMsg* ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro);
-	NetMsg* ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+	NetMsg* ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, const gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
 	NetMsg* ResponseServerAsynMsg(ServerPath& path, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro);
-	NetMsg* ResponseServerAsynMsg(ServerPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
-	NetMsg* ResponseBackServerAsynMsg(ServerPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+	NetMsg* ResponseServerAsynMsg(ServerPath& path, SHARE<BaseMsg>& comsg, const gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
+	NetMsg* ResponseBackServerAsynMsg(ServerPath& path, SHARE<BaseMsg>& comsg, const gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro);
 
 	void ResponseServerMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff);
-	void ResponseServerMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, gpb::Message& msg);
+	void ResponseServerMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, const gpb::Message& msg);
 	void ResponseServerMsg(ServerPath& path, SHARE<BaseMsg>& comsg, BuffBlock* buff);
-	void ResponseServerMsg(ServerPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg);
-	void ResponseBackServerMsg(ServerPath& path, SHARE<BaseMsg>& comsg, gpb::Message& msg);
+	void ResponseServerMsg(ServerPath& path, SHARE<BaseMsg>& comsg, const gpb::Message& msg);
+	void ResponseBackServerMsg(ServerPath& path, SHARE<BaseMsg>& comsg, const gpb::Message& msg);
 
 	BuffBlock* EncodeCoroMsg(BuffBlock* buff, const int32_t& mid, const int32_t& coid, const int32_t& mycoid = 0);
 	inline std::unordered_map<int32_t, std::unordered_map<int32_t, SHARE<NetServer>>>& GetServerList() { return m_serverList; };
@@ -60,7 +60,7 @@ protected:
 	void OnServerClose(int32_t sock);
 	void RemoveRand(const int32_t& stype, const int32_t& sid);
 
-	void TransMsgToServer(ServerPath& sers,const int32_t& mid, google::protobuf::Message& pbmsg);
+	void TransMsgToServer(ServerPath& sers,const int32_t& mid, const google::protobuf::Message& pbmsg);
 	void TransMsgToServer(ServerPath& sers, const int32_t& mid,BuffBlock* buffblock);
 
 	int32_t GetPathSize(ServerPath& sers);

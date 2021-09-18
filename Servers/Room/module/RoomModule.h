@@ -26,9 +26,9 @@ private:
 
 public:
 
-	void doSqlOperation(int64_t uid, int32_t opt, google::protobuf::Message& pb, int32_t ackId = 0);
+	void doSqlOperation(int64_t uid, int32_t opt, const google::protobuf::Message& pb, int32_t ackId = 0);
 	void doSqlOperation(int64_t uid, int32_t opt, BuffBlock* buf, int32_t ackId = 0);
-	void updatePlayerData(int64_t pid, google::protobuf::Message& pb, int32_t table, std::string key1 = "0", std::string key2 = "0");
+	void updatePlayerData(int64_t pid, const google::protobuf::Message& pb, int32_t table, std::string key1 = "0", std::string key2 = "0");
 	void updatePlayerData(int64_t pid,const std::string& pb, int32_t table, std::string key1 = "0", std::string key2 = "0");
 
 	void deletePlayerData(int64_t pid, const std::string& pb, int32_t table, std::string key1 = "0", std::string key2 = "0");

@@ -64,7 +64,7 @@ ServerPath & RoomModuloe::getDbPath(int64_t uid)
 	return m_db_path;
 }
 
-void RoomModuloe::doSqlOperation(int64_t uid, int32_t opt, google::protobuf::Message & pb, int32_t ackId)
+void RoomModuloe::doSqlOperation(int64_t uid, int32_t opt, const google::protobuf::Message & pb, int32_t ackId)
 {
 	auto pack = GET_LAYER_MSG(BuffBlock);
 	pack->makeRoom(pb.ByteSize() + sizeof(int32_t) * 2 + sizeof(int64_t));
@@ -88,7 +88,7 @@ void RoomModuloe::doSqlOperation(int64_t uid, int32_t opt, BuffBlock * buf, int3
 	m_trans_mod->SendToServer(getDbPath(uid), N_TDB_SQL_OPERATION, pack);
 }
 
-void RoomModuloe::updatePlayerData(int64_t pid, google::protobuf::Message & pb, int32_t table, std::string key1, std::string key2)
+void RoomModuloe::updatePlayerData(int64_t pid, const google::protobuf::Message & pb, int32_t table, std::string key1, std::string key2)
 {
 	auto pack = GET_LAYER_MSG(BuffBlock);
 	pack->makeRoom(pb.ByteSize() + 100);

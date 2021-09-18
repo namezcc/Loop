@@ -104,7 +104,7 @@ void NetObjectModule::AcceptConn(const int & socket, const int32_t& connType)
 	}
 }
 
-void NetObjectModule::SendNetMsg(const int & socket, const int & mid, google::protobuf::Message & pbmsg)
+void NetObjectModule::SendNetMsg(const int & socket, const int & mid, const google::protobuf::Message & pbmsg)
 {
 	NetMsg* nMsg = GetLayer()->GetLayerMsg<NetMsg>();
 	nMsg->socket = socket;
@@ -126,7 +126,7 @@ void NetObjectModule::SendNetMsg(const int& socket,const int32_t & mid, BuffBloc
 	m_msgModule->SendMsg(L_SOCKET_SEND_DATA, nMsg);
 }
 
-void NetObjectModule::BroadNetMsg(const std::vector<int32_t>& socks, const int32_t & mid, gpb::Message & pbmsg)
+void NetObjectModule::BroadNetMsg(const std::vector<int32_t>& socks, const int32_t & mid, const gpb::Message & pbmsg)
 {
 	auto nMsg = GET_LAYER_MSG(BroadMsg);
 
