@@ -19,11 +19,11 @@ set(COM_RECURSE
 #${PROJECT_SOURCE_DIR}/../Common/module/SendProxyDbModule.cpp 
 )
 
-file(GLOB_RECURSE OBJECT_RECURSE ${PROJECT_SOURCE_DIR}/../struct/*.cpp)
+#file(GLOB_RECURSE OBJECT_RECURSE ${PROJECT_SOURCE_DIR}/../struct/*.cpp)
 
-set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/GameReflectData.cpp)
+#set(SQL_DATA ${PROJECT_SOURCE_DIR}/../sqldata/GameReflectData.cpp)
 
-add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES} ${COM_RECURSE} ${SQL_DATA} ${OBJECT_RECURSE})
+add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES} ${COM_RECURSE})
 
 if(WIN32)
 set(DBProxylib

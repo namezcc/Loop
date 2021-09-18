@@ -7,6 +7,7 @@
 #include <vector>
 #include <set>
 #include <memory>
+#include <list>
 #include "FactorManager.h"
 
 #include "protoPB/client/object.pb.h"

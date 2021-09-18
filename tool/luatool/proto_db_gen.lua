@@ -194,7 +194,7 @@ function get_insert_func( cfg,v,_vec )
         local str = [[
 {
     %s
-    return db->Query(_buff);
+    return db->Query(const_cast<const char*>(_buff));
 }
 
 ]]
@@ -234,7 +234,7 @@ function get_replace_func( cfg,v,_vec )
         local str = [[
 {
     %s
-    return db->Query(_buff);
+    return db->Query(const_cast<const char*>(_buff));
 }
 
 ]]
@@ -269,7 +269,7 @@ function get_delete_func( cfg,v,_vec )
         local str = [[
 {
     %s
-    return db->Query(_buff);
+    return db->Query(const_cast<const char*>(_buff));
 }
 
 ]]
@@ -303,7 +303,7 @@ function get_update_func( cfg,v,_vec )
         local str = [[
 {
     %s
-    return db->Query(_buff);
+    return db->Query(const_cast<const char*>(_buff));
 }
 
 ]]
@@ -348,7 +348,7 @@ function get_select_func( cfg,v,_vec )
         str = [[
 {
     %s
-    auto& r = db->query(_buff);
+    auto r = db->query(_buff);
 
     if (!r->eof())
     {
@@ -362,7 +362,7 @@ function get_select_func( cfg,v,_vec )
         str = [[
 {
     %s
-    auto& r = db->query(_buff);
+    auto r = db->query(_buff);
 
     while (!r->eof())
     {

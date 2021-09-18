@@ -1,7 +1,7 @@
 {
 	"folders": [
 		{
-			"path": "_out\\Debug\\lua"
+			"path": "lua"
 		},
 		{
 			"path": "tool\\luatool"

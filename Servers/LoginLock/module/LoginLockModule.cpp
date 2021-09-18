@@ -118,7 +118,7 @@ void LoginLockModule::onDbIndexAddNum(NetMsg * msg)
 	m_db_player_num[it->second].second++;
 
 	char _sql[1024];
-	sprintf_s(_sql, "UPDATE `db_player_num` SET `count`=%d WHERE `dbid`=%d;", m_db_player_num[it->second].second, m_db_player_num[it->second].first);	
+	sprintf_s(_sql,sizeof(_sql), "UPDATE `db_player_num` SET `count`=%d WHERE `dbid`=%d;", m_db_player_num[it->second].second, m_db_player_num[it->second].first);	
 
 	m_mysql_module->Query(_sql);
 
@@ -131,7 +131,12 @@ void LoginLockModule::onDbIndexAddNum(NetMsg * msg)
 			return;
 		}
 
-		std::swap(m_db_player_num.begin() + it->second, m_db_player_num.end() - 1);
+		auto oldn = m_db_player_num[it->second];
+		m_db_player_num[it->second] = m_db_player_num[m_db_player_num.size()-1];
+		m_db_player_num[m_db_player_num.size() - 1] = oldn;
+
+		//std::swap(m_db_player_num.begin() + it->second, m_db_player_num.end() - 1);
+
 		m_id_index[m_db_player_num[it->second].first] = it->second;
 		m_id_index[m_db_player_num.cbegin()->first] = m_db_player_num.size() - 1;
 	}
