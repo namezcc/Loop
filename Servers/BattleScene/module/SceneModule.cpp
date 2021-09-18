@@ -33,25 +33,6 @@ void SceneModule::Init()
 	m_eventModule->AddEventCall(E_SERVER_CONNECT, BIND_EVENT(OnServerConnect,SHARE<NetServer>));
 	//m_scheduleModule->AddTimePointTask(this, &SceneModule::OnShowLuaStack, -1);
 
-	auto index = m_luaModule->CreateLuaState();
-	m_luaState = m_luaModule->GetLuaState(index);
-
-	m_luaModule->BindLuaOrgCall("BindLuaNetCall", this, &SceneModule::BindLuaNetCall);
-	m_luaModule->BindLuaCall("LuaBindNetMsg", this, &SceneModule::LuaBindNetMsg);
-	m_luaModule->BindLuaOrgCall("SendStreamData", this, &SceneModule::SendStreamData);
-	m_luaModule->BindLuaCall("GetScriptPath", this, &SceneModule::GetScriptPath);
-	m_luaModule->BindLuaCall("GetProtoPath", this, &SceneModule::GetProtoPath);
-	m_luaModule->BindLuaCall("RunScene", this, &SceneModule::RunScene);
-	m_luaModule->BindLuaCall("FreeScene", this, &SceneModule::FreeScene);
-
-	//m_gcRegIndex = m_luaState->RegistGlobalFunc("ClearGC",false);
-
-	auto rootp = LoopFile::GetRootPath();
-	rootp.append("Servers/BattleScene/script/main.lua");
-	m_luaState->RunScript(rootp);
-	m_luaState->CallGlobalLuaFunc("Main");
-	m_luaState->RegistGlobalFunc("MainUpdate");
-	InitScene();
 }
 
 void SceneModule::InitScene()
@@ -130,30 +111,7 @@ int SceneModule::OnGetNetMsgToLua(NetMsg * msg)
 
 int SceneModule::SendStreamData(lua_State * L)
 {
-	if (lua_gettop(L) - 2 != 2)
-		return m_luaState->PushArgs(false);
-
-	if (!lua_isinteger(L, -2))
-		return m_luaState->PushArgs(false);
-
-	int32_t mid = (int32_t)lua_tointeger(L, -2);
-
-	OutPutStream** ud = (OutPutStream**)luaL_checkudata(L, -1, "OutPutStream");
-	if (ud == NULL)
-		return m_luaState->PushArgs(false);
-
-	OutPutStream* s = *ud;
-	if (s == NULL || s->buf == NULL)
-		return m_luaState->PushArgs(false);
-
-	auto buffblock = GET_LAYER_MSG(BuffBlock);
-	buffblock->write(s->buf, s->len);
-	//buffblock->m_buff = s->buf;
-	//buffblock->m_size = s->len;
-	//s->buf = NULL;
-	
-	m_transModule->SendToServer(m_battle, mid, buffblock);
-	return m_luaState->PushArgs(true);
+	return 0;
 }
 
 int SceneModule::GetScriptPath()

@@ -33,7 +33,7 @@ void MatchStateModule::Init()
 
 	m_noticePath = m_transModule->GetFromSelfPath(2,SERVER_TYPE::LOOP_PROXY);
 	m_nodePath = m_transModule->GetFromSelfPath(3, SERVER_TYPE::LOOP_PROXY);
-	m_nodePath[1]->type = SERVER_TYPE::LOOP_PROXY;
+	m_nodePath[1].type = SERVER_TYPE::LOOP_PROXY;
 }
 
 void MatchStateModule::OnServerConnect(SHARE<NetServer>& ser)
@@ -60,7 +60,7 @@ void MatchStateModule::OnServerConnect(SHARE<NetServer>& ser)
 		pn3->CopyFrom(*pn1);
 		pn4->CopyFrom(*pn2);
 
-		m_noticePath[1]->serid = ser->serid;
+		m_noticePath[1].serid = ser->serid;
 
 		m_transModule->SendToServer(m_noticePath, N_REQ_NOTICE_SERVER, msg1);
 		m_transModule->SendToServer(m_noticePath, N_REQ_NOTICE_SERVER, msg2);
@@ -122,9 +122,9 @@ void MatchStateModule::OnAckNoticeServer(NetServerMsg * msg)
 		for (auto sid : pbMsg.serid())
 		{
 			if (pbMsg.sertype() == SERVER_TYPE::LOOP_MATCH)
-				AddMatchServer(sid, msg->path.front()->serid);
+				AddMatchServer(sid, msg->path.front().serid);
 			else if (pbMsg.sertype() == SERVER_TYPE::LOOP_BATTLE_TRANS)
-				AddBattleServer(sid, msg->path.front()->serid);
+				AddBattleServer(sid, msg->path.front().serid);
 		}
 	}
 }
@@ -321,9 +321,9 @@ void MatchStateModule::AddMatchToAble(SHARE<MatchNode>& match)
 void MatchStateModule::SendOffLine(const int8_t & tostype, ProxyNode & pnode, const int16_t & nserid, const int16_t& proxyId)
 {
 	// just one this server send
-	m_nodePath[1]->serid = pnode.proxyId;
-	m_nodePath[2]->type = tostype;
-	m_nodePath[2]->serid = pnode.serid;
+	m_nodePath[1].serid = pnode.proxyId;
+	m_nodePath[2].type = tostype;
+	m_nodePath[2].serid = pnode.serid;
 
 	LPMsg::ProxyNode msg;
 	msg.set_proxyid(proxyId);
@@ -334,9 +334,9 @@ void MatchStateModule::SendOffLine(const int8_t & tostype, ProxyNode & pnode, co
 void MatchStateModule::SendOnLine(const int8_t & tostype, ProxyNode & pnode, const int16_t & nserid, const int16_t& proxyId)
 {
 	// just one this server send
-	m_nodePath[1]->serid = pnode.proxyId;
-	m_nodePath[2]->type = tostype;
-	m_nodePath[2]->serid = pnode.serid;
+	m_nodePath[1].serid = pnode.proxyId;
+	m_nodePath[2].type = tostype;
+	m_nodePath[2].serid = pnode.serid;
 
 	LPMsg::ProxyNode msg;
 	msg.set_proxyid(proxyId);
