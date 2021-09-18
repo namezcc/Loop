@@ -14,6 +14,7 @@
 #include "protoPB/client/define.pb.h"
 #include "protoPB/client/room.pb.h"
 #include "protoPB/client/login.pb.h"
+#include "protoPB/client/object.pb.h"
 #include "protoPB/server/dbdata.pb.h"
 
 PlayerModule::PlayerModule(BaseLayer * l):BaseModule(l)
