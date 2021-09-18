@@ -322,7 +322,7 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 			xMsg->socket = nmsg->socket;	
 
 			buffblock->setOffect(TransHead::SIZE);
-			for (size_t i = 0; i < hsize; i++)
+			for (int8_t i = 0; i < hsize; i++)
 			{
 				ServerNode snode;
 				snode.type = buffblock->readInt8();
@@ -574,7 +574,7 @@ void TransMsgModule::ResponseBackServerMsg(ServerPath& path, SHARE<BaseMsg>& com
 ServerPath TransMsgModule::GetFromSelfPath(const int32_t& allSize, const int32_t& stype, const int32_t& sid)
 {
 	ServerPath path;
-	for (size_t i = 0; i < allSize; i++)
+	for (int32_t i = 0; i < allSize; i++)
 		path.push_back(ServerNode{});
 	
 	path[0] = *GetLayer()->GetServer();

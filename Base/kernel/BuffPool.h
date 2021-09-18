@@ -86,11 +86,11 @@ public:
 	{
 		int32_t base = BASE_BUFF_SIZE;
 		int32_t idx = 0;
-		if (nsize > base)
+		if ((int32_t)nsize > base)
 		{
 			idx = hightestBitIndex(static_cast<uint32_t>(nsize)) - BASE_SIZE_INDEX;
 			base <<= idx;
-			if (base < nsize)
+			if (base < (int32_t)nsize)
 			{
 				++idx;
 				base <<= 1;

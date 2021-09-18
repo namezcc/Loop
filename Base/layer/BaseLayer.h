@@ -54,7 +54,7 @@ public:
 		{
 			assert(0);
 		}
-		if(lid >= 0 && lid < it->second.size())
+		if(lid >= 0 && lid < (int32_t)it->second.size())
 			it->second[lid].wpipe->write(msg);
 		else
 			RecycleLayerMsg(msg);

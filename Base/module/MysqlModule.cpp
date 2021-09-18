@@ -45,7 +45,7 @@ public:
 	{
 	}
 
-	~QuerySqlResult()
+	virtual ~QuerySqlResult()
 	{
 	}
 
@@ -293,7 +293,7 @@ bool MysqlModule::Select(const string & str, MultRow & res, SqlRow & files)
 			for (int i = 0; i < result.num_fields(); i++)
 				files.push_back(result.field_name(i));
 
-			for (int i = 0; i < result.num_rows(); i++)
+			for (size_t i = 0; i < result.num_rows(); i++)
 			{
 				SqlRow row;
 				for (int j = 0; j < result.num_fields(); j++)

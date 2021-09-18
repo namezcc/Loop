@@ -104,7 +104,7 @@ void TcpAsioSessionModule::OnSocketSendData(NetMsg * nMsg)
 			LP_ERROR << ec.message();
 		}
 
-		if (length != buff->getOffect())
+		if ((int32_t)length != buff->getOffect())
 			LP_ERROR << "write data len not over";
 		RECYCLE_LAYER_MSG(buff);
 	});
@@ -139,7 +139,7 @@ void TcpAsioSessionModule::OnBroadData(BroadMsg * nMsg)
 				LP_ERROR << ec.message();
 			}
 
-			if (length != buff->getOffect())
+			if ((int32_t)length != buff->getOffect())
 				LP_ERROR << "write data len not over";
 		});
 	}
