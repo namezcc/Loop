@@ -41,6 +41,12 @@ public:
 		string path = "./";
 		path.append(name);
 		mInst = (DYNLIB_HANDLE)DYNLIB_LOAD(path.c_str());
+#if PLATFORM != PLATFORM_WIN
+		if (mInst == NULL)
+		{
+			printf("dlopen - %s\n", dlerror());
+		}
+#endif
 		return mInst != NULL;
 	}
 

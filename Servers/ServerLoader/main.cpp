@@ -110,9 +110,9 @@ int main(int argc, char* args[])
 		else
 		{
 #if PLATFORM == PLATFORM_WIN
-    cout << "load dll error: " << GetLastError() << endl;
+    cout << "load dll error: " << GetLastError() << dllname << endl;
 #else
-    cout << "load dll error: " << strerror(errno) << endl;
+    cout << "load dll error: " << strerror(errno) << dllname << endl;
 #endif
     }
 	}

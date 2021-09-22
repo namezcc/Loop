@@ -19,6 +19,10 @@ serverpb.lib
 libprotobufd.lib
 mysqlpp_d.lib
 )
+else()
+set(DBProxylib
+serverpb.so
+)
 endif()
 
 target_link_libraries(${ProjectName} ${LoopLib} ${DBProxylib})

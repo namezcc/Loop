@@ -32,6 +32,11 @@ clientpb.lib
 serverpb.lib
 libprotobufd.lib
 )
+else()
+set(DBProxylib
+clientpb.so
+serverpb.so
+)
 endif()
 
 target_link_libraries(${ProjectName} ${LoopLib} ${DBProxylib})

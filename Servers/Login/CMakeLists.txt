@@ -25,6 +25,11 @@ serverpb.lib
 libprotobufd.lib
 anet.lib
 )
+else()
+set(Loginlib
+clientpb.so
+serverpb.so
+)
 endif()
 
 add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES} ${COM_RECURSE} ${SQL_DATA})

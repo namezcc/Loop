@@ -26,6 +26,10 @@ serverpb.lib
 libprotobufd.lib
 mysqlpp_d.lib
 )
+else()
+set(mysqllib
+serverpb.so
+)
 endif()
 
 target_link_libraries(${ProjectName} ${LoopLib} ${mysqllib})
