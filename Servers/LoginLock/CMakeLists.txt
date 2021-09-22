@@ -22,6 +22,7 @@ mysqlpp_d.lib
 else()
 set(DBProxylib
 serverpb.so
+Crypto.a
 )
 endif()
 

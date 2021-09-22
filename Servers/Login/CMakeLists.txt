@@ -29,6 +29,7 @@ else()
 set(Loginlib
 clientpb.so
 serverpb.so
+Crypto.a
 )
 endif()
 

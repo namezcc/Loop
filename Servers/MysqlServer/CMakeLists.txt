@@ -30,6 +30,7 @@ else()
 set(mysqllib
 serverpb.so
 clientpb.so
+Crypto.a
 )
 endif()
 

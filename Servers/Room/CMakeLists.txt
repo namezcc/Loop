@@ -34,6 +34,7 @@ libprotobufd.lib
 )
 else()
 set(DBProxylib
+Crypto.a
 clientpb.so
 serverpb.so
 )
