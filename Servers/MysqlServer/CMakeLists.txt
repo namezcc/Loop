@@ -29,6 +29,7 @@ mysqlpp_d.lib
 else()
 set(mysqllib
 serverpb.so
+clientpb.so
 )
 endif()
 

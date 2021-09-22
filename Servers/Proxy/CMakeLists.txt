@@ -16,7 +16,10 @@ serverpb.lib
 libprotobufd.lib
 )
 else()
-set(Proxylib )
+set(Proxylib
+serverpb.so
+)
+
 endif()
 
 add_library(${ProjectName} SHARED ${PROXY_HEAD_FILES} ${PROXY_SOUCE_FILES} ${COM_RECURSE})
