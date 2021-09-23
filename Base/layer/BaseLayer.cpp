@@ -39,6 +39,24 @@ void BaseLayer::StartRun()
 		for (auto& it : m_modules)
 			it.second->Execute();
 
+		if (m_server->stopServer())
+		{
+			bool over = true;
+			for (auto& it : m_modules)
+			{
+				if (!it.second->isOver())
+				{
+					over = false;
+					break;
+				}
+			}
+			if (over)
+			{
+				m_over = true;
+				break;
+			}
+		}
+
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }

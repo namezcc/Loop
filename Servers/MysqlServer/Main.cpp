@@ -8,10 +8,11 @@
 #include "Coro1Module.h"
 #include "RedisModule.h"
 
-EXPORT void DLL_START_NAME(int argc,char* args[])
+EXPORT void DLL_START_NAME(int argc,char* args[], int* stop)
 {
-	LoopServer ser;
+	LoopServer& ser = *(new LoopServer);
 	ser.InitServer(argc, args);
+	ser.setStop(stop);
 
 	auto nl = ser.CreateLayer<TcpNetLayer>(ser.m_port);
 	auto ll = ser.CreateLayer<LogicLayer>(LY_LOGIC);
@@ -33,8 +34,4 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 	}
 
 	ser.Run();
-	while (true)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	}
 }

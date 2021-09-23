@@ -29,6 +29,7 @@ public:
 	{};
 	virtual void Execute()
 	{};
+	virtual bool isOver() { return true; }
 private:
 	BaseLayer* m_layer;
 };

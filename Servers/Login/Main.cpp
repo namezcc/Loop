@@ -9,10 +9,11 @@
 #include "RoomStateModule.h"
 #include "TcpAsioLayer.h"
 
-EXPORT void DLL_START_NAME(int argc,char* args[])
+EXPORT void DLL_START_NAME(int argc,char* args[],int* stop)
 {
-	LoopServer ser;
+	LoopServer& ser = *(new LoopServer);
 	ser.InitServer(argc, args);
+	ser.setStop(stop);
 
 	auto nl = ser.CreateLayer<TcpNetLayer>(ser.m_port);
 	//auto nl = ser.CreateLayer<TcpAsioLayer>(ser.m_port);
@@ -21,6 +22,8 @@ EXPORT void DLL_START_NAME(int argc,char* args[])
 	ll->CreateModule<SendProxyDbModule>();
 	ll->CreateModule<RedisModule>();
 	ll->CreateModule<RoomStateModule>();
+
+
 
 	ser.BuildPipe(nl, ll);
 	ser.Run();

@@ -24,7 +24,7 @@ typedef struct RWPipe
 class LOOP_EXPORT BaseLayer
 {
 public:
-	BaseLayer(const int32_t& ltype):m_type(ltype), m_defPipe(NULL)
+	BaseLayer(const int32_t& ltype):m_type(ltype), m_defPipe(NULL), m_over(false)
 	{
 	};
 	virtual ~BaseLayer();
@@ -111,6 +111,7 @@ public:
 	inline void SetLoopServer(LoopServer* ser) { m_server = ser; };
 	inline LoopServer* GetLoopServer() { return m_server; };
 	inline std::unordered_map<int32_t, std::vector<RWPipe>>& GetPipes() { return m_pipes; };
+	bool isOver() { return m_over; }
 protected:
 	void startRead(const RWPipe& pipe)
 	{
@@ -135,6 +136,7 @@ protected:
 	std::unordered_map<size_t, SHARE<BaseModule>> m_modules;
 	ServerNode* m_serNode;
 	LoopServer* m_server;
+	bool m_over;
 };
 
 #endif

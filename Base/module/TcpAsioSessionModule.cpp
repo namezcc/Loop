@@ -33,7 +33,7 @@ void TcpAsioSessionModule::AfterInit()
 {
 	DoAccept();
 	LP_INFO << "start listen port:" << m_accptor->local_endpoint().port();
-	m_io_pool.run();
+	//m_io_pool.run();
 }
 
 void TcpAsioSessionModule::Execute()
@@ -47,7 +47,8 @@ std::vector<SHARE<AsioSession>> _vec;
 
 void TcpAsioSessionModule::DoAccept()
 {
-	std::shared_ptr<tcp::socket> sock(new tcp::socket(m_io_pool.get_io_service()));
+	//std::shared_ptr<tcp::socket> sock(new tcp::socket(m_io_pool.get_io_service()));
+	std::shared_ptr<tcp::socket> sock(new tcp::socket(m_context));
 
 	/*auto ssss = GET_SHARE(AsioSession);
 	_vec.push_back(ssss);

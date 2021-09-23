@@ -67,6 +67,8 @@ public:
 
 	int m_port;
 	const ServerNode& getServerNode() { return m_server; }
+	void setStop(int32_t* stop) { m_stop = stop; }
+	bool stopServer() { return (*m_stop) > 0; }
 protected:
 	void Init(const int& stype, const int& serid);
 	void InitConfig();
@@ -85,6 +87,7 @@ private:
 	std::map<int32_t, std::pair<int32_t, int32_t>> m_connect_rule;
 
 	bool m_over;
+	int32_t* m_stop;
 };
 
 #endif

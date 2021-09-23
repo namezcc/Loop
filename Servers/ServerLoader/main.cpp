@@ -7,6 +7,7 @@
 #include "cmdline.h"
 //#include "dump.h"
 #include "JsonHelp.h"
+#include <csignal>
 
 #if PLATFORM != PLATFORM_WIN
 #include <errno.h>
@@ -16,7 +17,7 @@
 
 using namespace std;
 
-typedef void(*DLL_START)(int, char*[]);
+typedef void(*DLL_START)(int, char*[],int*);
 
 #define ARG_NUM 5
 #define ARG_USE_NUM 4
@@ -46,6 +47,14 @@ void StartInitCrash(const std::string& proname,const int32_t& nid)
 #endif // PLATFORM == PLATFORM_WIN
 }
 
+int32_t stopserver = 0;
+
+void signalHandle(int signum)
+{
+	printf("signum %d\n", signum);
+	stopserver = 1;
+}
+
 int main(int argc, char* args[])
 {
 	if (argc <ARG_NUM || ((argc - 1) % ARG_USE_NUM) != 0)
@@ -53,6 +62,9 @@ int main(int argc, char* args[])
 		cout << "argc num error" << endl;
 		assert(0);
 	}
+
+	signal(SIGINT, signalHandle);
+	signal(SIGTERM, signalHandle);
 
 	LoopFile::setRootPath(args[0]);
 
@@ -92,7 +104,8 @@ int main(int argc, char* args[])
 			{
 				if (num == 1)
 				{
-					func(ARG_NUM, args);
+					func(ARG_NUM, args, &stopserver);
+					continue;
 				}
 
 				thrs.emplace_back([i,argc,&args,func]() {
@@ -101,7 +114,7 @@ int main(int argc, char* args[])
 					nargs[0] = args[0];
 					for (size_t i = 1; i < ARG_NUM; i++)
 						nargs[i] = args[idx + i];
-					func(ARG_NUM, nargs);
+					func(ARG_NUM, nargs, &stopserver);
 				});
 			}
 			else

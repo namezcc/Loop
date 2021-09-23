@@ -8,10 +8,12 @@
 #include "module/ProxyNodeModule.h"
 #include "UdpNetSockModule.h"
 
-EXPORT void DLL_START_NAME(int argc, char* args[])
+EXPORT void DLL_START_NAME(int argc, char* args[], int* stop)
 {
-	LoopServer ser;
+	LoopServer& ser = *(new LoopServer);
 	ser.InitServer(argc, args);
+	ser.setStop(stop);
+
 	auto& conf = ser.GetConfig();
 
 	auto nl = ser.CreateLayer<TcpNetLayer>(ser.m_port);

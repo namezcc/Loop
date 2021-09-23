@@ -12,7 +12,7 @@ LogLayer::~LogLayer()
 	m_th.join();
 }
 
-void LogLayer::start(ServerNode* ser)
+void LogLayer::start(ServerNode* ser, LoopServer* server)
 {
 	std::lock_guard<std::mutex> _g(m_lock);
 
@@ -20,6 +20,7 @@ void LogLayer::start(ServerNode* ser)
 		return;
 
 	SetServer(ser);
+	SetLoopServer(server);
 	m_th = std::thread([this]() {
 		StartRun();
 	});

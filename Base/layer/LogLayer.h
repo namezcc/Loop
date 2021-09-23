@@ -13,7 +13,7 @@ public:
 
 	void log(BaseData* msg);
 
-	void start(ServerNode* ser);
+	void start(ServerNode* ser,LoopServer* server);
 private:
 	// Í¨¹ý BaseLayer ¼Ì³Ð
 	virtual void init() override;

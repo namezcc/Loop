@@ -14,7 +14,7 @@ enum ServerConnectType
 	SCT_ID,				//固定id
 };
 
-LoopServer::LoopServer():m_over(false)
+LoopServer::LoopServer():m_over(false), m_stop(NULL)
 {
 }
 
@@ -161,7 +161,7 @@ void LoopServer::InitConnectRule()
 
 void LoopServer::InitLogLayer()
 {
-	LOG_LAYER->start(&m_server);
+	LOG_LAYER->start(&m_server,this);
 }
 
 void LoopServer::BuildPipe(BaseLayer * l1, BaseLayer * l2)
@@ -195,6 +195,23 @@ void LoopServer::Run()
 
 void LoopServer::Loop()
 {
+	if (stopServer())
+	{
+		bool over = true;
+		for (size_t i = 0; i < m_layers.size(); i++)
+		{
+			if (!m_layers[i]->isOver())
+			{
+				over = false;
+				break;
+			}
+		}
+		if (over)
+		{
+			m_pool.reset();
+			m_over = true;
+		}
+	}
 	/*for (size_t i = 0; i < m_layers.size(); i++)
 	{
 		BaseData* msg = NULL;
