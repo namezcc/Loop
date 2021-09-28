@@ -1,4 +1,5 @@
 {
     "showlog":true,
-    "logdir":"_out/stdlog"
+    "logdir":"_out/stdlog",
+	"confighost":"http://10.41.2.57:8999"
 }

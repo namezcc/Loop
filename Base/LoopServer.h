@@ -100,6 +100,7 @@ private:
 	vector<SHARE<BaseLayer>> m_layers;
 	ServerNode m_server;
 	ServerConfig m_config;
+	int32_t m_machine_id;
 
 	//RecyclePool* m_recycle;
 	std::map<int32_t, std::vector<ServerConfigInfo>> m_all_server;

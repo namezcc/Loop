@@ -11,7 +11,10 @@ HttpClient::HttpClient()
 std::string HttpClient::requestUrl(const char * url)
 {
 	ft_http_client_t* http = ft_http_new();
-	std::string body = ft_http_sync_request(http, url, M_GET);
+	std::string body;
+	auto buf = ft_http_sync_request(http, url, M_GET);
+	if (buf)
+		body.append(buf);
 
 	ft_http_destroy(http);
 

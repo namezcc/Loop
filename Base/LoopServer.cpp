@@ -15,7 +15,7 @@ enum ServerConnectType
 	SCT_ID,				//固定id
 };
 
-LoopServer::LoopServer():m_over(false), m_stop(NULL), m_server_state(0)
+LoopServer::LoopServer():m_over(false), m_stop(NULL), m_server_state(0), m_machine_id(0)
 {
 }
 
@@ -71,9 +71,22 @@ void LoopServer::InitConfig()
 	}
 	else
 	{
+		JsonHelp confjs;
+		confjs.ParseFile(file.append("commonconf/Common.json"));
+		Value cfv = confjs.GetDocument().GetObject();
+
+		std::string confhost = cfv["confighost"].GetString();
+		confhost.append("/serverInfo?id=%d&type=%d");
+
 		char url[256] = {};
-		sprintf(url, "http://127.0.0.1:8999/serverInfo?id=%d&type=%d", m_server.serid, m_server.type);
+		sprintf(url, confhost.c_str(), m_server.serid, m_server.type);
 		auto res = Single::GetInstence<HttpClient>()->requestUrl(url);
+
+		if (res.empty())
+		{
+			printf("requestUrl getconfig error %s", url);
+			exit(-1);
+		}
 
 		JsonHelp jhelp;
 		if (!jhelp.ParseString(res))
@@ -84,6 +97,7 @@ void LoopServer::InitConfig()
 		m_config.addr.ip = rt["ip"].GetString();
 		m_config.addr.port = rt["port"].GetInt();
 		m_port = m_config.addr.port;
+		m_machine_id = rt["Machine"].GetInt();
 
 		auto sql = rt["mysql"].GetString();
 		if (strlen(sql) > 0)
@@ -354,7 +368,14 @@ std::vector<ServerConfigInfo> LoopServer::getConnectServer()
 	if (m_server.type != LOOP_CONSOLE && m_server.type != LOOP_MASTER)
 	{
 		auto svec = m_all_server[LOOP_CONSOLE];
-		res.insert(res.end(), svec.begin(), svec.end());
+		for (auto m:svec)
+		{
+			if (m.server_id == m_machine_id)
+			{
+				res.push_back(m);
+				break;
+			}
+		}
 	}
 	return res;
 }
