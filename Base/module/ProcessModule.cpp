@@ -5,8 +5,6 @@
 #include <boost/process.hpp>
 #include <boost/filesystem.hpp>
 
-#include <boost/process/windows.hpp>
-
 #include "JsonHelp.h"
 
 namespace bp = boost::process;
