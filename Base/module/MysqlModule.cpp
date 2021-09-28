@@ -169,7 +169,7 @@ bool MysqlModule::Connect(const string& dbname, const string & ip, const string 
 	m_port = port;
 
 	m_sqlConn->set_option(new mysqlpp::MultiStatementsOption(true));
-	m_sqlConn->set_option(new mysqlpp::SetCharsetNameOption("utf8mb4"));
+	//m_sqlConn->set_option(new mysqlpp::SetCharsetNameOption("utf8mb4"));
 	m_sqlConn->set_option(new mysqlpp::ReconnectOption(true));
 	m_sqlConn->set_option(new mysqlpp::ConnectTimeoutOption(60));
 
