@@ -61,6 +61,11 @@ void TestProcessModule::onServerConnect(SHARE<NetServer>& ser)
 
 void TestProcessModule::onServerClose(SHARE<NetServer>& ser)
 {
+	if (ser->type == LOOP_MASTER)
+	{
+		return;
+	}
+
 	Int64Struct i64;
 
 	i64.height32 = ser->type;
