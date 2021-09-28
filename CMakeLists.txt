@@ -32,6 +32,7 @@ ${PROJECT_SOURCE_DIR}/Base/kernel/
 ${PROJECT_SOURCE_DIR}/Base/layer/ 
 ${PROJECT_SOURCE_DIR}/Base/module/ 
 ${PROJECT_SOURCE_DIR}/Base/utils/ 
+${PROJECT_SOURCE_DIR}/Base/http/ 
 ${PROJECT_SOURCE_DIR}/librarys/include/ 
 ${PROJECT_SOURCE_DIR}/librarys/include/redis/ 
 ${PROJECT_SOURCE_DIR}/depend/ 
@@ -103,7 +104,7 @@ set(lib_link anet.a lua.a boost_filesystem boost_context.a uv.a jsoncpp.a protob
 set(LoopLib Loop)
 endif()
 
-file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/Base/*.cpp)
+file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/Base/*.cpp ${PROJECT_SOURCE_DIR}/Base/*.c)
 file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/Base/*.h)
 file(GLOB_RECURSE PROTO_FILES ${PROJECT_SOURCE_DIR}/protoPB/base/*.*)
 

@@ -45,44 +45,44 @@ enum SQL_OPRATION
 
 };
 
-union Int32Struct
-{
-	Int32Struct() :i32(0)
-	{}
-
-	Int32Struct(int32_t n) :i32(n)
-	{}
-
-	int32_t i32;
-	struct
-	{
-		int32_t lower16 : 16;
-		int32_t height16 : 16;
-	};
-	struct
-	{
-		int8_t bit8[4];
-	};
-};
-
-union Int64Struct
-{
-	Int64Struct() :i64(0)
-	{}
-
-	Int64Struct(int64_t n) :i64(n)
-	{}
-
-	Int64Struct(int32_t h, int32_t l) : height32(h), lower32(l)
-	{
-	}
-
-	int64_t i64;
-	struct
-	{
-		int32_t lower32;
-		int32_t height32;
-	};
-};
+//union Int32Struct
+//{
+//	Int32Struct() :i32(0)
+//	{}
+//
+//	Int32Struct(int32_t n) :i32(n)
+//	{}
+//
+//	int32_t i32;
+//	struct
+//	{
+//		int32_t lower16 : 16;
+//		int32_t height16 : 16;
+//	};
+//	struct
+//	{
+//		int8_t bit8[4];
+//	};
+//};
+//
+//union Int64Struct
+//{
+//	Int64Struct() :i64(0)
+//	{}
+//
+//	Int64Struct(int64_t n) :i64(n)
+//	{}
+//
+//	Int64Struct(int32_t h, int32_t l) : height32(h), lower32(l)
+//	{
+//	}
+//
+//	int64_t i64;
+//	struct
+//	{
+//		int32_t lower32;
+//		int32_t height32;
+//	};
+//};
 
 #endif

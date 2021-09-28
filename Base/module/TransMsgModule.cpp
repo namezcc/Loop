@@ -7,7 +7,7 @@
 #include <sstream>
 #include "protoPB/base/LPBase.pb.h"
 
-TransMsgModule::TransMsgModule(BaseLayer* l):BaseModule(l)
+TransMsgModule::TransMsgModule(BaseLayer* l):BaseModule(l), m_old_state(-1)
 {
 	
 }
@@ -25,9 +25,16 @@ void TransMsgModule::Init()
 
 	m_msgModule->AddMsgCall(N_REGISTE_SERVER, BIND_CALL(OnServerRegiste, NetMsg));
 	m_msgModule->AddMsgCall(N_TRANS_SERVER_MSG, BIND_CALL(OnGetTransMsg,NetMsg));
+	m_msgModule->AddMsgCall(N_CONN_SERVER_INFO, BIND_NETMSG(onConnInfo));
+	m_msgModule->AddMsgCall(N_GET_LINK_SERVER_INFO, BIND_SHARE_CALL(onGetLinkInfo));
 
 	m_eventModule->AddEventCall(E_SERVER_SOCKET_CLOSE,BIND_EVENT(OnServerClose, int32_t));
 
+	auto sertype = GetLayer()->GetServer()->type;
+	if (sertype != LOOP_CONSOLE && sertype != LOOP_MASTER)
+	{
+		m_schedule->AddInterValTask(BIND_TIME(checkSendServerState), 5000, -1, 3000);
+	}
 }
 
 void TransMsgModule::BeforExecute()
@@ -125,7 +132,7 @@ void TransMsgModule::OnServerClose(int32_t sock)
 	m_serverList[ser->type].erase(ser->serid);
 	m_allServer.erase(ser->socket);
 	RemoveRand(ser->type, ser->serid);
-	//m_eventModule->SendEvent(E_SOCKET_CLOSE, ser);
+	m_eventModule->SendEvent(E_SERVER_CLOSE, ser);
 	//reconnect server
 	LP_ERROR << "Server close type:" << ser->type << " ID:" << ser->serid;
 	if (ser->activeLink)
@@ -165,7 +172,10 @@ void TransMsgModule::SendToServer(const ServerNode & ser, const int32_t & mid, B
 		m_netObjMod->SendNetMsg(toser->socket, mid, buff);
 		return;
 	}
-	RECYCLE_LAYER_MSG(buff);
+	if (buff)
+	{
+		RECYCLE_LAYER_MSG(buff);
+	}
 }
 
 void TransMsgModule::SendToServer(const ServerNode & ser, const int32_t & mid, const google::protobuf::Message & msg)
@@ -377,6 +387,63 @@ void TransMsgModule::OnGetTransMsg(NetMsg* nmsg)
 	}
 }
 
+void TransMsgModule::onConnInfo(NetMsg * nmsg)
+{
+	std::vector<NetServer> server;
+
+	auto p = nmsg->m_buff;
+	auto num = p->readInt32();
+
+	for (int32_t i = 0; i < num; i++)
+	{
+		NetServer ser;
+		ser.type = p->readInt32();
+		ser.serid = p->readInt32();
+		ser.ip = p->readString();
+		ser.port = p->readInt32();
+		ser.state = CONN_STATE::CLOSE;
+		ser.socket = -1;
+		ser.activeLink = true;
+		
+		server.push_back(ser);
+	}
+
+	for (auto& s:server)
+	{
+		if (GetServer(s.type,s.serid) != NULL)
+		{
+			continue;
+		}
+
+		AddServerConn(s);
+	}
+}
+
+void TransMsgModule::onGetLinkInfo(SHARE<BaseMsg>& msg)
+{
+	auto buf = LAYER_BUFF;
+	auto begindex = buf->getOffect();
+	int32_t num = 0;
+	buf->writeInt32(num);
+
+	for (auto i:m_allServer)
+	{
+		if (i.second->activeLink)
+		{
+			num++;
+
+			buf->writeInt32(i.second->type);
+			buf->writeInt32(i.second->serid);
+		}
+	}
+
+	auto endindex = buf->getOffect();
+	buf->setOffect(begindex);
+	buf->writeInt32(num);
+	buf->setOffect(endindex);
+	ResponseServerMsg(ServerNode{ LOOP_CONSOLE,0 }, msg, buf);
+}
+
 NetServer* TransMsgModule::GetServer(const int32_t& type, const int32_t& serid)
 {
 	auto it = m_serverList.find(type);
@@ -418,6 +485,26 @@ BuffBlock* TransMsgModule::PathToBuff(ServerPath& path,const int32_t& mid, const
 	return buff;
 }
 
+void TransMsgModule::checkSendServerState(int64_t dt)
+{
+	if (m_old_state == GetLayer()->GetLoopServer()->getServerState())
+		return;
+
+	if (GetServer(LOOP_CONSOLE,0) == NULL)
+		return;
+
+	auto node = GetLayer()->GetServer();
+	m_old_state = GetLayer()->GetLoopServer()->getServerState();
+
+	auto buf = LAYER_BUFF;
+
+	buf->writeInt32(node->type);
+	buf->writeInt32(node->serid);
+	buf->writeInt32(m_old_state);
+
+	SendToServer(ServerNode{ LOOP_CONSOLE,0 }, N_SEND_SERVER_STATE, buf);
+}
+
 BuffBlock* TransMsgModule::EncodeCoroMsg(BuffBlock* buff,const int32_t& mid,const int32_t& coid,const int32_t& mycoid)
 {
 	auto corobuff = GET_LAYER_MSG(BuffBlock);
@@ -429,7 +516,7 @@ BuffBlock* TransMsgModule::EncodeCoroMsg(BuffBlock* buff,const int32_t& mid,cons
 	return corobuff;
 }
 
-NetMsg* TransMsgModule::RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::RequestServerAsynMsg(const ServerNode& ser, const int32_t& mid, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto coid = m_msgModule->GenCoroIndex();
 	auto corobuff = EncodeCoroMsg(buff,mid,coid);
@@ -437,7 +524,7 @@ NetMsg* TransMsgModule::RequestServerAsynMsg(ServerNode& ser, const int32_t& mid
 	return dynamic_cast<NetMsg*>(m_msgModule->PullWait(coid,coro,pull)->m_data);
 }
 
-NetMsg* TransMsgModule::RequestServerAsynMsg(ServerNode& ser, const int32_t& mid, const gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::RequestServerAsynMsg(const ServerNode& ser, const int32_t& mid, const gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto buff = GET_LAYER_MSG(BuffBlock);
 	buff->makeRoom(msg.ByteSize());
@@ -467,7 +554,7 @@ NetMsg* TransMsgModule::RequestBackServerAsynMsg(ServerPath& path, const int32_t
 	return RequestServerAsynMsg(path,mid,msg,pull,coro);
 }
 
-NetMsg* TransMsgModule::RequestServerAsynMsg(ServerNode & ser, const int32_t & mid, const gpb::Message & msg, c_pull & pull, SHARE<BaseCoro>& coro, const ReqFail & failCall)
+NetMsg* TransMsgModule::RequestServerAsynMsg(const ServerNode & ser, const int32_t & mid, const gpb::Message & msg, c_pull & pull, SHARE<BaseCoro>& coro, const ReqFail & failCall)
 {
 	bool res = false;
 	ExitCall call([&res, failCall]() {
@@ -491,7 +578,7 @@ NetMsg* TransMsgModule::RequestServerAsynMsg(ServerPath & path, const int32_t & 
 	return resmsg;
 }
 
-NetMsg* TransMsgModule::ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::ResponseServerAsynMsg(const ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto coroMsg = (CoroMsg*)comsg.get();
 	auto coid = coroMsg->m_mycoid >0 ? coroMsg->m_mycoid : coroMsg->m_coroId;
@@ -501,7 +588,7 @@ NetMsg* TransMsgModule::ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& c
 	return dynamic_cast<NetMsg*>(m_msgModule->PullWait(mycoid,coro,pull)->m_data);
 }
 
-NetMsg* TransMsgModule::ResponseServerAsynMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, const gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
+NetMsg* TransMsgModule::ResponseServerAsynMsg(const ServerNode& ser, SHARE<BaseMsg>& comsg, const gpb::Message& msg,c_pull& pull,SHARE<BaseCoro>& coro)
 {
 	auto buff = GET_LAYER_MSG(BuffBlock);
 	buff->makeRoom(msg.ByteSize());
@@ -533,7 +620,7 @@ NetMsg* TransMsgModule::ResponseBackServerAsynMsg(ServerPath& path, SHARE<BaseMs
 	return ResponseServerAsynMsg(path,comsg,msg,pull,coro);
 }
 
-void TransMsgModule::ResponseServerMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff)
+void TransMsgModule::ResponseServerMsg(const ServerNode& ser, SHARE<BaseMsg>& comsg, BuffBlock* buff)
 {
 	auto coroMsg = (CoroMsg*)comsg.get();
 	auto coid = coroMsg->m_mycoid >0 ? coroMsg->m_mycoid : coroMsg->m_coroId;
@@ -541,7 +628,7 @@ void TransMsgModule::ResponseServerMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, B
 	SendToServer(ser,N_RESPONSE_CORO_MSG,corobuff);
 }
 
-void TransMsgModule::ResponseServerMsg(ServerNode& ser, SHARE<BaseMsg>& comsg, const gpb::Message& msg)
+void TransMsgModule::ResponseServerMsg(const ServerNode& ser, SHARE<BaseMsg>& comsg, const gpb::Message& msg)
 {
 	auto buff = GET_LAYER_MSG(BuffBlock);
 	buff->makeRoom(msg.ByteSize());

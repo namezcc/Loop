@@ -98,6 +98,9 @@ bool RedisModule::Connect(const string & host, const string& pass, const int& po
 	{
 		m_enable = false;
 	}
+
+	GetLayer()->GetLoopServer()->setServerState(SERR_REDIS, m_enable == false);
+
 	return m_enable;
 }
 

@@ -138,9 +138,6 @@ void MysqlModule::Init()
 	auto& sql = config.sql;
 	m_dbgroup = sql.dbGroup;
 	SetConnect(sql.db,sql.ip,sql.user,sql.pass,sql.port);
-
-	if (!m_sqlConn->connected())
-		Reconnect();
 }
 
 void MysqlModule::AfterInit()
@@ -154,11 +151,13 @@ void MysqlModule::Execute()
 
 void MysqlModule::SetConnect(const string & dbname, const string & ip, const string & user, const string & pass, const int & port)
 {
-	m_dbname = dbname;
+	/*m_dbname = dbname;
 	m_ip = ip;
 	m_user = user;
 	m_pass = pass;
-	m_port = port;
+	m_port = port;*/
+
+	Connect(dbname, ip, user, pass, port);
 }
 
 bool MysqlModule::Connect(const string& dbname, const string & ip, const string & user, const string & pass, const int & port)
@@ -174,7 +173,7 @@ bool MysqlModule::Connect(const string& dbname, const string & ip, const string 
 	m_sqlConn->set_option(new mysqlpp::ReconnectOption(true));
 	m_sqlConn->set_option(new mysqlpp::ConnectTimeoutOption(60));
 
-	return m_sqlConn->connect(dbname.data(), ip.data(), user.data(), pass.data(), port);
+	return Reconnect();
 }
 
 bool MysqlModule::Reconnect()
@@ -195,6 +194,9 @@ bool MysqlModule::Reconnect()
 		LP_ERROR << "Mysql Connect Error "<<"db:"<<m_dbname<<" ip:"<<m_ip<<" user:"<<m_user<<" pass:"<<m_pass<<" port:"<<m_port;
 	else
 		LP_INFO << "Mysql Connect Success " << "db:" << m_dbname << " ip:" << m_ip << " port:" << m_port;
+
+
+	GetLayer()->GetLoopServer()->setServerState(SERR_SQL, res == false);
 	return res;
 }
 

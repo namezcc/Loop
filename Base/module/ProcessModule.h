@@ -11,8 +11,12 @@ public:
 	ProcessModule(BaseLayer* l);
 	~ProcessModule();
 
-	void CreateServer(const SERVER_TYPE& sertype,const int32_t& nid,const int32_t& port);
+	void CreateServer(const int32_t& sertype,const int32_t& nid);
 	void CreateLoopProcess(const std::string& proname, const std::string& logname,const std::vector<std::string>& args);
+
+	std::string runProcess(const std::string& cmd, const std::vector<std::string>& args);
+	void runProcessAndDetach(const std::string& cmd, const std::vector<std::string>& args);
+
 private:
 	// ͨ�� BaseModule �̳�
 	virtual void Init() override;

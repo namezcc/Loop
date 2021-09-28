@@ -398,11 +398,13 @@ template<> struct Reflect<T>:public ReflectField<T>{ \
 		if (m.size() == 0) \
 			for (size_t i = 0; i < Reflect<T>::arr_fields.size(); i++) \
 				m[string(Reflect<T>::arr_fields[i])] = static_cast<int>(i); \
-		return m[f]; \
+		auto it = m.find(f);	\
+		return it == m.end() ? -1 : it->second; \
 	}	\
 	static void SetFieldValue(T& t,const string& f,const string& v) \
 	{\
 		int idx = Reflect::GetFieldIndex(f);	\
+		if(idx < 0) return;				\
 		char* p = (char*)(&t);	\
 		SetVal(p+Reflect::arr_offset[idx],Reflect::arr_type[idx],v); \
 	} \

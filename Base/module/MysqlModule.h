@@ -241,7 +241,7 @@ public:
 	}
 
 	template<typename T>
-	bool Select(vector<SHARE<T>>& res,const string& sql)
+	bool Select(vector<T>& res,const string& sql)
 	{
 		MultRow tmp;
 		SqlRow files;
@@ -249,11 +249,10 @@ public:
 			return false;
 		for (size_t i = 0; i < tmp.size(); i++)
 		{
-			//SHARE<T> t = GetLayer()->GetSharedLoop<T>();
-			SHARE<T> t = GET_SHARE(T);
+			T t = {};
 			for (size_t j = 0; j < files.size(); j++)
 			{
-				Reflect<T>::SetFieldValue(*t, files[j], tmp[i][j]);
+				Reflect<T>::SetFieldValue(t, files[j], tmp[i][j]);
 			}
 			res.push_back(t);
 		}

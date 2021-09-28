@@ -158,7 +158,7 @@ struct LOOP_EXPORT BuffBlock:public BaseData
 		{
 			extandSize();
 			//error
-			return;
+			//return;
 		}
 
 		msg.SerializeToArray(m_buff + m_offect, msize);
@@ -212,7 +212,7 @@ private:
 		{
 			extandSize();
 			//error 
-			return;
+			//return;
 		}
 		T* pt = (T*)(m_buff + m_offect);
 		*pt = t;

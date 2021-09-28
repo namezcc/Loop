@@ -3,12 +3,15 @@ package handle
 import "tcp_test/network"
 
 const (
-	MS_BEGIN          = 2000
-	N_WBE_TEST        = 2001
-	N_WBE_TEST2       = 2002
-	N_WBE_ON_RESPONSE = 2003
-	N_WBE_REQUEST_1   = 2004
-	MS_END            = 3000
+	MS_BEGIN              = 2000
+	N_WBE_TEST            = 2001
+	N_WBE_TEST2           = 2002
+	N_WBE_ON_RESPONSE     = 2003
+	N_WBE_REQUEST_1       = 2004
+	N_WEB_VIEW_MACHINE    = 2005
+	N_WEB_GET_SERVER_INFO = 2006
+	N_WEB_SERVER_OPT      = 2007
+	MS_END                = 3000
 )
 
 type handlemsg struct {

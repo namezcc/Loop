@@ -37,7 +37,7 @@ void SessionModule::Execute()
 
 void SessionModule::LoadAdmin()
 {
-	vector<SHARE<Admin>> res;
+	/*vector<SHARE<Admin>> res;
 	m_mysqlModule->Select(res, "select * from Admin;");
 	if (res.size() == 0)
 	{
@@ -46,7 +46,7 @@ void SessionModule::LoadAdmin()
 	}
 	
 	for (auto& m:res)
-		m_admins[m->user] = m;
+		m_admins[m->user] = m;*/
 }
 
 bool SessionModule::OnCheckSession(HttpMsg * msg)

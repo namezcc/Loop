@@ -92,8 +92,10 @@ namespace Loop{
 			pos1 = pos2 + delimiter.size();
 			pos2 = str.find(delimiter, pos1);
 		}
-		if (pos1 != str.length())
+		if (pos1 < str.length())
 			res.push_back(Cvto<T>(str.substr(pos1)));
+		else if(pos1 == str.length())
+			res.push_back(Cvto<T>(""));
 
 		return res;
 	}
@@ -112,10 +114,13 @@ namespace Loop{
 			pos1 = pos2 + delimiter.size();
 			pos2 = str.find(delimiter, pos1);
 		}
-		if (pos1 != str.length())
+		if (pos1 < str.length())
 			res.push_back(Cvto<T>(str.substr(pos1)));
+		else if(pos1 == str.length())
+			res.push_back(Cvto<T>(""));
 	}
 
+	//del ',|:' a:b,c|d each split
 	static void Spliteach(const string& str, const char* delimiter, std::vector<std::string>& res)
 	{
 		auto p = str.c_str();
@@ -152,8 +157,10 @@ namespace Loop{
 			pos1 = pos2 + delimiter.size();
 			pos2 = str.find(delimiter, pos1);
 		}
-		if (pos1 != str.length())
+		if (pos1 < str.length())
 			res.push_back(str.substr(pos1));
+		else if (pos1 == str.length())
+			res.push_back("");
 	}
 }
 

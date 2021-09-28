@@ -58,6 +58,9 @@ func (m *logicModule) checkConnectServer(dt int64) {
 	}
 	if dt > m._checkServerTick {
 		m._checkServerTick = dt + connectTime
+		// if connectTime < 60000 {
+		// 	connectTime += 5000
+		// }
 		cid := m._net.ConnectServer(ServerAddr)
 		if cid != network.CONN_STATE_DISCONNECT {
 			m._server_connid = cid

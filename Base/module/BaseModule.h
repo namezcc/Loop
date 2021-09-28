@@ -46,6 +46,7 @@ private:
 
 //#define GET_LAYER_MSG(T) GetLayer()->GetLayerMsg<T>()
 #define GET_LAYER_MSG(T) MsgPool::popMsg<T>()
+#define LAYER_BUFF GET_LAYER_MSG(BuffBlock)
 #define RECYCLE_LAYER_MSG(t) GetLayer()->RecycleLayerMsg(t)
 
 #define COM_MOD_CLASS class MsgModule;class TransMsgModule;class NetObjectModule;
@@ -54,5 +55,8 @@ private:
 #define COM_MOD_INIT m_msg_mod = GET_MODULE(MsgModule); \
 m_trans_mod = GET_MODULE(TransMsgModule); \
 m_net_mod = GET_MODULE(NetObjectModule);
+
+
+#define SNODE(t,i) ServerNode{(int8_t)t,(int16_t)i}
 
 #endif

@@ -5,6 +5,7 @@
 #include "DataDefine.h"
 #include "JsonHelp.h"
 #include "LPStringUtil.h"
+#include "httpclient.h"
 
 enum ServerConnectType
 {
@@ -14,7 +15,7 @@ enum ServerConnectType
 	SCT_ID,				//固定id
 };
 
-LoopServer::LoopServer():m_over(false), m_stop(NULL)
+LoopServer::LoopServer():m_over(false), m_stop(NULL), m_server_state(0)
 {
 }
 
@@ -39,6 +40,18 @@ void LoopServer::InitServer(int argc, char** args)
 	Init(st, serid);
 }
 
+void LoopServer::setServerState(int32_t bit, bool err)
+{
+	if (err)
+	{
+		SET_BIT_1(m_server_state, bit);
+	}
+	else
+	{
+		SET_BIT_0(m_server_state, bit);
+	}
+}
+
 void LoopServer::Init(const int& stype, const int& serid)
 {
 	m_server.serid = serid;
@@ -53,10 +66,62 @@ void LoopServer::InitConfig()
 	string file = LoopFile::GetRootPath();
 	if(m_server.type== SERVER_TYPE::LOOP_MASTER)
 		file.append("commonconf/Master.json");
-	else if(m_server.type == SERVER_TYPE::LOOP_CONSOLE)
-		file.append("commonconf/Console.json");
-	else
+	else if(m_server.type == SERVER_TYPE::LOOP_CONSOLE){
 		file.append("commonconf/ServerConfig.json");
+	}
+	else
+	{
+		char url[256] = {};
+		sprintf(url, "http://127.0.0.1:8999/serverInfo?id=%d&type=%d", m_server.serid, m_server.type);
+		auto res = Single::GetInstence<HttpClient>()->requestUrl(url);
+
+		JsonHelp jhelp;
+		if (!jhelp.ParseString(res))
+			exit(-1);
+
+		Value rt = jhelp.GetDocument().GetObject();
+
+		m_config.addr.ip = rt["ip"].GetString();
+		m_config.addr.port = rt["port"].GetInt();
+		m_port = m_config.addr.port;
+
+		auto sql = rt["mysql"].GetString();
+		if (strlen(sql) > 0)
+		{
+			std::vector<std::string> res;
+			Loop::Split(sql, "|", res);
+
+			if (res.size() < 5)
+			{
+				printf("mysql conf error %s\n", sql);
+				exit(-1);
+			}
+
+			m_config.sql.ip = res[0];
+			m_config.sql.port = Loop::Cvto<int>(res[1]);
+			m_config.sql.db = res[2];
+			m_config.sql.user = res[3];
+			m_config.sql.pass = res[4];
+		}
+
+		auto redis = rt["redis"].GetString();
+		if (strlen(redis) > 0)
+		{
+			std::vector<std::string> res;
+			Loop::Split(redis, "|", res);
+
+			if (res.size() < 3)
+			{
+				printf("redis conf error %s\n", redis);
+				exit(-1);
+			}
+
+			m_config.redis.ip = res[0];
+			m_config.redis.port = Loop::Cvto<int>(res[1]);
+			m_config.redis.pass = res[2];
+		}
+		return;
+	}
 
 	JsonHelp jhelp;
 	if (!jhelp.ParseFile(file))
@@ -64,7 +129,7 @@ void LoopServer::InitConfig()
 
 	Value root = jhelp.GetDocument().GetObject();
 	Value config;
-	if (m_server.type == SERVER_TYPE::LOOP_MASTER || m_server.type == SERVER_TYPE::LOOP_CONSOLE)
+	if (m_server.type == SERVER_TYPE::LOOP_MASTER)
 		config = root;
 	else
 	{
@@ -120,6 +185,11 @@ void LoopServer::InitServerConfig()
 		if (it->value.IsObject())
 		{
 			auto type = Loop::Cvto<int>(it->name.GetString());
+			if (type != LOOP_MASTER && type != LOOP_CONSOLE)
+			{
+				continue;
+			}
+
 			auto& vec = m_all_server[type];
 
 			for (auto its=it->value.MemberBegin();its != it->value.MemberEnd();++its)
@@ -146,16 +216,14 @@ void LoopServer::InitConnectRule()
 
 	for (auto& v:root)
 	{
-		auto server_type = v["server"].GetInt();
+		ConnRule r = {};
+		r.server_type = v["server"].GetInt();
+		r.to_server_type = v["to_server"].GetInt();
+		r.conn_type = v["type"].GetInt();
+		r.param = v["param"].GetInt();
 
-		if (server_type == m_server.type)
-		{
-			auto toserver = v["to_server"].GetInt();
-			auto conn_type = v["type"].GetInt();
-			auto param = v["param"].GetInt();
-			if(conn_type > 0)
-				m_connect_rule[toserver] = std::make_pair(conn_type, param);
-		}
+		if (r.conn_type > 0)
+			m_connect_rule.push_back(r);
 	}
 }
 
@@ -231,9 +299,12 @@ std::vector<ServerConfigInfo> LoopServer::getConnectServer()
 	std::vector<ServerConfigInfo> res;
 	for (auto p:m_connect_rule)
 	{
-		auto server = p.first;
-		auto type = p.second.first;
-		auto param = p.second.second;
+		if (p.server_type != m_server.type)
+			continue;
+
+		auto server = p.to_server_type;
+		auto type = p.conn_type;
+		auto param = p.param;
 		auto svec = m_all_server[server];
 		auto msvec = m_all_server[m_server.type];
 		if (svec.empty())
@@ -279,6 +350,71 @@ std::vector<ServerConfigInfo> LoopServer::getConnectServer()
 			}
 		}
 	}
+
+	if (m_server.type != LOOP_CONSOLE && m_server.type != LOOP_MASTER)
+	{
+		auto svec = m_all_server[LOOP_CONSOLE];
+		res.insert(res.end(), svec.begin(), svec.end());
+	}
+	return res;
+}
+std::vector<ServerConfigInfo> LoopServer::getConnectServer(int32_t type, int32_t id, std::map<int32_t, std::vector<ServerConfigInfo>>& allser)
+{
+	std::vector<ServerConfigInfo> res;
+	for (auto p : m_connect_rule)
+	{
+		if (p.server_type != type)
+			continue;
+
+		auto server = p.to_server_type;
+		auto type = p.conn_type;
+		auto param = p.param;
+		auto svec = allser[server];
+		auto msvec = allser[type];
+		if (svec.empty())
+			continue;
+
+		if (type == SCT_ALL)
+		{
+			res.insert(res.end(), svec.begin(), svec.end());
+		}
+		else if (type == SCT_AVG_NUM)
+		{
+			auto to_snum = svec.size();
+			auto my_snum = msvec.size();
+			auto mindex = 0;
+
+			for (size_t i = 0; i < msvec.size(); i++)
+			{
+				if (msvec[i].server_id == id)
+					mindex = (int)i;
+			}
+
+			auto to_index = mindex * to_snum / my_snum;
+			if (to_index >= to_snum) to_index = 0;
+
+			if (param > to_snum) param = (int32_t)to_snum;
+
+			for (size_t i = 0; i < param; i++)
+			{
+				res.push_back(svec[to_index]);
+				if ((++to_index) >= to_snum)
+					to_index = 0;
+			}
+		}
+		else if (type == SCT_ID)
+		{
+			for (auto it : svec)
+			{
+				if (it.server_id == param)
+				{
+					res.push_back(it);
+					break;
+				}
+			}
+		}
+	}
+
 	return res;
 }
 //void LoopServer::recycle(int32_t index, BaseData* msg)

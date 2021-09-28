@@ -67,10 +67,7 @@ std::string LoopFile::GetRootPath()
 string LoopFile::GetExecutePath()
 {
 	std::string path = GetRootPath();
-	path.append("_out/");
-#if PLATFORM == PLATFORM_WIN
-	path.append("Debug/");
-#endif
+	path.append("_out/Debug/");
 	return path;
 }
 

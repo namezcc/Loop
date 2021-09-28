@@ -4,6 +4,9 @@
 #include "LPFile.h"
 #include <boost/process.hpp>
 #include <boost/filesystem.hpp>
+
+#include <boost/process/windows.hpp>
+
 #include "JsonHelp.h"
 
 namespace bp = boost::process;
@@ -39,7 +42,7 @@ void ProcessModule::Execute()
 {
 }
 
-void ProcessModule::CreateServer(const SERVER_TYPE& sertype, const int32_t& nid, const int32_t& port)
+void ProcessModule::CreateServer(const int32_t& sertype, const int32_t& nid)
 {
 	if (sertype <= SERVER_TYPE::LOOP_SERVER_NONE || sertype >= SERVER_TYPE::LOOP_SERVER_END)
 	{
@@ -51,8 +54,7 @@ void ProcessModule::CreateServer(const SERVER_TYPE& sertype, const int32_t& nid,
 	args.push_back(Loop::Cvto<std::string>((int32_t)sertype));
 	args.push_back("-n");
 	args.push_back(Loop::Cvto<std::string>(nid));
-	args.push_back("-p");
-	args.push_back(Loop::Cvto<std::string>(port));
+	
 	std::string logname = m_server_name[sertype];
 	logname.append("_").append(Loop::Cvto<std::string>(nid));
 #if PLATFORM == PLATFORM_WIN
@@ -81,5 +83,51 @@ void ProcessModule::CreateLoopProcess(const std::string& proname, const std::str
 	}
 	if (ec) {
 		std::cerr << "create process error code "<< ec << '\n';
+	}
+}
+
+std::string ProcessModule::runProcess(const std::string & cmd, const std::vector<std::string>& args)
+{
+	char buf[4096] = {};
+
+	bp::ipstream p1;
+
+	std::error_code ec;
+	try
+	{
+		bp::system(cmd.c_str(), args, bp::std_out > p1, ec);
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	if (ec) {
+		std::cerr << "run process error code " << ec << ec.message() << '\n';
+	}
+	
+	std::string res;
+
+	while (!p1.eof())
+	{
+		p1.read(buf, sizeof(buf));
+		res.append(buf);
+	}
+
+	return res;
+}
+
+void ProcessModule::runProcessAndDetach(const std::string & cmd, const std::vector<std::string>& args)
+{
+	std::error_code ec;
+	try
+	{
+		bp::system(cmd.c_str(), args, ec);
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	if (ec) {
+		std::cerr << "run process error code " << ec << '\n';
 	}
 }

@@ -33,6 +33,21 @@ struct ServerConfig
 	SqlInfo redis;
 };
 
+struct ConnRule
+{
+	int32_t server_type;
+	int32_t to_server_type;
+	int32_t conn_type;
+	int32_t param;
+};
+
+enum ServerState
+{
+	SERR_LINK = 1,
+	SERR_REDIS,
+	SERR_SQL,
+};
+
 class LOOP_EXPORT LoopServer
 {
 public:
@@ -64,11 +79,15 @@ public:
 	}
 	//void recycle(int32_t index, BaseData* msg);
 	std::vector<ServerConfigInfo> getConnectServer();
+	std::vector<ServerConfigInfo> getConnectServer(int32_t type,int32_t id, std::map<int32_t, std::vector<ServerConfigInfo>>& allser);
+
 
 	int m_port;
 	const ServerNode& getServerNode() { return m_server; }
 	void setStop(int32_t* stop) { m_stop = stop; }
 	bool stopServer() { return (*m_stop) > 0; }
+	int32_t getServerState() { return m_server_state; }
+	void setServerState(int32_t bit, bool err);
 protected:
 	void Init(const int& stype, const int& serid);
 	void InitConfig();
@@ -84,10 +103,12 @@ private:
 
 	//RecyclePool* m_recycle;
 	std::map<int32_t, std::vector<ServerConfigInfo>> m_all_server;
-	std::map<int32_t, std::pair<int32_t, int32_t>> m_connect_rule;
+	std::vector<ConnRule> m_connect_rule;
 
 	bool m_over;
 	int32_t* m_stop;
+
+	int32_t m_server_state;
 };
 
 #endif

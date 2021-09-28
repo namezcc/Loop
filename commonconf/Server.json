@@ -3,7 +3,7 @@
 	{"name":"LoopProxy","type":1,"dll":"LoopProxy"},
 	{"name":"Login","type":2,"dll":"Login"},
 	{"name":"MysqlServer","type":3,"dll":"MysqlServer"},
-	{"name":"LoopProxy","type":4,"dll":"LoopProxy"},
+	{"name":"ProxyProxy","type":4,"dll":"LoopProxy"},
 	{"name":"Master","type":5,"dll":"Master"},
 	{"name":"Console","type":6,"dll":"Console"},
 	{"name":"db_proxy","type":7,"dll":"LoopProxy"},

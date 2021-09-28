@@ -62,6 +62,11 @@ enum MSG_FROM_NET
 	
 	//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> server msg ----------------------
 	
+	N_SEND_SERVER_STATE,
+	N_ALL_SERVER_INFO,
+	N_CONN_SERVER_INFO,
+	N_GET_LINK_SERVER_INFO,
+
 	N_UPDATE_TABLE_GROUP,
 	N_ADD_TABLE_GROUP,
 	N_GET_ACCOUNT_INFO,

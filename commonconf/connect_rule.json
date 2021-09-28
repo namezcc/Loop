@@ -8,5 +8,6 @@
 	{"server":8,"to_server":7,"type":1,"param":0,"desc":"room->dbproxy所有"},
 	{"server":8,"to_server":18,"type":1,"param":0,"desc":"room->teamproxy所有"},
 	{"server":15,"to_server":18,"type":1,"param":0,"desc":"team->teamproxy所有"},
-	{"server":3,"to_server":7,"type":1,"param":0,"desc":"mysql->dbproxy所有"}
+	{"server":3,"to_server":7,"type":1,"param":0,"desc":"mysql->dbproxy所有"},
+	{"server":6,"to_server":5,"type":1,"param":0,"desc":"consol->master所有"}
 ]

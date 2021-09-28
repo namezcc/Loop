@@ -59,4 +59,11 @@
 //pack head size
 #define PACK_HEAD_SIZE 12
 
+//start 1
+#define SET_BIT_1(v,b) v|=(1<<(b-1))
+//start 1
+#define SET_BIT_0(v,b) v&=(~(1<<(b-1)))
+//start 1
+#define IS_BIT_1(v,b) ((v&(1<<(b-1)))>0)
+
 #endif

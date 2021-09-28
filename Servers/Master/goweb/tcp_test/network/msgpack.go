@@ -21,6 +21,15 @@ func NewMsgPack(size int) Msgpack {
 	return pack
 }
 
+func NewMsgPackDef() Msgpack {
+	pack := Msgpack{
+		_buff:  make([]byte, 64),
+		_index: 0,
+		_max:   64,
+	}
+	return pack
+}
+
 func (_m *Msgpack) Init(cid int, mid int, b []byte) {
 	_m._buff = b
 	_m._index = 0
@@ -84,7 +93,7 @@ func (_m *Msgpack) WriteInt16(v int16) {
 	_m._index += 2
 }
 
-func (_m *Msgpack) WriteInt32(v int32) {
+func (_m *Msgpack) WriteInt32(v int) {
 	if _m._index+4 > _m._max {
 		return
 	}
@@ -102,7 +111,7 @@ func (_m *Msgpack) WriteInt64(v int64) {
 
 func (_m *Msgpack) WriteString(v []byte) {
 	_s := len(v)
-	_m.WriteInt32(int32(_s))
+	_m.WriteInt32(_s)
 	if _m._index+_s > _m._max {
 		return
 	}
@@ -133,8 +142,8 @@ func (_m *Msgpack) GetBuff() []byte {
 const HEAD_SIZE = 12
 
 func (_m *Msgpack) EncodeMsg(mid int, buf []byte) {
-	_m.WriteInt32(int32(HEAD_SIZE + len(buf)))
-	_m.WriteInt32(int32(mid))
+	_m.WriteInt32(HEAD_SIZE + len(buf))
+	_m.WriteInt32(mid)
 	_m.WriteInt32(0)
 	if len(buf) > 0 {
 		_m.WriteBuff(buf)

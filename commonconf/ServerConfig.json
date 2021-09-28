@@ -1,139 +1,17 @@
 {
-	"comment1":"Login type 2",
-	"2":{
+	"master 5":"master server",
+	"5":{
 		"1":{
-			"addr":{"ip":"127.0.0.1","port":22001},
-			"redis":{
-				"ip":"127.0.0.1",
-				"port":6379,
-				"pass":""
-			}
+			"addr":{"ip":"10.41.2.57","port":25001}
 		}
 	},
-	"server 17":"Mysql account type 17",
-	"17":{
+	"consol 6":"consol server",
+	"6":{
 		"1":{
-			"addr":{"ip":"127.0.0.1","port":37001},
-			"sql":{
-				"ip":"127.0.0.1",
-				"port":3306,
-				"database":"lp_account",
-				"user":"root",
-				"pass":"123456",
-				"group":1
-			}
-		}
-	},
-	"comment2":"MysqlServer type 3",
-	"3":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":23001},
-			"sql":{
-				"ip":"127.0.0.1",
-				"port":3306,
-				"database":"lp_game",
-				"user":"root",
-				"pass":"123456",
-				"group":1
-			},
-			"redis":{
-				"ip":"127.0.0.1",
-				"port":6379,
-				"pass":""
-			}
-		}
-	},
-	"comment3":"Proxy type 1",
-	"1":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":21001}
-		},
-		"11":{
-			"addr":{"ip":"127.0.0.1","port":21011}
-		}
-	},
-	"comment4":"DBProxy type 7",
-	"7":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":27001}
-		}
-	},
-	"comment4":"team proxy type 18",
-	"18":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":38001}
-		}
-	},
-	"comment8":"Room Server",
-	"8":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":28001}
+			"addr":{"ip":"10.41.2.57","port":26001}
 		},
 		"2":{
-			"addr":{"ip":"127.0.0.1","port":28002}
-		}
-	},
-	"comment9":"RoomState Server",
-	"9":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":29001},
-			"redis":{
-				"ip":"127.0.0.1",
-				"port":6379,
-				"pass":""
-			}
-		}
-	},
-	"comment10":"LoginLock Server",
-	"10":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":30001},
-			"sql":{
-				"ip":"127.0.0.1",
-				"port":3306,
-				"database":"lp_player_num",
-				"user":"root",
-				"pass":"123456",
-				"group":1
-			}
-		}
-	},
-	"comment11":"BattleScene Server",
-	"11":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":31001}
-		}
-	},
-	"comment12":"BattleTrans Server",
-	"12":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":32001},
-			"udpaddr":{"ip":"127.0.0.1","port":32002}
-		}
-	},
-	"comment13":"Match Server",
-	"13":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":33001}
-		}
-	},
-	"comment14":"MatchState Server",
-	"14":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":34001}
-		}
-	},
-	"comment4":"ProxyProxy Server",
-	"4":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":24001}
-		}
-	},
-	"comment15":"Team Server 15",
-	"15":{
-		"1":{
-			"addr":{"ip":"127.0.0.1","port":35001}
+			"addr":{"ip":"192.168.154.143","port":26002}
 		}
 	}
-
 }

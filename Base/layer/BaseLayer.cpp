@@ -63,7 +63,8 @@ void BaseLayer::StartRun()
 
 void BaseLayer::RecycleLayerMsg(BaseData* msg)
 {
-	msg->recycleMsg();
+	if(msg)
+		msg->recycleMsg();
 	//m_server->recycle(m_lsindex,msg);
 	//msg->recycleCheck();
 	//msg->recycleMsg();

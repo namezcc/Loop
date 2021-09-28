@@ -4,8 +4,6 @@
 #include "LoopServer.h"
 #include "TransMsgModule.h"
 
-#include "protoPB/base/LPBase.pb.h"
-
 NetObjectModule::NetObjectModule(BaseLayer* l):BaseModule(l), m_acceptNoCheck(false), m_noCheckType(CONN_CLIENT)
 {
 }
@@ -229,10 +227,15 @@ void NetObjectModule::OnServerConnet(NetServer* ser)
 		auto netobj = GET_SHARE(NetObject);
 		netobj->socket = ser->socket;
 		m_objects_tmp[netobj->socket] = netobj;
+		if (m_tempServer.size() == 1)
+		{
+			GetLayer()->GetLoopServer()->setServerState(SERR_LINK, false);
+		}
 	}
 	else
 	{
 		LP_ERROR << "connect server " << ser->serid << "error ip:" << ser->ip << " port: " << ser->port;
+		GetLayer()->GetLoopServer()->setServerState(SERR_LINK, true);
 	}
 	it->second(ser->socket >= 0, *ser);
 	m_tempServer.erase(it);

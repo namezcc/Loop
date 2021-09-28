@@ -22,13 +22,16 @@ typedef void(*DLL_START)(int, char*[],int*);
 #define ARG_NUM 5
 #define ARG_USE_NUM 4
 
-void LoadServerConf(map<int,string>& conf)
+void LoadServerConf(map<int,string>& conf, map<int, string>& sername)
 {
 	JsonHelp jhelp;
 	if (!jhelp.ParseFile(LoopFile::GetRootPath().append("commonconf/Server.json")))
 		exit(-1);
 	for (auto& v : jhelp.GetDocument().GetArray())
+	{
 		conf[v["type"].GetInt()] = v["dll"].GetString();
+		sername[v["type"].GetInt()] = v["name"].GetString();
+	}
 }
 
 void StartInitCrash(const std::string& proname,const int32_t& nid)
@@ -69,7 +72,8 @@ int main(int argc, char* args[])
 	LoopFile::setRootPath(args[0]);
 
 	map<int, string> serverConf;
-	LoadServerConf(serverConf);
+	map<int, string> serverName;
+	LoadServerConf(serverConf, serverName);
 
 	vector<thread> thrs;
 	int num = argc / ARG_USE_NUM;
@@ -93,7 +97,7 @@ int main(int argc, char* args[])
 		assert(dllname.size() > 0);
 		if (i==0)
 		{
-			StartInitCrash(dllname,nid);
+			StartInitCrash(serverName[type],nid);
 		}
 
 		dllhelp dll(dllname);
