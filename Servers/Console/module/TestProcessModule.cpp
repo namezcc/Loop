@@ -234,7 +234,7 @@ std::string TestProcessModule::getServerPid(int32_t type, int32_t id)
 	arg.push_back(Loop::to_string(id));
 
 #else
-	auto exec = LoopFile::GetRootPath().append("_out/shgetpid.sh");
+	auto exec = "sh " + LoopFile::GetRootPath().append("_out/shgetpid.sh");
 	arg.push_back(Loop::to_string(type));
 	arg.push_back(Loop::to_string(id));
 #endif
@@ -274,7 +274,7 @@ void TestProcessModule::closeServer(int32_t type, int32_t id)
 #if PLATFORM == PLATFORM_WIN
 	auto exec = LoopFile::GetRootPath().append("_out/batkill.bat");
 #else
-	auto exec = LoopFile::GetRootPath().append("_out/shkill.sh");
+	auto exec = "sh " + LoopFile::GetRootPath().append("_out/shkill.sh");
 #endif
 	
 	std::vector<std::string> arg;
@@ -291,15 +291,16 @@ void TestProcessModule::openServer(int32_t type, int32_t id)
 		return;
 	}
 
-#if PLATFORM == PLATFORM_WIN
-	auto exec = LoopFile::GetRootPath().append("_out/batstart.bat");
-#else
-	auto exec = LoopFile::GetRootPath().append("_out/shstart.sh");
-#endif
 	std::vector<std::string> arg;
 	arg.push_back(Loop::to_string(type));
 	arg.push_back(Loop::to_string(id));
+	
+#if PLATFORM == PLATFORM_WIN
+	auto exec = LoopFile::GetRootPath().append("_out/batstart.bat");
+#else
+	auto exec = "sh " + LoopFile::GetRootPath().append("_out/shstart.sh");
 	arg.push_back(m_server_name[type]);
+#endif
 	m_processModule->runProcessAndDetach(exec, arg);
 }
 
