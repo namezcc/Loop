@@ -42,6 +42,7 @@ local function CreateGame()
 	local account = "zcc"..(GAME_INDEX*checkNum+nid)
 	local player = {}
 
+	-- print("create ply ",nid)
     games[nid] = player
 	setPlayerImpFunc(player)
 
@@ -54,11 +55,15 @@ local function CreateGame()
     nid = nid + 1
 end
 
+DELAY_START = 2000
+
 if checkNum == 1 then
     GameType = GAME_TYPE.SINGLE     --单人 模式
 	IS_SINGLE = true
+	DELAY_START = 0
 else
     GameType = GAME_TYPE.MUILT
+	AUTO_ENTER = true
 end
 
 --  发包器模式
@@ -70,9 +75,6 @@ end
 
 collectgarbage("setpause",200)  --200
 collectgarbage("setstepmul",5000)
-
-
-DELAY_START = 3000
 
 NOW_TICK = 0
 BEG_TIME = 0
@@ -169,9 +171,9 @@ function DoCmdFunction( pamstr )
             CMD:DoCmd(cmdname,v,cmd)
         end
     else
-        local game = games[gid]
+        local player = games[gid]
         if player == nil then
-            print("error player id")
+            print("error player id ",gid)
             return
         end
         CMD:DoCmd(cmdname,player,cmd)

@@ -98,6 +98,12 @@ void TransMsgModule::OnServerConnect(SHARE<NetServer>& ser)
 		m_netObjMod->CloseNetObject(its->second->socket);
 		RemoveRand(ser->type, ser->serid);
 	}
+
+	if (ser->type == LOOP_CONSOLE)
+	{
+		m_old_state = -1;
+	}
+
 	m_serverList[ser->type][ser->serid] = ser;
 	m_randServer[ser->type].push_back(ser.get());
 	m_allServer[ser->socket] = ser;

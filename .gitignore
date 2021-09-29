@@ -1,6 +1,5 @@
 build/
 _out/Debug/
-Base/.vscode/
 *.exp
 *.pdb
 *.ilk

@@ -22,9 +22,12 @@ end
 function LoginModule:onNewPlayer(account)
 	self._account = account
 
-	Schedule:AddIntervalTask(function()
-		self:DoConnectServer()
-	end,0,1,1)
+	if AUTO_ENTER then
+		Schedule:AddIntervalTask(function()
+			self:DoConnectServer()
+		end,0,1,1)
+	end
+
 end
 
 function LoginModule:SendGameData(pbname,mid,data)
@@ -60,12 +63,14 @@ function LoginModule:DoConnectServer()
 	end
     local res = _Net:Connect(ip,port,EventID.ON_CONNECT_LOGIN_SERVER,self)
 	if res == false then
-		if IS_SINGLE then
+		if AUTO_ENTER then
 			print("connect fail try after 3s...")
 		end
-		Schedule:AddIntervalTask(function()
-            self:DoConnectServer()
-        end,0,3000,1)
+		if AUTO_ENTER then
+			Schedule:AddIntervalTask(function()
+				self:DoConnectServer()
+			end,0,3000,1)
+		end
 	end
 end
 
@@ -128,7 +133,9 @@ function LoginModule:onLogin(data)
 		printTable(data)
 	end
 	self._room = data
-	self:DoEnterRoom()
+	if AUTO_ENTER then
+		self:DoEnterRoom()
+	end
 end
 
 function LoginModule:onGetRole(data)
@@ -138,10 +145,12 @@ function LoginModule:onGetRole(data)
 	end
 	self._role = data.roles
 
-	if #self._role > 0 then
-		self:EnterGame(self._role[1])
-	else
-		self:DoCreateRole({self._account.."-r1"})
+	if AUTO_ENTER then
+		if #self._role > 0 then
+			self:EnterGame(self._role[1])
+		else
+			self:DoCreateRole({self._account.."-r1"})
+		end
 	end
 end
 
@@ -184,7 +193,7 @@ function LoginModule:EnterGame(role)
         data = role.pid,
     }
     self:SendGameData("propertyInt64",CMCODE.CM_ENTER_GAME,pb)
-	print(role.name," enter room ------->> ",NOW_TICK - BEG_TIME," ms")
+	print(role.name," enter room ------->> ",self._room.ip,"   ",NOW_TICK - BEG_TIME," ms")
 end
 
 return LoginModule
