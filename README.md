@@ -4,10 +4,10 @@
 Feature：
 简单无锁的线程间通讯
 protobuf
-http、fastcgi
+http
 简单的 ORM 目前仅支持 增删改查 创建表
 coroutine
-lua script
+lua
 
 Dependencies:
 libuv 1.18.0
@@ -15,7 +15,6 @@ mysqlpp 3.2.2
 protobuf 3.4
 jsoncpp 1.8
 boost 1.66
-breakpad
 
 
 
