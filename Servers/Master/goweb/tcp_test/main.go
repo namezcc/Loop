@@ -7,16 +7,15 @@ import (
 	"os"
 	"regexp"
 	"tcp_test/module"
+	"tcp_test/util"
 	"time"
 )
 
-var host = ""
-
 func parseLine(str string) {
-	reg := regexp.MustCompile("host=(.*)")
+	reg := regexp.MustCompile("(\\w*)=(.*)")
 	sarr := reg.FindStringSubmatch(str)
-	if len(sarr) == 2 {
-		host = sarr[1]
+	if len(sarr) == 3 {
+		util.SetConfValue(sarr[1], sarr[2])
 		// fmt.Println("host ", host)
 	}
 }
@@ -35,10 +34,10 @@ func readconf() {
 	reader := bufio.NewReader(f)
 
 	for {
-		str, err := reader.ReadString('\n')
+		str, _, err := reader.ReadLine()
 
-		if str != "" {
-			parseLine(str)
+		if len(str) > 0 {
+			parseLine(string(str))
 		}
 
 		if err == io.EOF {
@@ -51,12 +50,11 @@ func readconf() {
 func main() {
 	readconf()
 
-	module.ServerAddr = host
+	module.ServerAddr = util.GetConfValue("host")
 	module.ModuleMgr.Init()
 	fmt.Println("start main")
-	for {
-		tm := time.Now().UnixNano() / 1e6
-		module.ModuleMgr.Update(tm)
-		time.Sleep(time.Millisecond * 1)
+	module.ModuleMgr.Run()
+	for range time.Tick(time.Second * 60) {
+
 	}
 }

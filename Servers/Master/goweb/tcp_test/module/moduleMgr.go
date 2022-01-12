@@ -32,9 +32,9 @@ func (m *moduleMgr) Init() {
 	}
 }
 
-func (m *moduleMgr) Update(dt int64) {
+func (m *moduleMgr) Run() {
 	for _, v := range m._mod {
-		v.Update(dt)
+		v.Run()
 	}
 }
 

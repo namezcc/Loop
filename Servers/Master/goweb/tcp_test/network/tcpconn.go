@@ -10,7 +10,7 @@ const (
 	CONN_STATE_DISCONNECT = -1
 )
 
-type readCallBack func(int, int, []byte)
+type ReadCallBack func(int, int, []byte)
 type onClose func(int)
 
 type Tcpconn struct {
@@ -45,7 +45,7 @@ func newTcpconn(id int, conn net.Conn, _c onClose) *Tcpconn {
 	return _tc
 }
 
-func (_tc *Tcpconn) StartRead(_call readCallBack) {
+func (_tc *Tcpconn) StartRead(_call ReadCallBack) {
 	go func() {
 		head := make([]byte, 12)
 		for {

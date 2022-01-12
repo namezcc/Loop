@@ -42,7 +42,9 @@ func (m *httpModule) Init(mgr *moduleMgr) {
 
 	handle.Handlemsg.AddMsgCall(handle.N_WBE_ON_RESPONSE, m.onMsgRespones)
 
-	sql, sqlerr := sqlx.Open("mysql", "root:123456@tcp(127.0.0.1:3306)/master?charset=utf8")
+	host := util.GetConfValue("mysql")
+
+	sql, sqlerr := sqlx.Open("mysql", host)
 	m._sql = sql
 
 	if sqlerr != nil {
@@ -97,10 +99,8 @@ func (m *httpModule) AfterInit() {
 		router.Run(":8999")
 		fmt.Println("start http server")
 	}()
-}
 
-func (m *httpModule) Update(dt int64) {
-	m.checkRespones(dt)
+	m.setTikerFunc(time.Second*5, m.checkRespones)
 }
 
 func (m *httpModule) requestMsg(mid int, spack *network.Msgpack) *network.Msgpack {
@@ -150,11 +150,6 @@ func (m *httpModule) getRespones() msgResponse {
 }
 
 func (m *httpModule) checkRespones(dt int64) {
-	if dt < m._checkRespTick {
-		return
-	}
-
-	m._checkRespTick = dt + 5000
 	m._rsp_index_lock.Lock()
 	defer m._rsp_index_lock.Unlock()
 
@@ -166,7 +161,8 @@ func (m *httpModule) checkRespones(dt int64) {
 	}
 }
 
-func (m *httpModule) onMsgRespones(pack network.Msgpack) {
+func (m *httpModule) onMsgRespones(msg handle.BaseMsg) {
+	pack := msg.Data.(network.Msgpack)
 	index := pack.ReadInt32()
 	m._rsp_index_lock.Lock()
 	rsp, ok := m._msg_response[int(index)]
