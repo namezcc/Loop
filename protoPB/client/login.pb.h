@@ -33,14 +33,17 @@
 namespace LPMsg {
 class ReqLogin;
 class ReqLoginDefaultTypeInternal;
-extern ReqLoginDefaultTypeInternal _ReqLogin_default_instance_;
+LIBPROTOC_EXPORT extern ReqLoginDefaultTypeInternal _ReqLogin_default_instance_;
+class RoomInfo;
+class RoomInfoDefaultTypeInternal;
+LIBPROTOC_EXPORT extern RoomInfoDefaultTypeInternal _RoomInfo_default_instance_;
 }  // namespace LPMsg
 
 namespace LPMsg {
 
 namespace protobuf_login_2eproto {
 // Internal implementation detail -- do not call these.
-struct TableStruct {
+struct LIBPROTOC_EXPORT TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
   static const ::google::protobuf::internal::ParseTable schema[];
@@ -49,13 +52,13 @@ struct TableStruct {
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static void InitDefaultsImpl();
 };
-void AddDescriptors();
-void InitDefaults();
+void LIBPROTOC_EXPORT AddDescriptors();
+void LIBPROTOC_EXPORT InitDefaults();
 }  // namespace protobuf_login_2eproto
 
 // ===================================================================
 
-class ReqLogin : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:LPMsg.ReqLogin) */ {
+class LIBPROTOC_EXPORT ReqLogin : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:LPMsg.ReqLogin) */ {
  public:
   ReqLogin();
   virtual ~ReqLogin();
@@ -170,6 +173,132 @@ class ReqLogin : public ::google::protobuf::Message /* @@protoc_insertion_point(
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::internal::ArenaStringPtr account_;
   ::google::protobuf::internal::ArenaStringPtr password_;
+  mutable int _cached_size_;
+  friend struct protobuf_login_2eproto::TableStruct;
+};
+// -------------------------------------------------------------------
+
+class LIBPROTOC_EXPORT RoomInfo : public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:LPMsg.RoomInfo) */ {
+ public:
+  RoomInfo();
+  virtual ~RoomInfo();
+
+  RoomInfo(const RoomInfo& from);
+
+  inline RoomInfo& operator=(const RoomInfo& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  #if LANG_CXX11
+  RoomInfo(RoomInfo&& from) noexcept
+    : RoomInfo() {
+    *this = ::std::move(from);
+  }
+
+  inline RoomInfo& operator=(RoomInfo&& from) noexcept {
+    if (GetArenaNoVirtual() == from.GetArenaNoVirtual()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+  #endif
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const RoomInfo& default_instance();
+
+  static inline const RoomInfo* internal_default_instance() {
+    return reinterpret_cast<const RoomInfo*>(
+               &_RoomInfo_default_instance_);
+  }
+  static PROTOBUF_CONSTEXPR int const kIndexInFileMessages =
+    1;
+
+  void Swap(RoomInfo* other);
+  friend void swap(RoomInfo& a, RoomInfo& b) {
+    a.Swap(&b);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline RoomInfo* New() const PROTOBUF_FINAL { return New(NULL); }
+
+  RoomInfo* New(::google::protobuf::Arena* arena) const PROTOBUF_FINAL;
+  void CopyFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void MergeFrom(const ::google::protobuf::Message& from) PROTOBUF_FINAL;
+  void CopyFrom(const RoomInfo& from);
+  void MergeFrom(const RoomInfo& from);
+  void Clear() PROTOBUF_FINAL;
+  bool IsInitialized() const PROTOBUF_FINAL;
+
+  size_t ByteSizeLong() const PROTOBUF_FINAL;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input) PROTOBUF_FINAL;
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const PROTOBUF_FINAL;
+  ::google::protobuf::uint8* InternalSerializeWithCachedSizesToArray(
+      bool deterministic, ::google::protobuf::uint8* target) const PROTOBUF_FINAL;
+  int GetCachedSize() const PROTOBUF_FINAL { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const PROTOBUF_FINAL;
+  void InternalSwap(RoomInfo* other);
+  private:
+  inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
+    return NULL;
+  }
+  inline void* MaybeArenaPtr() const {
+    return NULL;
+  }
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const PROTOBUF_FINAL;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // string ip = 1;
+  void clear_ip();
+  static const int kIpFieldNumber = 1;
+  const ::std::string& ip() const;
+  void set_ip(const ::std::string& value);
+  #if LANG_CXX11
+  void set_ip(::std::string&& value);
+  #endif
+  void set_ip(const char* value);
+  void set_ip(const char* value, size_t size);
+  ::std::string* mutable_ip();
+  ::std::string* release_ip();
+  void set_allocated_ip(::std::string* ip);
+
+  // int64 pid = 3;
+  void clear_pid();
+  static const int kPidFieldNumber = 3;
+  ::google::protobuf::int64 pid() const;
+  void set_pid(::google::protobuf::int64 value);
+
+  // int32 port = 2;
+  void clear_port();
+  static const int kPortFieldNumber = 2;
+  ::google::protobuf::int32 port() const;
+  void set_port(::google::protobuf::int32 value);
+
+  // int32 key = 4;
+  void clear_key();
+  static const int kKeyFieldNumber = 4;
+  ::google::protobuf::int32 key() const;
+  void set_key(::google::protobuf::int32 value);
+
+  // @@protoc_insertion_point(class_scope:LPMsg.RoomInfo)
+ private:
+
+  ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
+  ::google::protobuf::internal::ArenaStringPtr ip_;
+  ::google::protobuf::int64 pid_;
+  ::google::protobuf::int32 port_;
+  ::google::protobuf::int32 key_;
   mutable int _cached_size_;
   friend struct protobuf_login_2eproto::TableStruct;
 };
@@ -291,10 +420,111 @@ inline void ReqLogin::set_allocated_password(::std::string* password) {
   // @@protoc_insertion_point(field_set_allocated:LPMsg.ReqLogin.password)
 }
 
+// -------------------------------------------------------------------
+
+// RoomInfo
+
+// string ip = 1;
+inline void RoomInfo::clear_ip() {
+  ip_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& RoomInfo::ip() const {
+  // @@protoc_insertion_point(field_get:LPMsg.RoomInfo.ip)
+  return ip_.GetNoArena();
+}
+inline void RoomInfo::set_ip(const ::std::string& value) {
+  
+  ip_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:LPMsg.RoomInfo.ip)
+}
+#if LANG_CXX11
+inline void RoomInfo::set_ip(::std::string&& value) {
+  
+  ip_.SetNoArena(
+    &::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::move(value));
+  // @@protoc_insertion_point(field_set_rvalue:LPMsg.RoomInfo.ip)
+}
+#endif
+inline void RoomInfo::set_ip(const char* value) {
+  GOOGLE_DCHECK(value != NULL);
+  
+  ip_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:LPMsg.RoomInfo.ip)
+}
+inline void RoomInfo::set_ip(const char* value, size_t size) {
+  
+  ip_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:LPMsg.RoomInfo.ip)
+}
+inline ::std::string* RoomInfo::mutable_ip() {
+  
+  // @@protoc_insertion_point(field_mutable:LPMsg.RoomInfo.ip)
+  return ip_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* RoomInfo::release_ip() {
+  // @@protoc_insertion_point(field_release:LPMsg.RoomInfo.ip)
+  
+  return ip_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void RoomInfo::set_allocated_ip(::std::string* ip) {
+  if (ip != NULL) {
+    
+  } else {
+    
+  }
+  ip_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ip);
+  // @@protoc_insertion_point(field_set_allocated:LPMsg.RoomInfo.ip)
+}
+
+// int32 port = 2;
+inline void RoomInfo::clear_port() {
+  port_ = 0;
+}
+inline ::google::protobuf::int32 RoomInfo::port() const {
+  // @@protoc_insertion_point(field_get:LPMsg.RoomInfo.port)
+  return port_;
+}
+inline void RoomInfo::set_port(::google::protobuf::int32 value) {
+  
+  port_ = value;
+  // @@protoc_insertion_point(field_set:LPMsg.RoomInfo.port)
+}
+
+// int64 pid = 3;
+inline void RoomInfo::clear_pid() {
+  pid_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 RoomInfo::pid() const {
+  // @@protoc_insertion_point(field_get:LPMsg.RoomInfo.pid)
+  return pid_;
+}
+inline void RoomInfo::set_pid(::google::protobuf::int64 value) {
+  
+  pid_ = value;
+  // @@protoc_insertion_point(field_set:LPMsg.RoomInfo.pid)
+}
+
+// int32 key = 4;
+inline void RoomInfo::clear_key() {
+  key_ = 0;
+}
+inline ::google::protobuf::int32 RoomInfo::key() const {
+  // @@protoc_insertion_point(field_get:LPMsg.RoomInfo.key)
+  return key_;
+}
+inline void RoomInfo::set_key(::google::protobuf::int32 value) {
+  
+  key_ = value;
+  // @@protoc_insertion_point(field_set:LPMsg.RoomInfo.key)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
 #endif  // !PROTOBUF_INLINE_NOT_IN_HEADERS
+// -------------------------------------------------------------------
+
 
 // @@protoc_insertion_point(namespace_scope)
 

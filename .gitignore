@@ -8,3 +8,8 @@ robot/Robot2/Debug/
 robot/Robot2/x64/
 Servers/Master/goweb/tcp_test/vendor/
 protoPB/solution/
+protoPB/client/*.cc
+protoPB/client/*.h
+protoPB/server/*.cc
+protoPB/server/*.h
+Servers/Master/goweb/tcp_test/bin/main.exe

@@ -5,6 +5,7 @@
 		"lowercase-global",
 		"unused-local",
 		"unused-function",
-		"trailing-space"
+		"trailing-space",
+		"redundant-parameter"
 	]
 }

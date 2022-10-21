@@ -13,22 +13,6 @@ function BindModLuaFunc(findex, mod, _func )
     end)
 end
 
-function BindLuaPlayerFuncMsg( fidx,_func ,msgName)
-	local plyMod = MOD.PlayerModule
-	cstate:bindLuaFunc(fidx,function(sid,cid,buffer)
-        local ply = plyMod:GetPlayer(sid,cid)
-		if ply == nil then
-			print("BindLuaPlayerFuncMsg nil player")
-            return
-		end
-		local mdata = nil
-		if msgName ~= nil then
-			mdata = pb.decode("Proto."..msgName,buffer)
-		end
-        return _func(ply,mdata)
-    end)
-end
-
 local IMPL_FUNC = {}
 local INIT_DB_FUNC = {}
 local LOGOUT_FUNC = {}

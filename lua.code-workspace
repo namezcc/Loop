@@ -2,9 +2,6 @@
 	"folders": [
 		{
 			"path": "lua"
-		},
-		{
-			"path": "tool\\luatool"
 		}
 	],
 	"settings": {

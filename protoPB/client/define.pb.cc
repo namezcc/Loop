@@ -24,7 +24,7 @@ namespace protobuf_define_2eproto {
 
 namespace {
 
-const ::google::protobuf::EnumDescriptor* file_level_enum_descriptors[1];
+const ::google::protobuf::EnumDescriptor* file_level_enum_descriptors[2];
 
 }  // namespace
 
@@ -80,12 +80,28 @@ namespace {
 void AddDescriptorsImpl() {
   InitDefaults();
   static const char descriptor[] GOOGLE_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-      "\n\014define.proto\022\005LPMsg*M\n\tLP_MSG_ID\022\n\n\006N_"
-      "NONE\020\000\022\014\n\007N_BEGAN\020\220N\022\020\n\013N_REQ_LOGIN\020\221N\022\024"
-      "\n\017N_ACK_LOGIN_RES\020\222Nb\006proto3"
+      "\n\014define.proto\022\005LPMsg*\361\002\n\014LP_CM_MSG_ID\022\017"
+      "\n\013CM_MSG_NONE\020\000\022\r\n\010CM_BEGAN\020\220N\022\r\n\010CM_LOG"
+      "IN\020\221N\022\022\n\rCM_ENTER_ROOM\020\222N\022\023\n\016CM_CREATE_R"
+      "OLE\020\223N\022\023\n\016CM_BEGIN_MATCH\020\224N\022\022\n\rCM_STOP_M"
+      "ATCH\020\225N\022\032\n\025CM_ENTER_BATTLE_SCENE\020\226N\022\030\n\023C"
+      "M_PLAYER_OPERATION\020\227N\022\021\n\014CM_FIX_FRAME\020\230N"
+      "\022\022\n\rCM_ENTER_GAME\020\231N\022\025\n\020CM_SEARCH_PLAYER"
+      "\020\232N\022\022\n\rCM_ADD_FRIEND\020\233N\022\030\n\023CM_OPT_FRIEND"
+      "_APPLY\020\234N\022\025\n\020CM_DELETE_FRIEND\020\235N\022\032\n\025CM_S"
+      "YNC_RELATION_INFO\020\236N\022\013\n\006CM_END\020\230u*\332\002\n\014LP"
+      "_SM_MSG_ID\022\017\n\013SM_MSG_NONE\020\000\022\r\n\010SM_BEGIN\020"
+      "\230u\022\021\n\014SM_LOGIN_RES\020\231u\022\022\n\rSM_ENTER_ROOM\020\232"
+      "u\022\023\n\016SM_CREATE_ROLE\020\233u\022\023\n\016SM_MATCH_STATE"
+      "\020\234u\022\024\n\017SM_ENTER_BATTLE\020\235u\022\030\n\023SM_PLAYER_O"
+      "PERATION\020\236u\022\023\n\016SM_OBJECT_INFO\020\237u\022\026\n\021SM_S"
+      "ELF_ROLE_INFO\020\240u\022\026\n\021SM_OPERATION_SIZE\020\241u"
+      "\022\023\n\016SM_OBJECT_SIZE\020\242u\022\027\n\022SM_OLD_BATTLE_I"
+      "NFO\020\243u\022\021\n\014SM_FIX_FRAME\020\244u\022\025\n\020SM_RELATION"
+      "_INFO\020\245u\022\014\n\006SM_END\020\240\234\001b\006proto3"
   };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-      descriptor, 108);
+      descriptor, 750);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "define.proto", &protobuf_RegisterTypes);
 }
@@ -104,16 +120,57 @@ struct StaticDescriptorInitializer {
 
 }  // namespace protobuf_define_2eproto
 
-const ::google::protobuf::EnumDescriptor* LP_MSG_ID_descriptor() {
+const ::google::protobuf::EnumDescriptor* LP_CM_MSG_ID_descriptor() {
   protobuf_define_2eproto::protobuf_AssignDescriptorsOnce();
   return protobuf_define_2eproto::file_level_enum_descriptors[0];
 }
-bool LP_MSG_ID_IsValid(int value) {
+bool LP_CM_MSG_ID_IsValid(int value) {
   switch (value) {
     case 0:
     case 10000:
     case 10001:
     case 10002:
+    case 10003:
+    case 10004:
+    case 10005:
+    case 10006:
+    case 10007:
+    case 10008:
+    case 10009:
+    case 10010:
+    case 10011:
+    case 10012:
+    case 10013:
+    case 10014:
+    case 15000:
+      return true;
+    default:
+      return false;
+  }
+}
+
+const ::google::protobuf::EnumDescriptor* LP_SM_MSG_ID_descriptor() {
+  protobuf_define_2eproto::protobuf_AssignDescriptorsOnce();
+  return protobuf_define_2eproto::file_level_enum_descriptors[1];
+}
+bool LP_SM_MSG_ID_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 15000:
+    case 15001:
+    case 15002:
+    case 15003:
+    case 15004:
+    case 15005:
+    case 15006:
+    case 15007:
+    case 15008:
+    case 15009:
+    case 15010:
+    case 15011:
+    case 15012:
+    case 15013:
+    case 20000:
       return true;
     default:
       return false;

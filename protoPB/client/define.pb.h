@@ -36,7 +36,7 @@ namespace LPMsg {
 
 namespace protobuf_define_2eproto {
 // Internal implementation detail -- do not call these.
-struct TableStruct {
+struct LIBPROTOC_EXPORT TableStruct {
   static const ::google::protobuf::internal::ParseTableField entries[];
   static const ::google::protobuf::internal::AuxillaryParseTableField aux[];
   static const ::google::protobuf::internal::ParseTable schema[];
@@ -45,32 +45,80 @@ struct TableStruct {
   static const ::google::protobuf::internal::SerializationTable serialization_table[];
   static void InitDefaultsImpl();
 };
-void AddDescriptors();
-void InitDefaults();
+void LIBPROTOC_EXPORT AddDescriptors();
+void LIBPROTOC_EXPORT InitDefaults();
 }  // namespace protobuf_define_2eproto
 
-enum LP_MSG_ID {
-  N_NONE = 0,
-  N_BEGAN = 10000,
-  N_REQ_LOGIN = 10001,
-  N_ACK_LOGIN_RES = 10002,
-  LP_MSG_ID_INT_MIN_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32min,
-  LP_MSG_ID_INT_MAX_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32max
+enum LP_CM_MSG_ID {
+  CM_MSG_NONE = 0,
+  CM_BEGAN = 10000,
+  CM_LOGIN = 10001,
+  CM_ENTER_ROOM = 10002,
+  CM_CREATE_ROLE = 10003,
+  CM_BEGIN_MATCH = 10004,
+  CM_STOP_MATCH = 10005,
+  CM_ENTER_BATTLE_SCENE = 10006,
+  CM_PLAYER_OPERATION = 10007,
+  CM_FIX_FRAME = 10008,
+  CM_ENTER_GAME = 10009,
+  CM_SEARCH_PLAYER = 10010,
+  CM_ADD_FRIEND = 10011,
+  CM_OPT_FRIEND_APPLY = 10012,
+  CM_DELETE_FRIEND = 10013,
+  CM_SYNC_RELATION_INFO = 10014,
+  CM_END = 15000,
+  LP_CM_MSG_ID_INT_MIN_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32min,
+  LP_CM_MSG_ID_INT_MAX_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32max
 };
-bool LP_MSG_ID_IsValid(int value);
-const LP_MSG_ID LP_MSG_ID_MIN = N_NONE;
-const LP_MSG_ID LP_MSG_ID_MAX = N_ACK_LOGIN_RES;
-const int LP_MSG_ID_ARRAYSIZE = LP_MSG_ID_MAX + 1;
+LIBPROTOC_EXPORT bool LP_CM_MSG_ID_IsValid(int value);
+const LP_CM_MSG_ID LP_CM_MSG_ID_MIN = CM_MSG_NONE;
+const LP_CM_MSG_ID LP_CM_MSG_ID_MAX = CM_END;
+const int LP_CM_MSG_ID_ARRAYSIZE = LP_CM_MSG_ID_MAX + 1;
 
-const ::google::protobuf::EnumDescriptor* LP_MSG_ID_descriptor();
-inline const ::std::string& LP_MSG_ID_Name(LP_MSG_ID value) {
+LIBPROTOC_EXPORT const ::google::protobuf::EnumDescriptor* LP_CM_MSG_ID_descriptor();
+inline const ::std::string& LP_CM_MSG_ID_Name(LP_CM_MSG_ID value) {
   return ::google::protobuf::internal::NameOfEnum(
-    LP_MSG_ID_descriptor(), value);
+    LP_CM_MSG_ID_descriptor(), value);
 }
-inline bool LP_MSG_ID_Parse(
-    const ::std::string& name, LP_MSG_ID* value) {
-  return ::google::protobuf::internal::ParseNamedEnum<LP_MSG_ID>(
-    LP_MSG_ID_descriptor(), name, value);
+inline bool LP_CM_MSG_ID_Parse(
+    const ::std::string& name, LP_CM_MSG_ID* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<LP_CM_MSG_ID>(
+    LP_CM_MSG_ID_descriptor(), name, value);
+}
+enum LP_SM_MSG_ID {
+  SM_MSG_NONE = 0,
+  SM_BEGIN = 15000,
+  SM_LOGIN_RES = 15001,
+  SM_ENTER_ROOM = 15002,
+  SM_CREATE_ROLE = 15003,
+  SM_MATCH_STATE = 15004,
+  SM_ENTER_BATTLE = 15005,
+  SM_PLAYER_OPERATION = 15006,
+  SM_OBJECT_INFO = 15007,
+  SM_SELF_ROLE_INFO = 15008,
+  SM_OPERATION_SIZE = 15009,
+  SM_OBJECT_SIZE = 15010,
+  SM_OLD_BATTLE_INFO = 15011,
+  SM_FIX_FRAME = 15012,
+  SM_RELATION_INFO = 15013,
+  SM_END = 20000,
+  LP_SM_MSG_ID_INT_MIN_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32min,
+  LP_SM_MSG_ID_INT_MAX_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32max
+};
+LIBPROTOC_EXPORT bool LP_SM_MSG_ID_IsValid(int value);
+const LP_SM_MSG_ID LP_SM_MSG_ID_MIN = SM_MSG_NONE;
+const LP_SM_MSG_ID LP_SM_MSG_ID_MAX = SM_END;
+const int LP_SM_MSG_ID_ARRAYSIZE = LP_SM_MSG_ID_MAX + 1;
+
+LIBPROTOC_EXPORT const ::google::protobuf::EnumDescriptor* LP_SM_MSG_ID_descriptor();
+inline const ::std::string& LP_SM_MSG_ID_Name(LP_SM_MSG_ID value) {
+  return ::google::protobuf::internal::NameOfEnum(
+    LP_SM_MSG_ID_descriptor(), value);
+}
+inline bool LP_SM_MSG_ID_Parse(
+    const ::std::string& name, LP_SM_MSG_ID* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<LP_SM_MSG_ID>(
+    LP_SM_MSG_ID_descriptor(), name, value);
 }
 // ===================================================================
 
@@ -98,10 +146,15 @@ inline bool LP_MSG_ID_Parse(
 namespace google {
 namespace protobuf {
 
-template <> struct is_proto_enum< ::LPMsg::LP_MSG_ID> : ::google::protobuf::internal::true_type {};
+template <> struct is_proto_enum< ::LPMsg::LP_CM_MSG_ID> : ::google::protobuf::internal::true_type {};
 template <>
-inline const EnumDescriptor* GetEnumDescriptor< ::LPMsg::LP_MSG_ID>() {
-  return ::LPMsg::LP_MSG_ID_descriptor();
+inline const EnumDescriptor* GetEnumDescriptor< ::LPMsg::LP_CM_MSG_ID>() {
+  return ::LPMsg::LP_CM_MSG_ID_descriptor();
+}
+template <> struct is_proto_enum< ::LPMsg::LP_SM_MSG_ID> : ::google::protobuf::internal::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::LPMsg::LP_SM_MSG_ID>() {
+  return ::LPMsg::LP_SM_MSG_ID_descriptor();
 }
 
 }  // namespace protobuf
