@@ -365,7 +365,7 @@ std::vector<ServerConfigInfo> LoopServer::getConnectServer()
 		}
 	}
 
-	if (m_server.type != LOOP_CONSOLE && m_server.type != LOOP_MASTER)
+	/*if (m_server.type != LOOP_CONSOLE && m_server.type != LOOP_MASTER)
 	{
 		auto svec = m_all_server[LOOP_CONSOLE];
 		for (auto m:svec)
@@ -376,7 +376,7 @@ std::vector<ServerConfigInfo> LoopServer::getConnectServer()
 				break;
 			}
 		}
-	}
+	}*/
 	return res;
 }
 std::vector<ServerConfigInfo> LoopServer::getConnectServer(int32_t type, int32_t id, std::map<int32_t, std::vector<ServerConfigInfo>>& allser)

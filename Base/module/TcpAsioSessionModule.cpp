@@ -19,6 +19,21 @@ TcpAsioSessionModule::~TcpAsioSessionModule()
 {
 }
 
+std::string TcpAsioSessionModule::getLocalIp()
+{
+	as::io_context ctx;
+	tcp::resolver resolver(ctx);
+	tcp::resolver::query query(boost::asio::ip::host_name(), "");
+	tcp::resolver::iterator it = resolver.resolve(query);
+	if(it != tcp::resolver::iterator())
+	{
+		boost::asio::ip::address addr = it->endpoint().address();
+		if (!addr.is_v6())
+			return addr.to_string();
+	}
+	return "";
+}
+
 void TcpAsioSessionModule::Init()
 {
 	m_msgModule = GET_MODULE(MsgModule);
@@ -31,8 +46,8 @@ void TcpAsioSessionModule::Init()
 
 void TcpAsioSessionModule::AfterInit()
 {
-	DoAccept();
-	LP_INFO << "start listen port:" << m_accptor->local_endpoint().port();
+	DoAccept();	
+	LP_INFO << "asio start listen " << getLocalIp() << " port:" << m_accptor->local_endpoint().port();
 	//m_io_pool.run();
 }
 

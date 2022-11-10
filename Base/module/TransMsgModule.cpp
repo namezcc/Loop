@@ -30,11 +30,11 @@ void TransMsgModule::Init()
 
 	m_eventModule->AddEventCall(E_SERVER_SOCKET_CLOSE,BIND_EVENT(OnServerClose, int32_t));
 
-	auto sertype = GetLayer()->GetServer()->type;
+	/*auto sertype = GetLayer()->GetServer()->type;
 	if (sertype != LOOP_CONSOLE && sertype != LOOP_MASTER)
 	{
 		m_schedule->AddInterValTask(BIND_TIME(checkSendServerState), 5000, -1, 3000);
-	}
+	}*/
 }
 
 void TransMsgModule::BeforExecute()

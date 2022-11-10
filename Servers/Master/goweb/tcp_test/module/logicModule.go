@@ -29,7 +29,7 @@ func (m *logicModule) Init(mgr *moduleMgr) {
 
 func (m *logicModule) AfterInit() {
 	m._net = ModuleMgr.GetModule(MOD_NET).(*netModule)
-	m._net.ConnectServer(ServerAddr, &m.modulebase, m.onReadConnBuff)
+	// m._net.ConnectServer(ServerAddr, &m.modulebase, m.onReadConnBuff)
 }
 
 func (m *logicModule) onServerClose(d interface{}) {
