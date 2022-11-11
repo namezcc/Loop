@@ -1,5 +1,7 @@
 build/
-_out/Debug/
+_out/Debug/*.dll
+_out/Debug/*.lib
+_out/Debug/logs
 *.exp
 *.pdb
 *.ilk

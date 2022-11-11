@@ -87,7 +87,7 @@ void LoopFile::setRootPath(const string & path)
 {
 	boost::filesystem::path p = boost::filesystem::initial_path();
 
-	while (p.has_parent_path())
+	/*while (p.has_parent_path())
 	{
 		if (p.leaf() == "_out")
 		{
@@ -95,7 +95,7 @@ void LoopFile::setRootPath(const string & path)
 			break;
 		}
 		p.remove_leaf();
-	}
+	}*/
 	auto res = p.string();
 	res.append("/");
 
