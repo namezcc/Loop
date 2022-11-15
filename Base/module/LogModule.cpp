@@ -4,6 +4,7 @@
 #include "LPFile.h"
 #include "spdlog/spdlog.h"
 #include "JsonHelp.h"
+#include "LTime.h"
 
 LogModule::LogModule(BaseLayer * l):BaseModule(l),m_showlog(true)
 {
@@ -28,44 +29,32 @@ void LogModule::Init()
 	JsonHelp jhelp;
 	if(jhelp.ParseFile(LoopFile::GetRootPath().append("commonconf/Common.json")))
 		m_showlog = jhelp.GetMember("showlog")->GetBool();
-
-	JsonHelp jhelp2;
-	if (jhelp2.ParseFile(LoopFile::GetRootPath().append("commonconf/Server.json")))
-	{
-		for (auto& v : jhelp2.GetDocument().GetArray())
-			m_server_name[v["type"].GetInt()] = v["name"].GetString();
-	}
 }
 
 void LogModule::AfterInit()
 {
 	auto ser = GetLayer()->GetServer();
+	auto loopser = getLoopServer();
+	auto sername = loopser->getServerName(ser->type);
 	stringstream cons;
-	cons << m_server_name[ser->type] << "-" << ser->serid;
+	cons << "std" << sername << "-" << ser->serid;
 	m_console = spdlog::stdout_color_st(cons.str());
 	string dir = LoopFile::GetExecutePath();
 	dir.append("logs/");
 
-	for (size_t i = 0; i < LOG_LEVEL_N; i++)
+	stringstream log, file;
+	file << dir;
+	log << sername << "-" << ser->serid;
+	file << sername << "-" << ser->serid << "-" << Loop::GetStringTime("%Y.%m.%d.%H.%M.%S") << ".log";
+	try
 	{
-		stringstream log, file;
-		file << dir;
-		if (i == 0)
-		{
-			log << m_server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::info];
-			file << m_server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::info] << ".txt";
-			auto loger = spdlog::daily_date_logger_st(log.str(), file.str());
-			m_daily.push_back(loger);
-		}
-		else if (i == spdlog::level::err)
-		{
-			log << m_server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::err];
-			file << m_server_name[ser->type] << "-" << ser->serid << "-" << spdlog::level::level_names[spdlog::level::err] << ".txt";
-			auto loger = spdlog::daily_date_logger_st(log.str(), file.str());
-			loger->flush_on(spdlog::level::err);
-			m_daily.push_back(loger);
-		}else
-			m_daily.push_back(m_daily[0]);
+		m_loger = spdlog::basic_logger_st(log.str(), file.str(), true);
+		m_loger->flush_on(spdlog::level::err);
+	}
+	catch (const spdlog::spdlog_ex& e)
+	{
+		std::cout << e.what() << std::endl;
+		loopser->closeServer();
 	}
 
 	m_console->log(spdlog::level::level_enum::info, "log init ...");
@@ -81,10 +70,10 @@ void LogModule::OnLog(LogInfo * info)
 		return;
 	if (m_showlog)
 		m_console->log((spdlog::level::level_enum)info->level, info->log.str());
-	m_daily[info->level]->log((spdlog::level::level_enum)info->level, info->log.str());
+	m_loger->log((spdlog::level::level_enum)info->level, info->log.str());
 }
 
 void LogModule::OnFlush(int64_t & dt)
 {
-	m_daily[spdlog::level::info]->flush();
+	m_loger->flush();
 }

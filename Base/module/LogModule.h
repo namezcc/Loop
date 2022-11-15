@@ -34,9 +34,7 @@ private:
 	ScheduleModule* m_schedule;
 
 	SHARE<spdlog::logger> m_console;
-	vector<SHARE<spdlog::logger>> m_daily;
-
-	std::map<int32_t, std::string> m_server_name;
+	SHARE<spdlog::logger> m_loger;
 
 	bool m_showlog;
 };

@@ -66,9 +66,9 @@ std::string LoopFile::GetRootPath()
 
 string LoopFile::GetExecutePath()
 {
-	std::string path = GetRootPath();
-	path.append("_out/Debug/");
-	return path;
+	/*std::string path = GetRootPath();
+	path.append("_out/Debug/");*/
+	return root_path;
 }
 
 void LoopFile::MakeDir(const string & path)

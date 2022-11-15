@@ -560,7 +560,7 @@ NetServer* TransMsgModule::GetServer(const int32_t& type, const int32_t& serid)
 	auto it = m_serverList.find(type);
 	if (it == m_serverList.end() || it->second.size() == 0)
 	{
-		LP_ERROR << "GetServer NULL type:" << type << " serid:" << serid;
+		LP_INFO << "GetServer NULL type:" << type << " serid:" << serid;
 		return NULL;
 	}
 	
