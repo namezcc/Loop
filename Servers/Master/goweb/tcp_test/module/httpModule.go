@@ -15,30 +15,33 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type responesData struct {
+	index int
+	data  interface{}
+}
+
 type msgResponse struct {
-	_c       chan *network.Msgpack
+	_c       chan *responesData
 	_endtime int64
 	_id      int
 }
 
-type httpModule struct {
+type HttpModule struct {
 	modulebase
 	_msg_response   map[int]msgResponse
 	_rsp_index      int
 	_rsp_index_lock sync.Mutex
-	_checkRespTick  int64
-	_log_mod        *logicModule
+	_log_mod        *MasterModule
 	_net_mod        *netModule
 	_sql            *sqlx.DB
 }
 
-func (m *httpModule) Init(mgr *moduleMgr) {
+func (m *HttpModule) Init(mgr *moduleMgr) {
 	m._mod_mgr = mgr
 	m._msg_response = make(map[int]msgResponse)
 	m._rsp_index = 0
-	m._checkRespTick = 0
-	m._log_mod = mgr.GetModule(MOD_LOGIC).(*logicModule)
 	m._net_mod = mgr.GetModule(MOD_NET).(*netModule)
+	m._log_mod = mgr.GetModule(MOD_MASTER).(*MasterModule)
 
 	handle.Handlemsg.AddMsgCall(handle.N_WBE_ON_RESPONSE, m.onMsgRespones)
 
@@ -82,7 +85,7 @@ func Cors() gin.HandlerFunc {
 	}
 }
 
-func (m *httpModule) AfterInit() {
+func (m *HttpModule) AfterInit() {
 
 	router := gin.Default()
 
@@ -103,44 +106,23 @@ func (m *httpModule) AfterInit() {
 	m.setTikerFunc(time.Second*5, m.checkRespones)
 }
 
-func (m *httpModule) requestMsg(mid int, spack *network.Msgpack) *network.Msgpack {
-	if m._log_mod._server_connid == network.CONN_STATE_DISCONNECT {
-		return nil
-	}
-
+func (m *HttpModule) requestMsg(mod modulebase, mid int, d interface{}) *responesData {
 	mrsp := m.getRespones()
-	pack := network.NewMsgPack(32)
-	pack.WriteInt32(mrsp._id)
 
-	if spack != nil {
-		pack.WriteBuff(spack.GetBuff())
-	}
-
-	m._net_mod.SendPackMsg(m._log_mod._server_connid, mid, pack)
+	mod.sendMsg(mid, responesData{
+		index: mrsp._id,
+		data:  d,
+	})
 
 	getpack := <-mrsp._c
 	return getpack
 }
 
-func (m *httpModule) sendMsg(mid int, spack *network.Msgpack) {
-	if m._log_mod._server_connid == network.CONN_STATE_DISCONNECT {
-		return
-	}
-
-	pack := network.NewMsgPack(32)
-
-	if spack != nil {
-		pack.WriteBuff(spack.GetBuff())
-	}
-
-	m._net_mod.SendPackMsg(m._log_mod._server_connid, mid, pack)
-}
-
-func (m *httpModule) getRespones() msgResponse {
+func (m *HttpModule) getRespones() msgResponse {
 	m._rsp_index_lock.Lock()
 	defer m._rsp_index_lock.Unlock()
 	msg := msgResponse{
-		_c:       make(chan *network.Msgpack),
+		_c:       make(chan *responesData),
 		_endtime: util.GetMillisecond() + 500000, //5s
 		_id:      m._rsp_index,
 	}
@@ -149,7 +131,7 @@ func (m *httpModule) getRespones() msgResponse {
 	return msg
 }
 
-func (m *httpModule) checkRespones(dt int64) {
+func (m *HttpModule) checkRespones(dt int64) {
 	m._rsp_index_lock.Lock()
 	defer m._rsp_index_lock.Unlock()
 
@@ -161,9 +143,9 @@ func (m *httpModule) checkRespones(dt int64) {
 	}
 }
 
-func (m *httpModule) onMsgRespones(msg handle.BaseMsg) {
-	pack := msg.Data.(network.Msgpack)
-	index := pack.ReadInt32()
+func (m *HttpModule) onMsgRespones(msg handle.BaseMsg) {
+	pack := msg.Data.(responesData)
+	index := pack.index
 	m._rsp_index_lock.Lock()
 	rsp, ok := m._msg_response[int(index)]
 	if !ok {
@@ -176,16 +158,16 @@ func (m *httpModule) onMsgRespones(msg handle.BaseMsg) {
 	rsp._c <- &pack
 }
 
-func (m *httpModule) apiIndex(c *gin.Context) {
+func (m *HttpModule) apiIndex(c *gin.Context) {
 	fmt.Println(c.Request.Method, c.Request.URL)
 
-	pack := m.requestMsg(handle.N_WBE_REQUEST_1, nil)
+	pack := m.requestMsg(m._log_mod.modulebase, handle.N_WBE_REQUEST_1, nil)
 	if pack == nil {
 		c.String(http.StatusOK, "getpack nil")
 		return
 	}
 
-	c.String(http.StatusOK, string(pack.ReadString()))
+	c.String(http.StatusOK, string(""))
 }
 
 type dbMachine struct {
@@ -196,6 +178,8 @@ type dbMachine struct {
 type dbServer struct {
 	Type    int    `db:"type" json:"type"`
 	Id      int    `db:"id" json:"id"`
+	Name    string `db:"name" json:"name"`
+	Group   int    `db:"group" json:"group"`
 	Ip      string `db:"ip" json:"ip"`
 	Port    int    `db:"port" json:"port"`
 	Mysql   string `db:"mysql" json:"mysql"`
@@ -203,23 +187,39 @@ type dbServer struct {
 	Machine int    `db:"machine"`
 }
 
-func (m *httpModule) getServerConf(c *gin.Context) {
-	var serverInfo dbServer
+type dbServiceFind struct {
+	Id   int    `db:"id" json:"id"`
+	Ip   string `db:"ip" json:"ip"`
+	Port int    `db:"port" json:"port"`
+}
+
+type ServiceInfo struct {
+	Server  dbServer        `json:"server"`
+	Service []dbServiceFind `json:"service"`
+}
+
+func (m *HttpModule) getServerConf(c *gin.Context) {
+	var serviceinfo ServiceInfo
 
 	id, _ := strconv.Atoi(c.Query("id"))
 	type_, _ := strconv.Atoi(c.Query("type"))
 
-	err := m._sql.Get(&serverInfo, "SELECT s.*,m.ip FROM `server` s LEFT JOIN machine m ON s.machine=m.id WHERE s.type=? AND s.id=?;", type_, id)
-
+	err := m._sql.Get(&serviceinfo.Server, "SELECT s.*,m.ip FROM `server` s LEFT JOIN machine m ON s.machine=m.id WHERE s.type=? AND s.id=?;", type_, id)
 	if err != nil {
 		c.String(http.StatusOK, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, serverInfo)
+	err = m._sql.Select(&serviceinfo.Service, "SELECT * FROM `service_find`")
+	if err != nil {
+		c.String(http.StatusOK, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, serviceinfo)
 }
 
-func (m *httpModule) getMachine(c *gin.Context) {
+func (m *HttpModule) getMachine(c *gin.Context) {
 
 	var machines []dbMachine
 	err := m._sql.Select(&machines, "select * from machine;")
@@ -261,7 +261,7 @@ var serverName = map[int32]string{
 	18: "teamproxy",
 }
 
-func (m *httpModule) viewMachine(c *gin.Context) {
+func (m *HttpModule) viewMachine(c *gin.Context) {
 
 	minfo := machineInfo{
 		Open: 0,
@@ -276,30 +276,30 @@ func (m *httpModule) viewMachine(c *gin.Context) {
 	spack := network.NewMsgPackDef()
 	spack.WriteInt32(id)
 
-	pack := m.requestMsg(handle.N_WEB_VIEW_MACHINE, &spack)
+	pack := m.requestMsg(m._log_mod.modulebase, handle.N_WEB_VIEW_MACHINE, &spack)
 	if pack == nil {
 		c.JSON(http.StatusOK, minfo)
 		return
 	}
 
-	minfo.Open = pack.ReadInt32()
+	// minfo.Open = pack.ReadInt32()
 
-	num := pack.ReadInt32()
+	// num := pack.ReadInt32()
 
-	for i := 0; i < int(num); i++ {
-		type_ := pack.ReadInt32()
-		id_ := pack.ReadInt32()
-		open_ := pack.ReadInt32()
-		err_ := pack.ReadInt32()
+	// for i := 0; i < int(num); i++ {
+	// 	type_ := pack.ReadInt32()
+	// 	id_ := pack.ReadInt32()
+	// 	open_ := pack.ReadInt32()
+	// 	err_ := pack.ReadInt32()
 
-		minfo.Server = append(minfo.Server, servernode{
-			Type:  type_,
-			Name:  serverName[type_],
-			Id:    id_,
-			Open:  open_,
-			Error: err_,
-		})
-	}
+	// 	minfo.Server = append(minfo.Server, servernode{
+	// 		Type:  type_,
+	// 		Name:  serverName[type_],
+	// 		Id:    id_,
+	// 		Open:  open_,
+	// 		Error: err_,
+	// 	})
+	// }
 
 	c.JSON(http.StatusOK, minfo)
 }
@@ -316,7 +316,7 @@ type serInfo struct {
 	Link []serLink
 }
 
-func (m *httpModule) getServerInfo(c *gin.Context) {
+func (m *HttpModule) getServerInfo(c *gin.Context) {
 
 	mid, _ := strconv.Atoi(c.Query("mid"))
 	sertype, _ := strconv.Atoi(c.Query("type"))
@@ -329,30 +329,36 @@ func (m *httpModule) getServerInfo(c *gin.Context) {
 
 	var vserInfo serInfo
 
-	pack := m.requestMsg(handle.N_WEB_GET_SERVER_INFO, &spack)
+	pack := m.requestMsg(m._log_mod.modulebase, handle.N_WEB_GET_SERVER_INFO, &spack)
 	if pack == nil {
 		c.JSON(http.StatusOK, vserInfo)
 		return
 	}
 
-	num := pack.ReadInt32()
+	// num := pack.ReadInt32()
 
-	for i := 0; i < int(num); i++ {
+	// for i := 0; i < int(num); i++ {
 
-		lst := pack.ReadInt32()
-		vserInfo.Link = append(vserInfo.Link, serLink{
-			Name: serverName[lst],
-			Type: lst,
-			Id:   pack.ReadInt32(),
-			Port: pack.ReadInt32(),
-			Open: pack.ReadInt32(),
-		})
-	}
+	// 	lst := pack.ReadInt32()
+	// 	vserInfo.Link = append(vserInfo.Link, serLink{
+	// 		Name: serverName[lst],
+	// 		Type: lst,
+	// 		Id:   pack.ReadInt32(),
+	// 		Port: pack.ReadInt32(),
+	// 		Open: pack.ReadInt32(),
+	// 	})
+	// }
 
 	c.JSON(http.StatusOK, vserInfo)
 }
 
-func (m *httpModule) serverOpt(c *gin.Context) {
+type hotInfo struct {
+	Lua    string `json:"lua"`
+	Server []int  `json:"server"`
+	Except []int  `json:"except"`
+}
+
+func (m *HttpModule) serverOpt(c *gin.Context) {
 
 	mid, _ := strconv.Atoi(c.Query("mid"))
 	sertype, _ := strconv.Atoi(c.Query("type"))

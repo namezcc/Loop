@@ -56,6 +56,7 @@ protected:
 	virtual void Execute() override;
 
 	void AddServerConn(const NetServer& ser);
+	void setFindService();
 	void OnServerConnect(SHARE<NetServer>& ser);
 	void OnServerRegiste(NetMsg* msg);
 	void OnServerClose(int32_t sock);
@@ -83,6 +84,7 @@ private:
 	std::unordered_map<int32_t, SHARE<NetServer>> m_allServer;//sock -> ser
 	std::unordered_map<int32_t, std::vector<NetServer*>> m_randServer;
 	int32_t m_old_state;
+	int32_t m_find_service_idx;
 };
 
 #endif

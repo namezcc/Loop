@@ -17,4 +17,6 @@ struct CoroTool
 	}
 };
 
+std::string getLocalIp();
+
 #endif

@@ -83,6 +83,15 @@ func (m *netModule) SendPackMsg(cid int, mid int, pack network.Msgpack) {
 	m.sendMsg(handle.M_SEND_MSG, sendpack)
 }
 
+func (m *netModule) BroadPackMsg(cids []int, mid int, pack network.Msgpack) {
+	sendbuf := make([]byte, pack.Size()+network.HEAD_SIZE)
+	sendpack := network.Msgpack{}
+	sendpack.Init(0, mid, sendbuf)
+	sendpack.SetBroad(cids)
+	sendpack.EncodeMsg(mid, pack.GetBuff())
+	m.sendMsg(handle.M_SEND_MSG, sendpack)
+}
+
 func (m *netModule) onConnectServer(msg handle.BaseMsg) {
 	d := msg.Data.(connServer)
 
@@ -96,8 +105,15 @@ func (m *netModule) onAcceptConn(msg handle.BaseMsg) {
 }
 
 func (m *netModule) onSendMsg(msg handle.BaseMsg) {
-	d := msg.Data.(msgSend)
-	m._connMgr.SendMsg(d.cid, d.pack.GetBuff())
+	d := msg.Data.(network.Msgpack)
+	cids := d.BroadCid()
+	if len(cids) == 0 {
+		m._connMgr.SendMsg(d.ConnId(), d.GetBuff())
+	} else {
+		for _, v := range cids {
+			m._connMgr.SendMsg(v, d.GetBuff())
+		}
+	}
 }
 
 func (m *netModule) onConnClose(cid int) {

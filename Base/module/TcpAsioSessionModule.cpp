@@ -1,6 +1,7 @@
 ﻿#include "TcpAsioSessionModule.h"
 #include "MsgModule.h"
 #include "Protocol.h"
+#include "ToolFunction.h"
 
 #define ASIO_READ_BUFF_SIZE 4096
 
@@ -17,21 +18,6 @@ TcpAsioSessionModule::TcpAsioSessionModule(BaseLayer * l):BaseModule(l), m_io_po
 
 TcpAsioSessionModule::~TcpAsioSessionModule()
 {
-}
-
-std::string TcpAsioSessionModule::getLocalIp()
-{
-	as::io_context ctx;
-	tcp::resolver resolver(ctx);
-	tcp::resolver::query query(boost::asio::ip::host_name(), "");
-	tcp::resolver::iterator it = resolver.resolve(query);
-	if(it != tcp::resolver::iterator())
-	{
-		boost::asio::ip::address addr = it->endpoint().address();
-		if (!addr.is_v6())
-			return addr.to_string();
-	}
-	return "";
 }
 
 void TcpAsioSessionModule::Init()
@@ -178,6 +164,7 @@ void TcpAsioSessionModule::OnConnectServer(NetServer * ser)
 		{
 			tmpser->socket = -1;
 			tmpser->state = CONN_STATE::CLOSE;
+			LP_ERROR << ec.message();
 		}
 		m_msgModule->SendMsg(L_SERVER_CONNECTED, tmpser);
 	});

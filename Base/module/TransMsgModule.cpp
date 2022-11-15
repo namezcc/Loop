@@ -6,8 +6,10 @@
 #include <fstream>
 #include <sstream>
 #include "protoPB/base/LPBase.pb.h"
+#include "TcpAsioSessionModule.h"
+#include "LPStringUtil.h"
 
-TransMsgModule::TransMsgModule(BaseLayer* l):BaseModule(l), m_old_state(-1)
+TransMsgModule::TransMsgModule(BaseLayer* l):BaseModule(l), m_old_state(-1), m_find_service_idx(0)
 {
 	
 }
@@ -53,6 +55,8 @@ void TransMsgModule::BeforExecute()
 		ser->activeLink = true;
 		AddServerConn(*ser);
 	}
+
+	setFindService();
 }
 
 void TransMsgModule::Execute()
@@ -82,10 +86,94 @@ void TransMsgModule::AddServerConn(const NetServer & ser)
 		}
 		else
 		{
-			NetServer tmp = _ser;
-			m_schedule->AddInterValTask([this,tmp](int64_t&) {
-				AddServerConn(tmp);
-			},5000,1,5000);
+			if (!GetServer(_ser.type,_ser.serid))
+			{
+				NetServer tmp = _ser;
+				m_schedule->AddInterValTask([this,tmp](int64_t&) {
+					AddServerConn(tmp);
+				},5000,1,5000);
+			}
+
+		}
+	});
+}
+
+void TransMsgModule::setFindService()
+{
+	auto selfinfo = getLoopServer()->GetConfig();
+	auto service = getLoopServer()->getServerInfo(LOOP_SERVICE_FIND);
+	if (service.empty())
+	{
+		LP_ERROR << "service find empty";
+		getLoopServer()->closeServer();
+		return;
+	}
+	auto idx = 0;
+	if (m_find_service_idx > 0)
+	{
+		idx = m_find_service_idx % service.size();
+	}
+	else
+	{
+		idx = selfinfo.addr.serid%service.size();
+		m_find_service_idx = idx;
+	}
+	auto& scfg = service[idx];
+	auto ser = GET_SHARE(NetServer);
+	ser->type = scfg.type;
+	ser->ip = scfg.ip;
+	ser->port = scfg.port;
+	ser->serid = scfg.server_id;
+	ser->state = CONN_STATE::CLOSE;
+	ser->socket = -1;
+	ser->activeLink = false;
+	
+	m_netObjMod->ConnectServer(*ser, [this](bool res, NetServer& _ser) {
+		if (res)
+		{
+			auto connSer = GET_SHARE(NetServer);
+			//registe server
+			auto server = getLoopServer();
+			auto config = server->GetConfig();
+			/*LPMsg::ServerInfo xMsg;
+			xMsg.set_id(config.addr.serid);
+			xMsg.set_type(config.addr.type);
+			xMsg.set_ip(ip);
+			xMsg.set_port(config.addr.port);*/
+
+
+			auto sendbuff = GET_LAYER_MSG(BuffBlock);
+			sendbuff->makeRoom(512);
+
+			sendbuff->writeString(server->getServerAddrKey());
+			sendbuff->writeString(server->getServerAddrInfo());
+
+			std::vector<std::string> connkey,watchkey;
+			server->getConnectKey(connkey, watchkey);
+			auto noticekey = server->getNoticKey();
+
+			sendbuff->writeInt8((int8_t)connkey.size());
+			for (auto& s : connkey)
+				sendbuff->writeString(s);
+
+			sendbuff->writeInt8((int8_t)watchkey.size());
+			for (auto& s : watchkey)
+				sendbuff->writeString(s);
+
+			sendbuff->writeInt8((int8_t)noticekey.size());
+			for (auto& s : noticekey)
+				sendbuff->writeString(s);
+
+			m_netObjMod->SendNetMsg(_ser.socket, N_REGISTE_SERVER, sendbuff);
+
+			*connSer = _ser;
+			OnServerConnect(connSer);
+		}
+		else {
+			m_find_service_idx++;
+			m_schedule->AddInterValTask([this](int64_t&) {
+				setFindService();
+			}, 5000, 1, 5000);
 		}
 	});
 }
@@ -144,6 +232,13 @@ void TransMsgModule::OnServerClose(int32_t sock)
 	if (ser->activeLink)
 	{
 		AddServerConn(*ser);
+	}
+
+	if (ser->type == LOOP_SERVICE_FIND)
+	{
+		m_schedule->AddInterValTask([this](int64_t&) {
+			setFindService();
+		}, 5000, 1, 5000);
 	}
 }
 
@@ -402,11 +497,21 @@ void TransMsgModule::onConnInfo(NetMsg * nmsg)
 
 	for (int32_t i = 0; i < num; i++)
 	{
+		auto info = p->readString();
+		std::vector<std::string> vec;
+		Loop::Split(info, ":", vec);
+
+		if (vec.size() != 5)
+		{
+			LP_ERROR << "conn info error :" << info;
+			continue;
+		}
+
 		NetServer ser;
-		ser.type = p->readInt32();
-		ser.serid = p->readInt32();
-		ser.ip = p->readString();
-		ser.port = p->readInt32();
+		ser.type = Loop::Cvto<int>(vec[1]);
+		ser.serid = Loop::Cvto<int>(vec[2]);
+		ser.ip = vec[3];
+		ser.port = Loop::Cvto<int>(vec[4]);
 		ser.state = CONN_STATE::CLOSE;
 		ser.socket = -1;
 		ser.activeLink = true;

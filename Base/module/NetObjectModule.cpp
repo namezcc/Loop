@@ -208,9 +208,13 @@ void NetObjectModule::CloseNetObject(const int& socket)
 //can not in ConnectServerRes Call ConnectServer again !!!
 void NetObjectModule::ConnectServer(const NetServer & ser, const ConnectServerRes & call)
 {
+	auto key = ser.ip + ":" + loop_cast<std::string>(ser.port);
+	if (m_tempServer.find(key) != m_tempServer.end())
+		return;
+
 	auto msg = GET_LAYER_MSG(NetServer);
 	*msg = ser;
-	m_tempServer[ser.ip + ":" + loop_cast<std::string>(ser.port)] = call;
+	m_tempServer[key] = call;
 	m_msgModule->SendMsg(L_TO_CONNET_SERVER,msg);
 }
 

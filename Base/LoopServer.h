@@ -27,6 +27,8 @@ struct ServerConfigInfo
 
 struct ServerConfig
 {
+	std::string name;
+	int32_t group;
 	NetServer addr;
 	NetServer udpAddr;
 	SqlInfo sql;
@@ -35,6 +37,7 @@ struct ServerConfig
 
 struct ConnRule
 {
+	bool group;
 	int32_t server_type;
 	int32_t to_server_type;
 	int32_t conn_type;
@@ -80,14 +83,20 @@ public:
 	//void recycle(int32_t index, BaseData* msg);
 	std::vector<ServerConfigInfo> getConnectServer();
 	std::vector<ServerConfigInfo> getConnectServer(int32_t type,int32_t id, std::map<int32_t, std::vector<ServerConfigInfo>>& allser);
-
+	std::vector<ServerConfigInfo>& getServerInfo(int32_t type);
+	std::string getServerAddrKey();
+	std::string getServerAddrInfo();
+	void getConnectKey(std::vector<std::string>& connkey, std::vector<std::string>& watchkey);
+	std::set<std::string> getNoticKey();
 
 	int m_port;
 	const ServerNode& getServerNode() { return m_server; }
 	void setStop(int32_t* stop) { m_stop = stop; }
 	bool stopServer() { return (*m_stop) > 0; }
+	void closeServer() { *m_stop = 1; }
 	int32_t getServerState() { return m_server_state; }
 	void setServerState(int32_t bit, bool err);
+	inline std::string getServerName(int32_t type) { return m_server_name[type]; }
 protected:
 	void Init(const int& stype, const int& serid);
 	void InitConfig();
@@ -105,6 +114,8 @@ private:
 	//RecyclePool* m_recycle;
 	std::map<int32_t, std::vector<ServerConfigInfo>> m_all_server;
 	std::vector<ConnRule> m_connect_rule;
+	std::map<int32_t, std::string> m_server_name;
+	std::map<std::string,int32_t> m_server_type;
 
 	bool m_over;
 	int32_t* m_stop;

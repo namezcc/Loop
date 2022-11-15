@@ -49,8 +49,6 @@ public:
 	TcpAsioSessionModule(BaseLayer*l);
 	~TcpAsioSessionModule();
 
-	static std::string getLocalIp();
-
 	int32_t AddNewSession(const std::shared_ptr<tcp::socket>& sock,bool clien = true);
 	void SetProtoType(ProtoType ptype);
 	void SetBind(int port)

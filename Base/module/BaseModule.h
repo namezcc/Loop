@@ -21,6 +21,7 @@ public:
 	};
 
 	inline BaseLayer* GetLayer() { return m_layer; };
+	inline LoopServer* getLoopServer() { return m_layer->GetLoopServer(); }
 
 	virtual void Init() = 0;
 	virtual void AfterInit() 

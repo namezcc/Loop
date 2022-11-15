@@ -5,11 +5,12 @@ import "encoding/binary"
 var _order = binary.LittleEndian
 
 type Msgpack struct {
-	_buff   []byte
-	_index  int
-	_max    int
-	_connId int
-	_msgId  int
+	_buff      []byte
+	_index     int
+	_max       int
+	_connId    int
+	_msgId     int
+	_connBroad []int
 }
 
 func NewMsgPack(size int) Msgpack {
@@ -36,7 +37,14 @@ func (_m *Msgpack) Init(cid int, mid int, b []byte) {
 	_m._max = cap(b)
 	_m._connId = cid
 	_m._msgId = mid
+}
 
+func (_m *Msgpack) SetBroad(cids []int) {
+	_m._connBroad = append(_m._connBroad, cids...)
+}
+
+func (_m *Msgpack) BroadCid() []int {
+	return _m._connBroad
 }
 
 func (_m *Msgpack) ReadInt8() int8 {
@@ -77,9 +85,24 @@ func (_m *Msgpack) ReadString() []byte {
 	return _m._buff[_m._index-int(_s) : _m._index]
 }
 
+func (_m *Msgpack) ReadBuff() []byte {
+	return _m._buff[_m._index:_m._max]
+}
+
+func (_m *Msgpack) expandSize(s int) {
+	if _m._max+s > _m._max*2 {
+		_m._max = _m._max + s
+	} else {
+		_m._max = _m._max * 2
+	}
+	tmp := make([]byte, 0, _m._max)
+	copy(tmp, _m._buff)
+	_m._buff = tmp
+}
+
 func (_m *Msgpack) WriteInt8(v int8) {
 	if _m._index+1 > _m._max {
-		return
+		_m.expandSize(1)
 	}
 	_m._buff[_m._index] = byte(v)
 	_m._index += 1
@@ -87,7 +110,7 @@ func (_m *Msgpack) WriteInt8(v int8) {
 
 func (_m *Msgpack) WriteInt16(v int16) {
 	if _m._index+2 > _m._max {
-		return
+		_m.expandSize(2)
 	}
 	_order.PutUint16(_m._buff[_m._index:_m._index+2], uint16(v))
 	_m._index += 2
@@ -95,7 +118,7 @@ func (_m *Msgpack) WriteInt16(v int16) {
 
 func (_m *Msgpack) WriteInt32(v int) {
 	if _m._index+4 > _m._max {
-		return
+		_m.expandSize(4)
 	}
 	_order.PutUint32(_m._buff[_m._index:_m._index+4], uint32(v))
 	_m._index += 4
@@ -103,7 +126,7 @@ func (_m *Msgpack) WriteInt32(v int) {
 
 func (_m *Msgpack) WriteInt64(v int64) {
 	if _m._index+8 > _m._max {
-		return
+		_m.expandSize(8)
 	}
 	_order.PutUint64(_m._buff[_m._index:_m._index+8], uint64(v))
 	_m._index += 8
@@ -113,7 +136,17 @@ func (_m *Msgpack) WriteString(v []byte) {
 	_s := len(v)
 	_m.WriteInt32(_s)
 	if _m._index+_s > _m._max {
-		return
+		_m.expandSize(_s)
+	}
+	copy(_m._buff[_m._index:_m._index+_s], v)
+	_m._index += _s
+}
+
+func (_m *Msgpack) WriteRealString(v string) {
+	_s := len(v)
+	_m.WriteInt32(_s)
+	if _m._index+_s > _m._max {
+		_m.expandSize(_s)
 	}
 	copy(_m._buff[_m._index:_m._index+_s], v)
 	_m._index += _s
@@ -121,7 +154,7 @@ func (_m *Msgpack) WriteString(v []byte) {
 
 func (m *Msgpack) WriteBuff(v []byte) {
 	if m._index+len(v) > m._max {
-		return
+		m.expandSize(len(v))
 	}
 	copy(m._buff[m._index:m._index+len(v)], v)
 	m._index += len(v)

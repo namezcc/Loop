@@ -21,7 +21,7 @@ var ServerAddr = "127.0.0.1:11001"
 func (m *logicModule) Init(mgr *moduleMgr) {
 	m._mod_mgr = mgr
 	m._server_connid = network.CONN_STATE_DISCONNECT
-	util.EventMgr.AddEventCall(util.EV_CONN_CLOSE, m.onServerClose)
+	util.EventMgr.AddEventCall(util.EV_CONN_CLOSE, m, m.onServerClose)
 
 	handle.Handlemsg.AddMsgCall(handle.N_WBE_TEST2, m.onTest2)
 	handle.Handlemsg.AddMsgCall(handle.M_SERVER_CONNECTED, m.onServerConnect)

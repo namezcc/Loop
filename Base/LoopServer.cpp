@@ -6,6 +6,7 @@
 #include "JsonHelp.h"
 #include "LPStringUtil.h"
 #include "httpclient.h"
+#include "ToolFunction.h"
 
 enum ServerConnectType
 {
@@ -56,6 +57,15 @@ void LoopServer::Init(const int& stype, const int& serid)
 {
 	m_server.serid = serid;
 	m_server.type = stype;
+	JsonHelp jhelp2;
+	if (jhelp2.ParseFile(LoopFile::GetRootPath().append("commonconf/Server.json")))
+	{
+		for (auto& v : jhelp2.GetDocument().GetArray())
+		{
+			m_server_name[v["type"].GetInt()] = v["name"].GetString();
+			m_server_type[v["name"].GetString()] = v["type"].GetInt();
+		}
+	}
 	InitConfig();
 	InitServerConfig();
 	InitConnectRule();
@@ -92,10 +102,15 @@ void LoopServer::InitConfig()
 		if (!jhelp.ParseString(res))
 			exit(-1);
 
-		Value rt = jhelp.GetDocument().GetObject();
+		Value sroot = jhelp.GetDocument().GetObject();
+		Value rt = sroot["server"].GetObject();
 
+		m_config.name = m_server_name[m_server.type];
+		m_config.group = rt["group"].GetInt();
 		m_config.addr.ip = rt["ip"].GetString();
 		m_config.addr.port = rt["port"].GetInt();
+		m_config.addr.serid = m_server.serid;
+		m_config.addr.type = m_server.type;
 		m_port = m_config.addr.port;
 		m_machine_id = rt["Machine"].GetInt();
 
@@ -133,6 +148,17 @@ void LoopServer::InitConfig()
 			m_config.redis.ip = res[0];
 			m_config.redis.port = Loop::Cvto<int>(res[1]);
 			m_config.redis.pass = res[2];
+		}
+
+		auto service = sroot["service"].GetArray();
+		for (auto& sv:service)
+		{
+			ServerConfigInfo info = {};
+			info.server_id = sv["id"].GetInt();
+			info.ip = sv["ip"].GetString();
+			info.port = sv["port"].GetInt();
+			info.type = LOOP_SERVICE_FIND;
+			m_all_server[LOOP_SERVICE_FIND].push_back(info);
 		}
 		return;
 	}
@@ -231,8 +257,9 @@ void LoopServer::InitConnectRule()
 	for (auto& v:root)
 	{
 		ConnRule r = {};
-		r.server_type = v["server"].GetInt();
-		r.to_server_type = v["to_server"].GetInt();
+		r.group = v["group"].GetBool();
+		r.server_type = m_server_type[v["server"].GetString()];
+		r.to_server_type = m_server_type[v["to_server"].GetString()];
 		r.conn_type = v["type"].GetInt();
 		r.param = v["param"].GetInt();
 
@@ -436,6 +463,81 @@ std::vector<ServerConfigInfo> LoopServer::getConnectServer(int32_t type, int32_t
 		}
 	}
 
+	return res;
+}
+std::vector<ServerConfigInfo>& LoopServer::getServerInfo(int32_t type)
+{
+	return m_all_server[type];
+}
+
+std::string LoopServer::getServerAddrKey()
+{
+	char key[64];
+	sprintf(key, "serveraddr:g%d:%s-%d", m_config.group, m_config.name.c_str(), m_config.addr.serid);
+	return key;
+}
+
+std::string LoopServer::getServerAddrInfo()
+{
+	char key[64];
+	auto ip = getLocalIp();
+	sprintf(key, "%s:%d:%d:%s:%d",m_config.name.c_str(),m_server.type,m_server.serid, ip.c_str(), m_config.addr.port);
+	return key;
+}
+
+void LoopServer::getConnectKey(std::vector<std::string>& connkey, std::vector<std::string>& watchkey)
+{
+	for (auto& p:m_connect_rule)
+	{
+		if (p.server_type != m_server.type)
+			continue;
+
+		std::string ckey = ":g";
+		if (p.group)
+			ckey.append(std::to_string(m_config.group));
+		else
+			ckey.append("*");
+
+		ckey.append(":").append(m_server_name[p.to_server_type]);
+
+		if (p.conn_type == SCT_ALL)
+			ckey.append("*");
+		else if (p.conn_type == SCT_ID)
+			ckey.append(std::to_string(m_server.serid));
+		else if (p.conn_type == SCT_AVG_NUM)
+		{
+
+		}
+		connkey.push_back("serveraddr"+ckey);
+		watchkey.push_back("watch" + ckey);
+	}
+}
+std::set<std::string> LoopServer::getNoticKey()
+{
+	std::set<std::string> res;
+	for (auto& p : m_connect_rule)
+	{
+		if (p.to_server_type != m_server.type)
+			continue;
+
+		std::string key = "watch:g";
+		if (p.group)
+			key.append(std::to_string(m_config.group));
+		else
+			key.append("*");
+
+		key.append(":").append(m_config.name);
+
+		if (p.conn_type == SCT_ALL)
+			key.append("*");
+		else if (p.conn_type == SCT_ID)
+			key.append(std::to_string(m_server.serid));
+		else if (p.conn_type == SCT_AVG_NUM)
+		{
+
+		}
+		res.insert(key);
+	}
 	return res;
 }
 //void LoopServer::recycle(int32_t index, BaseData* msg)

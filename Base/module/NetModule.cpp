@@ -2,7 +2,7 @@
 #include "MsgModule.h"
 #include "BuffPool.h"
 #include "Protocol.h"
-#include "TcpAsioSessionModule.h"
+#include "ToolFunction.h"
 
 #define UV_ALLOC_BUFF_SIZE 4096
 
@@ -56,7 +56,7 @@ void NetModule::StartListen()
 	m_hand.data = this;
 	r = uv_listen((uv_stream_t*)&m_hand, SOMAXCONN, Connection_cb);
 	ASSERT(r == 0);
-	LP_INFO << "start listen :"<< TcpAsioSessionModule::getLocalIp() << " port:" << m_port;
+	LP_INFO << "start listen :"<< getLocalIp() << " port:" << m_port;
 }
 
 void NetModule::Connection_cb(uv_stream_t * serhand, int status)

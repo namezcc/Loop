@@ -2,11 +2,13 @@ package module
 
 import (
 	"tcp_test/handle"
+	"tcp_test/interface_func"
 	"tcp_test/network"
 	"time"
 )
 
 type module interface {
+	interface_func.Imodule
 	Init(*moduleMgr)
 	AfterInit()
 	Run()
@@ -15,6 +17,11 @@ type module interface {
 type timeCall struct {
 	d    int64
 	call func(int64)
+}
+
+type eventCallData struct {
+	d    interface{}
+	call interface_func.EventCall
 }
 
 type modulebase struct {
@@ -26,6 +33,16 @@ var defalut_msg_size int = 100
 
 func (m *modulebase) initMsgSize(s int) {
 	m._msg_chan = make(chan *handle.BaseMsg, s)
+
+	handle.Handlemsg.AddMsgCall(handle.M_TIME_CALL, m.onTimeCall)
+	handle.Handlemsg.AddMsgCall(handle.M_EVENT_CALL, m.onEventCall)
+}
+
+func (m *modulebase) SendEvent(f interface_func.EventCall, d interface{}) {
+	m.sendMsg(handle.M_EVENT_CALL, eventCallData{
+		d:    d,
+		call: f,
+	})
 }
 
 func (m *modulebase) sendMsg(mid int, d interface{}) {
@@ -43,6 +60,11 @@ func (m *modulebase) onReadConnBuff(cid int, mid int, buf []byte) {
 
 func (m *modulebase) onTimeCall(msg handle.BaseMsg) {
 	d := msg.Data.(timeCall)
+	d.call(d.d)
+}
+
+func (m *modulebase) onEventCall(msg handle.BaseMsg) {
+	d := msg.Data.(eventCallData)
 	d.call(d.d)
 }
 
