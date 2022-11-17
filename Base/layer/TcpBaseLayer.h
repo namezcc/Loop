@@ -9,13 +9,13 @@ class LOOP_EXPORT TcpBaseLayer:public BaseLayer
 {
 public:
 	TcpBaseLayer(const int32_t& _port, const ProtoType& _potype):BaseLayer(LY_NET),
-		m_port(_port),m_protoType(_potype)
+		m_port(_port),m_protoType(_potype), m_role(0)
 	{
 		CreateModule<MsgModule>();
 	}
 
 	virtual ~TcpBaseLayer() {};
-
+	void setRole(int32_t role) { m_role = role; };
 protected:
 
 	virtual void GetDefaultTrans(int32_t & ltype, int32_t & lid)
@@ -26,6 +26,7 @@ protected:
 	}
 
 	int32_t m_port;
+	int32_t m_role;
 	ProtoType m_protoType;
 };
 

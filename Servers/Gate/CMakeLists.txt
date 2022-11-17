@@ -1,15 +1,24 @@
 #cmake_minimum_required(VERSION 3.1)
-set(ProjectName "TeamState")
-project(TeamState)
+set(ProjectName "Gate")
+project(Gate)
 
 include_directories(
 ${PROJECT_SOURCE_DIR}/module 
 )
-file(GLOB_RECURSE PROXY_SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
-file(GLOB_RECURSE PROXY_HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
+file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
+file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
-add_library(${ProjectName} SHARED ${PROXY_HEAD_FILES} ${PROXY_SOUCE_FILES})
-target_link_libraries(${ProjectName} ${LoopLib})
+if(WIN32)
+set(gatelib
+)
+else()
+set(gatelib
+serverpb.so
+)
+endif()
+
+add_library(${ProjectName} SHARED ${HEAD_FILES} ${SOUCE_FILES})
+target_link_libraries(${ProjectName} ${LoopLib} ${gatelib})
 
 set_target_properties(${ProjectName} PROPERTIES 
 	ARCHIVE_OUTPUT_DIRECTORY ${LPOutDir}

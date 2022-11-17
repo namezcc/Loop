@@ -9,8 +9,10 @@ ${PROJECT_SOURCE_DIR}/module
 
 file(GLOB_RECURSE SOUCE_FILES ${PROJECT_SOURCE_DIR}/*.cpp)
 file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
+set(SQL_DATA ${PROJECT_SOURCE_DIR}/../Common/proto_sql.cpp
+)
 
-add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES})
+add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES} ${SQL_DATA})
 
 if(WIN32)
 set(DBProxylib

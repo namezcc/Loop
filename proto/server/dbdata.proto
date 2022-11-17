@@ -1,12 +1,19 @@
 syntax = "proto3";
 package LPMsg;
 
+message DB_player_num_info
+{
+	int32	dbid = 1;
+	int32	num = 2;
+	int32	maxnum = 3;
+	int32	hostid = 4;
+}
+
 message DB_account
 {
 	string	platform_uid	= 1;
-	int32	hash_index		= 2;
-	int64	game_uid		= 3;
-	int32	dbindex			= 4;
+	int64	game_uid		= 2;
+	int32	create_time		= 3;
 }
 
 message DB_player

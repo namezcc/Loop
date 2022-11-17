@@ -87,14 +87,11 @@ public:
 protected:
 	virtual void Init() override;
 
-	void OnReadyTakePlayer(NetMsg* msg);
 	void OnPlayerEnter(NetMsg* msg);
 	void OnCreatePlayer(NetMsg* msg);
 	void onEnterGame(NetMsg* msg);
 
 	void onGetRoleList(NetMsg* msg);
-
-	void OnClientClose(const int32_t& sock);
 
 
 	RoomPlayer* getPlayerData(int32_t sock);

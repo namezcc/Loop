@@ -230,11 +230,15 @@ void MsgModule::DoRequestMsg(SHARE<BaseMsg>& msg)
 	{
 		if (m_arrayCall[cmsg->m_subMsgId])
 			m_arrayCall[cmsg->m_subMsgId](msg);
+		else
+			m_common_call(msg);
 	}
 	else if(cmsg->m_subMsgId > CM_MSG_BEGIN && cmsg->m_subMsgId < CM_MSG_END)
 	{
 		if (m_protoCall[cmsg->m_subMsgId - CM_MSG_BEGIN])
 			m_protoCall[cmsg->m_subMsgId - CM_MSG_BEGIN](msg);
+		else
+			m_common_call(msg);
 	}
 }
 

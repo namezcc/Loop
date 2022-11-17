@@ -46,17 +46,33 @@ function get_get_val_func( sqlf_type )
     end
 end
 
+function get_logic_str(type)
+	if type == SQL_GT then
+		return ">"
+	elseif type == SQL_GTE then
+		return ">="
+	elseif type == SQL_LT then
+		return "<"
+	elseif type == SQL_LTE then
+		return "<="
+	elseif type == SQL_NE then
+		return "<>"
+	else
+		return "="
+	end
+end
+
 function getKeyStr( cfg,_key,noType )
     local str = ""
     for _1,kindex in ipairs(_key) do
         local finfo = cfg._field[kindex]
         if noType then
             str = str..", _"..finfo[1]
-            if finfo[3] == SQL_STRING or finfo[3] == SQL_TIMESTAMP then
+            if finfo[2] == SQL_STRING or finfo[2] == SQL_TIMESTAMP then
                 str = str..".c_str()"
             end
         else
-            str = str..","..getCtype(finfo[3]).." _"..finfo[1]
+            str = str..","..getCtype(finfo[2]).." _"..finfo[1]
         end
     end
     return str
@@ -81,9 +97,6 @@ function getFuncStr(cfg,v,_vec)
         sqltype = "update"
     elseif v._type == SQL_TYPE_SELECT then
         sqltype = "select"
-        -- if v._key then
-        --     keyStr = getKeyStr(cfg,v._key)
-        -- end
         keyStr = getKeyStr(cfg,v._key or cfg._key)
     elseif v._type == SQL_TYPE_REPLACE then
         sqltype = "replace"
@@ -110,24 +123,28 @@ function getValueStr( cfg )
         if i > 1 then
             str = str..","
         end
-        str = str..getCformate(v[3])
+        str = str..getCformate(v[2])
     end
     return str..")"
 end
 
-function get_k_v( f )
-    local str = "`%s`=%s"
-    str = string.format(str,f[1],getCformate(f[3]))
+function get_k_v( f,logic )
+    local str = "`%s` %s %s"
+	local lg = "="
+	if logic then
+		lg = get_logic_str(logic[f[1]])
+	end
+    str = string.format(str,f[1],lg,getCformate(f[2]))
     return str
 end
 
-function getWhereStr( cfg,keys )
+function getWhereStr( cfg,keys,logic )
     local str = ""
     for i,v in ipairs(keys) do
         if i > 1 then
             str = str.." AND "
         end
-        str = str..get_k_v(cfg._field[v])
+        str = str..get_k_v(cfg._field[v],logic)
     end
     return str
 end
@@ -165,8 +182,8 @@ function getPbValue( cfg,_key , _outKey)
                 str = str..","
             end
             local v = cfg._field[index]
-            str = str.."pb."..string.lower(v[2]).."()"
-            if v[3] == SQL_STRING or v[3] == SQL_TIMESTAMP then
+            str = str.."pb."..string.lower(v[1]).."()"
+            if v[2] == SQL_STRING or v[2] == SQL_TIMESTAMP then
                 str = str..".c_str()"
             end
         end
@@ -178,8 +195,8 @@ function getPbValue( cfg,_key , _outKey)
                     str = str..","
                 end
                 first = true
-                str = str.."pb."..string.lower(v[2]).."()"
-                if v[3] == SQL_STRING or v[3] == SQL_TIMESTAMP then
+                str = str.."pb."..string.lower(v[1]).."()"
+                if v[2] == SQL_STRING or v[2] == SQL_TIMESTAMP then
                     str = str..".c_str()"
                 end
             end
@@ -335,7 +352,7 @@ function get_pb_set_str( cfg,pb )
     local pb = pb or "pb"
     local str = ""
     for i,v in ipairs(cfg._field) do
-        str = str..string.format('\t\t%s.set_%s(r->%s("%s"));\n',pb,string.lower(v[2]),get_get_val_func(v[3]),v[1])
+        str = str..string.format('\t\t%s.set_%s(r->%s("%s"));\n',pb,string.lower(v[1]),get_get_val_func(v[2]),v[1])
     end
     return str
 end
@@ -376,9 +393,18 @@ function get_select_func( cfg,v,_vec )
 ]]
     end
 
+	local cond = ""
+	if #key > 0 then
+		cond = ' WHERE '..getWhereStr(cfg,key,v._logic)
+	end
+
     local ptf = 'snprintf(_buff, _size,'
-    ptf = ptf..'"SELECT * FROM `'..cfg._table..'` WHERE '..getWhereStr(cfg,key)..';"'
-    ptf = ptf..getKeyStr(cfg,key,true)..");\n"
+    ptf = ptf..'"SELECT * FROM `'..cfg._table..'`'..cond..';"'
+    if #key > 0 then
+		ptf = ptf..getKeyStr(cfg,key,true)..");\n"
+	else
+		ptf = ptf..");\n"
+	end
 
     if _vec == nil then
         str = string.format(str,ptf,get_pb_set_str(cfg))

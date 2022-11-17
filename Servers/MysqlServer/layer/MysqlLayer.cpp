@@ -18,8 +18,8 @@ void MysqlLayer::init()
 	CreateModule<MysqlModule>();
 	CreateModule<MsgModule>();
 	CreateModule<ExecuteMysqlModule>();
-	CreateModule<Coro2Module>();
 	CreateModule<RedisModule>();
+	//CreateModule<Coro2Module>();
 }
 
 void MysqlLayer::loop()

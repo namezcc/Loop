@@ -10,6 +10,7 @@ class EventModule;
 class NetObjectModule;
 class RedisModule;
 class PlayerOnlineModule;
+struct PlayerRoomInfo;
 
 class RoomTransModule:public BaseModule
 {
@@ -17,11 +18,13 @@ public:
 	RoomTransModule(BaseLayer* l);
 	~RoomTransModule();
 
+	bool chooseGateAndRoom(PlayerRoomInfo& info);
 protected:
 	virtual void Init() override;
 
 	void onRoomBusyState(NetMsg* msg);
 	void onRoomPlayerLogout(NetMsg* msg);
+	void onPlayerNum(NetMsg* msg);
 	void OnServerConnect(SHARE<NetServer>& ser);
 	void OnServerClose(SHARE<NetServer>& ser);
 
@@ -35,6 +38,9 @@ private:
 
 	std::map<int32_t, ServerInfoState> m_room_state;
 	
+	std::map<int32_t, int32_t> m_gate_player_num;
+	std::map<int32_t, int32_t> m_game_player_num;
+
 };
 
 #endif

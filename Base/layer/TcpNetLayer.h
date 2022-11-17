@@ -17,12 +17,11 @@ public:
 		uv_loop_close(m_uvloop);
 	};
 
-
 protected:
 	virtual void init() {
 		auto netmod = CreateModule<NetModule>();
 		netmod->SetProtoType(m_protoType);
-		netmod->SetBind(m_port, m_uvloop);
+		netmod->SetBind(m_port, m_uvloop,m_role);
 	};
 	void loop() {
 		//std::cout << "TcpNetLayer loop..." << endl;

@@ -1,3 +1,4 @@
+---@diagnostic disable: redundant-parameter
 function class(classname, super)  
     local superType = type(super)  
     local cls  

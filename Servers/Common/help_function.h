@@ -21,6 +21,13 @@ int64_t createPlayerUid(int32_t dbid,int64_t stamp,int32_t addnum)
 	return res;
 }
 
+int32_t createPlayerUid32(int32_t dbidx,int32_t num)
+{
+	if (dbidx > 10000 || dbidx <= 0 || num >= 100000)
+		return 0;
+	return dbidx * 100000 + num;
+}
+
 int32_t getPlayerDbIndexFromUid(int64_t uid)
 {
 	return (uid >> 42) & 0xFFFFF;

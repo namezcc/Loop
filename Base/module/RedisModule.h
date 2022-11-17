@@ -12,13 +12,12 @@ namespace redis {
 }
 
 class MsgModule;
+typedef vector<string> vec_str;
+typedef pair<string, string> pair_str;
 
 class LOOP_EXPORT RedisModule:public BaseModule
 {
 public:
-	typedef vector<string> vec_str;
-	typedef pair<string, string> pair_str;
-
 	RedisModule(BaseLayer* l);
 	~RedisModule();
 

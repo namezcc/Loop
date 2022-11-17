@@ -118,6 +118,7 @@ void NetMsg::initMsg()
 	len = 0;
 	mid = 0;
 	socket = 0;
+	role = 0;
 	m_next_data = NULL;
 }
 

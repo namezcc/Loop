@@ -2,6 +2,7 @@
 #define LOGIN_LOCK_MODULE_H
 
 #include "BaseModule.h"
+#include "protoPB/server/dbdata.pb.h"
 
 class MsgModule;
 class NetObjectModule;
@@ -22,6 +23,8 @@ protected:
 	virtual void Init() override;
 	virtual void AfterInit() override;
 
+	void onPlayerLogin(SHARE<BaseMsg>& msg);
+
 	void OnLoginLock(SHARE<BaseMsg>& msg);
 	void OnLoginUnlock(NetMsg* msg);
 
@@ -36,6 +39,7 @@ protected:
 
 	void loadDbPlayerNum();
 	int32_t getDbIndex();
+	int32_t genPlayerUid(const std::string& uuid);
 private:
 	MsgModule * m_msgModule;
 	NetObjectModule* m_netObjModule;
@@ -51,7 +55,12 @@ private:
 
 	std::unordered_map<int64_t, int64_t> m_lockPid;
 	std::vector<std::pair<int32_t, int32_t>> m_db_player_num;
+	std::vector<LPMsg::DB_player_num_info> m_db_player_num_info;
 	std::map<int32_t, size_t> m_id_index;
+	std::map<std::string, int32_t> m_account_info;
+	std::set<int32_t> m_uid_check;
+
+	char m_sql_buff[4096];
 };
 
 #endif

@@ -1,7 +1,13 @@
 {
 	"folders": [
 		{
-			"path": "lua"
+			"path": "_out/Debug/lua"
+		},
+		{
+			"path": "tool/luatool"
+		},
+		{
+			"path": "proto"
 		}
 	],
 	"settings": {

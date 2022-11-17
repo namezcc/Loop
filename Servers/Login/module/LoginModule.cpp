@@ -12,10 +12,12 @@
 #include "ScheduleModule.h"
 
 #include "protoPB/base/LPSql.pb.h"
-#include "protoPB/client/login.pb.h"
+#include "protoPB/client/client.pb.h"
 #include "protoPB/client/define.pb.h"
 #include "protoPB/server/server.pb.h"
 #include "protoPB/server/dbdata.pb.h"
+#include "protoPB/server/server_msgid.pb.h"
+#include "protoPB/server/proto_common.pb.h"
 
 LoginModule::LoginModule(BaseLayer* l):BaseModule(l)
 {
@@ -48,8 +50,8 @@ void LoginModule::Init()
 	m_lock_server.type = SERVER_TYPE::LOOP_LOGIN_LOCK;
 	m_lock_server.serid = 0;
 
-	m_db_path.push_back(*GetLayer()->GetServer());
-	m_db_path.push_back({SERVER_TYPE::LOOP_MYSQL_ACCOUNT,0});
+	m_room_mgr.type = SERVER_TYPE::LOOP_ROOM_MANAGER;
+	m_room_mgr.serid = 0;
 }
 
 void LoginModule::OnClientConnect(const int32_t& sock)
@@ -87,7 +89,7 @@ void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Base
 	auto itc = m_tmpClient.find(pbMsg.account());
 	if (itc != m_tmpClient.end())
 	{
-		LP_WARN << "allread wait to login account:" << pbMsg.account();
+		LP_WARN << "allready wait to login account:" << pbMsg.account();
 		if(itc->second.sock != msg->socket)
 			m_netModule->CloseNetObject(msg->socket);
 		return;
@@ -95,7 +97,6 @@ void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Base
 
 	ClientObj client = {};
 	client.sock = msg->socket;
-	client.pass = pbMsg.password();
 	m_tmpClient[pbMsg.account()] = client;
 
 	ExitCall failcall([this,&coro,&pbMsg]() {
@@ -104,63 +105,35 @@ void LoginModule::OnClientLogin(SHARE<BaseMsg>& comsg, c_pull & pull, SHARE<Base
 		RemoveClient(pbMsg.account());
 	});
 
-	auto hash = common::Hash32(pbMsg.account());
-	LPMsg::LoginLock lockpb;
-	lockpb.set_pid(hash);
+	LPMsg::VString lockpb;
+	lockpb.set_val(pbMsg.account());
 
-	auto acklock = m_transModule->RequestServerAsynMsg(m_lock_server, N_LOGIN_LOCK, lockpb, pull, coro);
+	auto acklock = m_transModule->RequestServerAsynMsg(m_lock_server, LPMsg::IM_ACCOUNT_GET_UID, lockpb, pull, coro);
+	PARSEPB_NAME_IF_FALSE(ackpb,LPMsg::Int32Value, acklock)
 	{
-		PARSEPB_NAME_IF_FALSE(acklockpb,LPMsg::LoginLock, acklock)
-		{
-			coro->SetFail();
-			return;
-		}
-		if (acklockpb.pid() == 0)
-		{
-			coro->SetFail();
-			LP_WARN << "login locked accont " << pbMsg.account();
-			return;
-		}
+		return coro->SetFail();
+	}
+	if (ackpb.value() == 0)
+	{
+		coro->SetFail();
+		LP_WARN << "login get accont fail:" << pbMsg.account();
+		return;
 	}
 
-	auto ackaccount = m_transModule->RequestServerAsynMsg(m_db_path, N_GET_ACCOUNT_INFO, pbMsg, pull, coro);
+	auto ackgate = m_transModule->RequestServerAsynMsg(m_room_mgr, LPMsg::IM_RMGR_PLAYER_LOGIN, ackpb, pull, coro);
 	{
-		PARSEPB_NAME_IF_FALSE(ackpb, LPMsg::DB_account, ackaccount)
+		PARSEPB_NAME_IF_FALSE(ackpb, LPMsg::RoomInfo, ackgate)
 		{
+			LP_ERROR << "login get gate info error ";
 			return coro->SetFail();
 		}
-
-		LP_INFO << ackpb.ShortDebugString();
-
-		ServerInfoState* room = NULL;
-
-		auto roomid = getRoomFromRedis(ackpb.game_uid());
-		if (roomid > 0)
-			room = m_roomModule->getRoom(roomid);
-
-		if(room == NULL)
-			room = m_roomModule->GetRandRoom();
-
-		if (room == NULL)
+		if (ackpb.uid() == 0)
 		{
-			LP_ERROR << "no room server";
-			return coro->SetFail();
+			LP_WARN << "no room info get " << pbMsg.account();
 		}
-
-		LPMsg::RoomInfo roominfo;
-		roominfo.set_ip(room->ip);
-		roominfo.set_port(room->port);
-		roominfo.set_pid(ackpb.game_uid());
-		roominfo.set_key((int32_t)std::hash<int64_t>()(Loop::GetSecend()));
-
-		saveLoginToRedis(ackpb.game_uid(), room->server_id);
-
-		m_transModule->SendToServer(m_roomModule->GetRoomPath(room->server_id), N_ROOM_READY_TAKE_PLAYER, roominfo);
-		m_netModule->SendNetMsg(msg->socket, LPMsg::SM_LOGIN_RES, roominfo);
+		m_netModule->SendNetMsg(msg->socket, LPMsg::SM_LOGIN_RES, ackpb);
 		RemoveClient(pbMsg.account());
 	}
-
-	m_transModule->SendToServer(m_lock_server, N_LOGIN_UNLOCK, lockpb);
 }
 
 void LoginModule::RemoveClient(const std::string & account)

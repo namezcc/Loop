@@ -22,6 +22,10 @@ private:
 	virtual void Init() override;
 
 	void onServerConnect(SHARE<NetServer>& ser);
+	void onServerClose(SHARE<NetServer>& ser);
+	void sendRoomMgrPlayerNum();
+
+
 	ServerPath& getDbPath(int64_t uid);
 
 public:

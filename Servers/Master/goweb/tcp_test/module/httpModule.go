@@ -176,15 +176,23 @@ type dbMachine struct {
 }
 
 type dbServer struct {
-	Type    int    `db:"type" json:"type"`
-	Id      int    `db:"id" json:"id"`
-	Name    string `db:"name" json:"name"`
-	Group   int    `db:"group" json:"group"`
-	Ip      string `db:"ip" json:"ip"`
-	Port    int    `db:"port" json:"port"`
-	Mysql   string `db:"mysql" json:"mysql"`
-	Redis   string `db:"redis" json:"redis"`
-	Machine int    `db:"machine"`
+	Type      int         `db:"type" json:"type"`
+	Id        int         `db:"id" json:"id"`
+	Name      string      `db:"name" json:"name"`
+	Group     int         `db:"group" json:"group"`
+	Port      int         `db:"port" json:"port"`
+	Mysql     string      `db:"mysql" json:"mysql"`
+	Redis     string      `db:"redis" json:"redis"`
+	MysqlHost dbMysqlHost `json:"mysqlhost"`
+}
+
+type dbMysqlHost struct {
+	Id     int    `db:"id" json:"id"`
+	Ip     string `db:"ip" json:"ip"`
+	Port   int    `db:"port" json:"port"`
+	Dbname string `db:"dbname" json:"dbname"`
+	User   string `db:"user" json:"user"`
+	Pass   string `db:"pass" json:"pass"`
 }
 
 type dbServiceFind struct {
@@ -204,14 +212,25 @@ func (m *HttpModule) getServerConf(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Query("id"))
 	type_, _ := strconv.Atoi(c.Query("type"))
 
-	err := m._sql.Get(&serviceinfo.Server, "SELECT s.*,m.ip FROM `server` s LEFT JOIN machine m ON s.machine=m.id WHERE s.type=? AND s.id=?;", type_, id)
+	err := m._sql.Get(&serviceinfo.Server, "SELECT * FROM `server` WHERE type=? AND id=?;", type_, id)
 	if err != nil {
+		fmt.Println(err)
 		c.String(http.StatusOK, err.Error())
 		return
 	}
 
+	if serviceinfo.Server.Mysql != "" {
+		err = m._sql.Get(&serviceinfo.Server.MysqlHost, "SELECT * FROM `mysql_host` WHERE `id`=?;", serviceinfo.Server.Mysql)
+		if err != nil {
+			fmt.Println(err)
+			c.String(http.StatusOK, err.Error())
+			return
+		}
+	}
+
 	err = m._sql.Select(&serviceinfo.Service, "SELECT * FROM `service_find`")
 	if err != nil {
+		fmt.Println(err)
 		c.String(http.StatusOK, err.Error())
 		return
 	}

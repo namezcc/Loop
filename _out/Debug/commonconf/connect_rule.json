@@ -1,14 +1,10 @@
 [
 	{"group":true,"server":"","to_server":"","type":0,"param":0,"desc":"type:0无效,1所有,2平均分配n个,3固定id"},
 	{"group":true,"server":"Login","to_server":"LoginLock","type":1,"param":0,"desc":"login->lock所有"},
-	{"group":true,"server":"Login","to_server":"account_db_server","type":1,"param":0,"desc":"login->mysql_account所有"},
 	{"group":true,"server":"Login","to_server":"RoomState","type":1,"param":0,"desc":"login->room_manager所有"},
-	{"group":true,"server":"Room","to_server":"Login","type":1,"param":0,"desc":"room->login"},
-	{"group":true,"server":"account_db_server","to_server":"LoginLock","type":1,"param":0,"desc":"mysql_account->lock所有"},
+	{"group":true,"server":"Gate","to_server":"RoomState","type":1,"param":0,"desc":"gate->room_mgr"},
+	{"group":true,"server":"Gate","to_server":"Room","type":1,"param":0,"desc":"gate->room_mgr"},
 	{"group":true,"server":"Room","to_server":"RoomState","type":1,"param":0,"desc":"room->room_manager所有"},
 	{"group":true,"server":"Room","to_server":"db_proxy","type":1,"param":0,"desc":"room->dbproxy所有"},
-	{"group":true,"server":"Room","to_server":"team_proxy","type":1,"param":0,"desc":"room->teamproxy所有"},
-	{"group":true,"server":"Team","to_server":"team_proxy","type":1,"param":0,"desc":"team->teamproxy所有"},
-	{"group":true,"server":"MysqlServer","to_server":"db_proxy","type":1,"param":0,"desc":"mysql->dbproxy所有"},
-	{"group":true,"server":"Console","to_server":"Master","type":1,"param":0,"desc":"consol->master所有"}
+	{"group":true,"server":"MysqlServer","to_server":"db_proxy","type":1,"param":0,"desc":"mysql->dbproxy所有"}
 ]

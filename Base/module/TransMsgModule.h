@@ -15,6 +15,8 @@ public:
 	typedef std::function<void()> ReqFail;
 
 	SHARE<NetServer> GetServerConn(const int32_t& sock);
+	void SendToServer(const int32_t& stype, const int32_t& sid, const int32_t& mid, BuffBlock* buff);
+	void SendToServer(const int32_t& stype, const int32_t& sid, const int32_t& mid, const google::protobuf::Message& msg);
 	void SendToServer(const ServerNode& ser, const int32_t& mid, BuffBlock* buff);
 	void SendToServer(const ServerNode& ser, const int32_t& mid, const google::protobuf::Message& msg);
 	void SendToAllServer(const int32_t& stype, const int32_t& mid, const google::protobuf::Message& msg);

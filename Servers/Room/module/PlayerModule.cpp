@@ -13,7 +13,6 @@
 #include "protoPB/server/server.pb.h"
 #include "protoPB/client/define.pb.h"
 #include "protoPB/client/room.pb.h"
-#include "protoPB/client/login.pb.h"
 #include "protoPB/client/object.pb.h"
 #include "protoPB/server/dbdata.pb.h"
 
@@ -35,9 +34,6 @@ void PlayerModule::Init()
 	m_room_mod = GET_MODULE(RoomModuloe);
 	m_room_lua = GET_MODULE(RoomLuaModule);
 
-	m_eventModule->AddEventCall(E_SOCKET_CLOSE,BIND_EVENT(OnClientClose,int32_t));
-
-	m_msgModule->AddMsgCall(N_ROOM_READY_TAKE_PLAYER, BIND_NETMSG(OnReadyTakePlayer));
 	m_msgModule->AddMsgCall(N_TROM_GET_ROLE_LIST, BIND_NETMSG(onGetRoleList));
 	
 
@@ -45,26 +41,6 @@ void PlayerModule::Init()
 	m_msgModule->AddMsgCall(LPMsg::CM_CREATE_ROLE, BIND_NETMSG(OnCreatePlayer));
 	m_msgModule->AddMsgCall(LPMsg::CM_ENTER_GAME, BIND_NETMSG(onEnterGame));
 
-}
-
-void PlayerModule::OnReadyTakePlayer(NetMsg* msg)
-{
-	TRY_PARSEPB(LPMsg::RoomInfo, msg);
-
-	LP_INFO << "take ready pid:" << pbMsg.pid();
-
-	auto it = m_readyTable.find(pbMsg.pid());
-	if (it == m_readyTable.end())
-	{
-		ReadyInfo ready = {};
-		ready.pid = pbMsg.pid();
-		ready.key = pbMsg.key();
-		m_readyTable[pbMsg.pid()] = ready;
-	}
-	else
-	{
-		it->second.key = pbMsg.key();
-	}
 }
 
 void PlayerModule::OnPlayerEnter(NetMsg * msg)
@@ -225,26 +201,6 @@ void PlayerModule::onGetRoleList(NetMsg * msg)
 	}
 
 	m_netobjModule->SendNetMsg(it->second.sock, LPMsg::SM_SELF_ROLE_INFO, spb);
-}
-
-void PlayerModule::OnClientClose(const int32_t & sock)
-{
-	auto ply = getPlayerData(sock);
-	if (ply == NULL)
-		return;
-
-	auto it = m_readyTable.find(ply->uid);
-	if (it == m_readyTable.end() || it->second.sock != sock)
-	{
-		removePlayer(sock);
-		LP_ERROR << "client close diff ready uid:" << ply->uid;
-		return;
-	}
-
-	LP_INFO << "player offLine id:" << ply->uid;
-
-	removePlayer(sock);
-	m_readyTable.erase(it);
 }
 
 RoomPlayer * PlayerModule::getPlayerData(int32_t sock)

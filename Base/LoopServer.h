@@ -9,6 +9,7 @@ class BaseLayer;
 
 struct SqlInfo
 {
+	int id;
 	string ip;
 	int port;
 	string db;

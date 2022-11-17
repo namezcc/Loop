@@ -19,7 +19,6 @@ struct RoomServer;
 struct ClientObj
 {
 	int sock;
-	string pass;
 };
 
 class LoginModule:public BaseModule
@@ -51,9 +50,8 @@ private:
 	ScheduleModule* m_schedule;
 
 	ServerNode m_lock_server;
-	ServerPath m_db_path;
+	ServerNode m_room_mgr;
 
-	map<string, SHARE<AccoutInfo>> m_cash;
 	std::map<string,ClientObj> m_tmpClient;
 };
 

@@ -1,5 +1,5 @@
 [
-	{"name":"Game","type":0,"dll":"Game"},
+	{"name":"Gate","type":0,"dll":"Gate"},
 	{"name":"LoopProxy","type":1,"dll":"LoopProxy"},
 	{"name":"Login","type":2,"dll":"Login"},
 	{"name":"MysqlServer","type":3,"dll":"MysqlServer"},

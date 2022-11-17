@@ -265,6 +265,30 @@ SHARE<NetServer> TransMsgModule::GetServerConn(const int32_t & sock)
 	return it->second;
 }
 
+void TransMsgModule::SendToServer(const int32_t & stype, const int32_t & sid, const int32_t & mid, BuffBlock * buff)
+{
+	auto toser = GetServer(stype, sid);
+	if (toser)
+	{
+		m_netObjMod->SendNetMsg(toser->socket, mid, buff);
+		return;
+	}
+	if (buff)
+	{
+		RECYCLE_LAYER_MSG(buff);
+	}
+}
+
+void TransMsgModule::SendToServer(const int32_t & stype, const int32_t & sid, const int32_t & mid, const google::protobuf::Message & msg)
+{
+	auto toser = GetServer(stype, sid);
+	if (toser)
+	{
+		m_netObjMod->SendNetMsg(toser->socket, mid, msg);
+		return;
+	}
+}
+
 void TransMsgModule::SendToServer(const ServerNode & ser, const int32_t & mid, BuffBlock* buff)
 {
 	auto toser = GetServer(ser.type, ser.serid);

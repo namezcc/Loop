@@ -9,8 +9,14 @@ message ReqLogin
 
 message RoomInfo
 {
-	string     ip = 1;
-	int32      port = 2;
-    int64      pid = 3; 
+	string		ip = 1;
+	int32		port = 2;
+	int32		uid = 3; 
 	int32		key = 4;
+}
+
+message CmLogin
+{
+	int32	uid = 1;
+	int32	key = 2;
 }

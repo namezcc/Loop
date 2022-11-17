@@ -16,8 +16,6 @@ void LuaModule::Init()
 {
 	COM_MOD_INIT;
 
-	m_msg_mod->setCommonCall(BIND_NETMSG(onNetMsg));
-
 	CreateLuaState();
 	m_curState->initCToLIndex(CTOL_NONE, CTOL_MAX);
 	m_curState->initLToCIndex(LTOC_NONE,LTOC_MAX);

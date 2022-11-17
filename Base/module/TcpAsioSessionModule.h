@@ -23,6 +23,7 @@ struct AsioSession:public LoopObject
 	{
 		m_sockId = 0;
 		m_active = false;
+		m_role = 0;
 	}
 
 	virtual void init(FactorManager* fm)
@@ -38,6 +39,7 @@ struct AsioSession:public LoopObject
 
 	SHARE<tcp::socket> m_sock;
 	int32_t m_sockId;
+	int32_t m_role;
 	LocalBuffBlock m_buff;
 	NetBuffer m_decodeBuff;
 	bool m_active;
@@ -51,9 +53,10 @@ public:
 
 	int32_t AddNewSession(const std::shared_ptr<tcp::socket>& sock,bool clien = true);
 	void SetProtoType(ProtoType ptype);
-	void SetBind(int port)
+	void SetBind(int port,int32_t role)
 	{
 		m_accptor = make_unique_m<tcp::acceptor>(m_context, tcp::endpoint(tcp::v4(), port));
+		m_role = role;
 	}
 private:
 
@@ -74,11 +77,12 @@ private:
 	void pushMsg(NetMsg* msg);
 	void sendMsgToLayer();
 
-	void pushCloseSock(int32_t sock);
+	void pushCloseSock(int32_t sock,int32_t role);
 	void extureCloseSock();
 private:
 
 	Protocol * m_proto;
+	int32_t m_role;
 
 	MsgModule* m_msgModule;
 

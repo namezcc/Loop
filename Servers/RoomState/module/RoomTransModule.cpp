@@ -6,8 +6,10 @@
 #include "ServerMsgDefine.h"
 #include "RedisModule.h"
 #include "PlayerOnlineModule.h"
+#include "ToolFunction.h"
 
 #include "protoPB/server/server.pb.h"
+#include "protoPB/server/server_msgid.pb.h"
 
 
 RoomTransModule::RoomTransModule(BaseLayer * l):BaseModule(l)
@@ -29,6 +31,7 @@ void RoomTransModule::Init()
 
 	m_msgModule->AddMsgCall(N_ROOM_STATE, BIND_NETMSG(onRoomBusyState));
 	m_msgModule->AddMsgCall(N_TRMM_PLAYER_LOGOUT, BIND_NETMSG(onRoomPlayerLogout));
+	m_msgModule->AddMsgCall(LPMsg::IM_RMGR_PLAYER_ONLINE_NUM, BIND_NETMSG(onPlayerNum));
 
 	m_eventModule->AddEventCall(E_SERVER_CONNECT,BIND_EVENT(OnServerConnect,SHARE<NetServer>));
 	m_eventModule->AddEventCall(E_SERVER_CLOSE,BIND_EVENT(OnServerClose, SHARE<NetServer>));
@@ -70,6 +73,19 @@ void RoomTransModule::onRoomPlayerLogout(NetMsg * msg)
 	m_ply_online->onPlayerOffline(pid);
 }
 
+void RoomTransModule::onPlayerNum(NetMsg * msg)
+{
+	auto pack = msg->m_buff;
+	auto stype = pack->readInt32();
+	auto sid = pack->readInt32();
+	auto num = pack->readInt32();
+
+	if (stype == LOOP_GATE)
+		m_gate_player_num[sid] = num;
+	else if (stype == LOOP_ROOM)
+		m_game_player_num[sid] = num;
+}
+
 void RoomTransModule::OnServerConnect(SHARE<NetServer>& ser)
 {
 	if (ser->type == SERVER_TYPE::LOOP_LOGIN)
@@ -105,14 +121,49 @@ void RoomTransModule::OnServerClose(SHARE<NetServer>& ser)
 {
 	if (ser->type == SERVER_TYPE::LOOP_ROOM)
 	{
-		LPMsg::RoomStateList pb;
-		auto& msg = *pb.add_list();
-		msg.set_id(ser->serid);
-		msg.set_ip(ser->ip);
-		msg.set_port(ser->port);
-		msg.set_state(ServerBusyState::SBS_CLOSE);
-		m_room_state.erase(ser->serid);
-
-		m_transModule->SendToAllServer(LOOP_LOGIN, N_ROOM_STATE, pb);
+		m_game_player_num.erase(ser->serid);
 	}
+	else if (ser->type == SERVER_TYPE::LOOP_GATE)
+	{
+		m_gate_player_num.erase(ser->serid);
+	}
+}
+
+#define GATE_MAX_PLAYER 10000
+#define GAME_MAX_PLAYER 20000
+
+bool RoomTransModule::chooseGateAndRoom(PlayerRoomInfo & info)
+{
+	std::vector<std::pair<int32_t, int32_t>> randvec;
+	for (auto i:m_gate_player_num)
+	{
+		if (i.second < GATE_MAX_PLAYER)
+			randvec.push_back(std::make_pair(GATE_MAX_PLAYER - i.second, i.first));
+	}
+
+	if (randvec.size() == 0)
+		return false;
+
+	auto idx = randWeightPair(randvec);
+	auto sid = randvec[idx].second;
+	auto server = m_transModule->GetServer(LOOP_GATE, sid);
+	if (server == NULL)
+		return false;
+
+	info.gate_id = sid;
+	info.ip = server->ip;
+	info.port = server->port;
+
+	randvec.clear();
+	for (auto i : m_game_player_num)
+	{
+		if (i.second < GAME_MAX_PLAYER)
+			randvec.push_back(std::make_pair(GAME_MAX_PLAYER - i.second, i.first));
+	}
+	if (randvec.size() == 0) return false;
+
+	idx = randWeightPair(randvec);
+	sid = randvec[idx].second;
+	info.room_id = sid;
+	return true;
 }

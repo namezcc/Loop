@@ -107,30 +107,22 @@ void LoopServer::InitConfig()
 
 		m_config.name = m_server_name[m_server.type];
 		m_config.group = rt["group"].GetInt();
-		m_config.addr.ip = rt["ip"].GetString();
+		m_config.addr.ip = getLocalIp();
 		m_config.addr.port = rt["port"].GetInt();
 		m_config.addr.serid = m_server.serid;
 		m_config.addr.type = m_server.type;
 		m_port = m_config.addr.port;
-		m_machine_id = rt["Machine"].GetInt();
 
-		auto sql = rt["mysql"].GetString();
-		if (strlen(sql) > 0)
+		auto sqlid = rt["mysql"].GetString();
+		if (strlen(sqlid) > 0)
 		{
-			std::vector<std::string> res;
-			Loop::Split(sql, "|", res);
-
-			if (res.size() < 5)
-			{
-				printf("mysql conf error %s\n", sql);
-				exit(-1);
-			}
-
-			m_config.sql.ip = res[0];
-			m_config.sql.port = Loop::Cvto<int>(res[1]);
-			m_config.sql.db = res[2];
-			m_config.sql.user = res[3];
-			m_config.sql.pass = res[4];
+			auto sqlval = rt["mysqlhost"].GetObject();
+			m_config.sql.id = Loop::Cvto<int>(sqlid);
+			m_config.sql.ip = sqlval["ip"].GetString();
+			m_config.sql.port = sqlval["port"].GetInt();
+			m_config.sql.db = sqlval["dbname"].GetString();
+			m_config.sql.user = sqlval["user"].GetString();
+			m_config.sql.pass = sqlval["pass"].GetString();
 		}
 
 		auto redis = rt["redis"].GetString();
@@ -182,14 +174,14 @@ void LoopServer::InitConfig()
 
 	if (config.HasMember("addr"))
 	{
-		m_config.addr.ip = config["addr"]["ip"].GetString();
+		m_config.addr.ip = getLocalIp();
 		m_config.addr.port = config["addr"]["port"].GetInt();
 		m_port = m_config.addr.port;
 	}
 
 	if (config.HasMember("udpaddr"))
 	{
-		m_config.udpAddr.ip = config["udpaddr"]["ip"].GetString();
+		m_config.udpAddr.ip = getLocalIp();
 		m_config.udpAddr.port = config["udpaddr"]["port"].GetInt();
 	}
 

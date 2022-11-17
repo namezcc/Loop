@@ -1,0 +1,12 @@
+syntax = "proto3";
+package LPMsg;
+
+message Int32Value
+{
+    int32   value = 1;
+}
+
+message VString
+{
+	string	val = 1;
+}

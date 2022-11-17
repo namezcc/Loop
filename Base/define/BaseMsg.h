@@ -259,6 +259,7 @@ struct LOOP_EXPORT NetMsg:public BaseData
 	inline int32_t getLen() { return len; };
 
 	int32_t socket;
+	int32_t role;
 	int32_t mid;
 	BuffBlock* m_buff;
 	NetMsg* m_next_data;

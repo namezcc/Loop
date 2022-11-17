@@ -39,7 +39,7 @@ public:
 		m_doc.Parse(buff.c_str());
 		if (m_doc.HasParseError())
 		{
-			fprintf(stdout, "Error (%u):%s\n", static_cast<unsigned>(m_doc.GetErrorOffset()), GetParseError_En(m_doc.GetParseError()));
+			fprintf(stdout, "Error (%u):%s %s\n", static_cast<unsigned>(m_doc.GetErrorOffset()), GetParseError_En(m_doc.GetParseError()),buff.c_str());
 			return false;
 		}
 		return true;

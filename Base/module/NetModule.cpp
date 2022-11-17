@@ -6,7 +6,7 @@
 
 #define UV_ALLOC_BUFF_SIZE 4096
 
-NetModule::NetModule(BaseLayer* l):BaseModule(l), m_port(0)
+NetModule::NetModule(BaseLayer* l):BaseModule(l), m_port(0), m_role(0)
 {
 	memset(m_conns, 0, sizeof(m_conns));
 	for (int32_t i = 0; i < MAX_CLIENT_CONN; i++)
@@ -38,10 +38,11 @@ void NetModule::SetProtoType(ProtoType ptype)
 	m_proto = new Protocol(ptype);
 }
 
-void NetModule::SetBind(const int & port, uv_loop_t * loop)
+void NetModule::SetBind(const int & port, uv_loop_t * loop, int32_t role)
 {
 	m_uvloop = loop;
 	m_port = port;
+	m_role = role;
 }
 
 void NetModule::StartListen()
@@ -97,6 +98,8 @@ void NetModule::Connected(uv_tcp_t* conn, bool client)
 	cn->conn = conn;
 	cn->netmodule = this;
 	cn->socket = m_sock_pool.front();
+	if(client)
+		cn->role = m_role;
 	m_sock_pool.pop_front();
 
 	if (m_conns[cn->socket] != NULL)
@@ -111,6 +114,7 @@ void NetModule::Connected(uv_tcp_t* conn, bool client)
 	{
 		auto sock = GET_LAYER_MSG(NetMsg);
 		sock->socket = cn->socket;
+		sock->role = cn->role;
 		m_mgsModule->SendMsg(L_SOCKET_CONNET, sock);
 	}
 
@@ -162,6 +166,7 @@ void NetModule::on_close_client(uv_handle_t* client) {
 
 	auto sock = server->GetLayer()->GetLayerMsg<NetMsg>();
 	sock->socket = conn->socket;
+	sock->role = conn->role;
 	server->m_mgsModule->SendMsg(L_SOCKET_CLOSE, sock);
 
 	if (CHECK_SOCK_INDEX(conn->socket))
@@ -200,6 +205,7 @@ bool NetModule::ReadPack(Conn* conn, char* buf, int len)
 		auto msg = GetLayer()->GetLayerMsg<NetMsg>();
 		msg->mid = mid;
 		msg->socket = conn->socket;
+		msg->role = conn->role;
 		msg->push_front(GetLayer(), buff, rlength);
 		m_mgsModule->SendMsg(mid, msg);
 	})) {

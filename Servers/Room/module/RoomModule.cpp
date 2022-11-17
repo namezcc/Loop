@@ -48,12 +48,18 @@ void RoomModuloe::onServerConnect(SHARE<NetServer>& ser)
 {
 	if (ser->type == LOOP_ROOM_MANAGER)
 	{
-		auto pack = GET_LAYER_MSG(BuffBlock);
-		pack->writeInt32(GetLayer()->GetServer()->serid);
-		pack->writeInt32(m_room_state);
-		ServerNode sernode{ LOOP_ROOM_MANAGER,1 };
-		m_trans_mod->SendToServer(sernode, N_ROOM_STATE, pack);
+		sendRoomMgrPlayerNum();
 	}
+}
+
+void RoomModuloe::onServerClose(SHARE<NetServer>& ser)
+{
+
+}
+
+void RoomModuloe::sendRoomMgrPlayerNum()
+{
+
 }
 
 ServerPath & RoomModuloe::getDbPath(int64_t uid)

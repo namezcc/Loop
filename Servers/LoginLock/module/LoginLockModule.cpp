@@ -5,8 +5,15 @@
 #include "MysqlModule.h"
 #include "TransMsgModule.h"
 #include "help_function.h"
+#include "proto_sql.h"
 
+#include <protobuf/google/protobuf/repeated_field.h>
 #include "protoPB/server/server.pb.h"
+#include "protoPB/server/server_msgid.pb.h"
+#include "protoPB/server/proto_common.pb.h"
+#include "protoPB/server/dbdata.pb.h"
+
+#define SQL_BUFF m_sql_buff, sizeof(m_sql_buff)
 
 LoginLockModule::LoginLockModule(BaseLayer * l):BaseModule(l)
 {
@@ -26,6 +33,8 @@ void LoginLockModule::Init()
 	m_mysql_module = GET_MODULE(MysqlModule);
 	m_trans_mod = GET_MODULE(TransMsgModule);
 
+	m_msgModule->AddMsgCall(LPMsg::IM_ACCOUNT_GET_UID, BIND_SHARE_CALL(onPlayerLogin));
+	
 	m_msgModule->AddMsgCallBack(N_LOGIN_LOCK, this, &LoginLockModule::OnLoginLock);
 	m_msgModule->AddMsgCallBack(N_LOGIN_UNLOCK, this, &LoginLockModule::OnLoginUnlock);
 
@@ -46,6 +55,23 @@ void LoginLockModule::AfterInit()
 {
 	loadDbPlayerNum();
 	m_now_stamp = Loop::GetSecend();
+}
+
+void LoginLockModule::onPlayerLogin(SHARE<BaseMsg>& msg)
+{
+	auto netmsg = (NetMsg*)msg->m_data;
+	TRY_PARSEPB(LPMsg::VString, netmsg);
+	LPMsg::Int32Value pb;
+	auto it = m_account_info.find(pbMsg.val());
+	if (it != m_account_info.end())
+	{
+		pb.set_value(it->second);
+	}
+	else {
+		auto uid = genPlayerUid(pbMsg.val());
+		pb.set_value(uid);
+	}
+	m_netObjModule->ResponseMsg(netmsg->socket, msg, pb);
 }
 
 void LoginLockModule::OnLoginLock(SHARE<BaseMsg>& msg)
@@ -204,20 +230,28 @@ void LoginLockModule::showTestNum(int64_t & dt)
 
 void LoginLockModule::loadDbPlayerNum()
 {
-	m_db_player_num.clear();
-	auto res = m_mysql_module->query("SELECT * FROM `db_player_num`;");
-
-	while (!res->eof())
+	gopb::RepeatedPtrField<LPMsg::DB_player_num_info> repplayer;
+	select_db_player_num_info(repplayer, m_mysql_module, SQL_BUFF);
+	if (repplayer.size() == 0)
 	{
-		auto idx = res->getInt32("dbid");
-		auto num = res->getInt32("count");
+		LP_ERROR << "player num info error size 0";
+		getLoopServer()->closeServer();
+		return;
+	}
 
-		if (num < MAX_PLAYER_NUM_PER_DB)
-		{
-			m_db_player_num.push_back(std::make_pair(idx, num));
-			m_id_index[idx] = m_db_player_num.size() - 1;
-		}
-		res->nextRow();
+	for (auto i:repplayer)
+	{
+		if (i.num() < i.maxnum() || i.maxnum() <= 0)
+			continue;
+		m_db_player_num_info.push_back(i);
+	}
+
+	gopb::RepeatedPtrField<LPMsg::DB_account> repaccount;
+	select_account(repaccount, m_mysql_module, SQL_BUFF);
+	for (auto& i:repaccount)
+	{
+		m_account_info[i.platform_uid()] = i.game_uid();
+		m_uid_check.insert(i.game_uid());
 	}
 }
 
@@ -228,4 +262,52 @@ int32_t LoginLockModule::getDbIndex()
 
 	auto r = rand() % m_db_player_num.size();
 	return m_db_player_num[r].first;
+}
+
+int32_t LoginLockModule::genPlayerUid(const std::string& uuid)
+{
+	if (m_db_player_num_info.empty())
+		return 0;
+
+	while (m_db_player_num_info.size() > 0)
+	{
+		auto r = rand() % m_db_player_num_info.size();
+		auto& info = m_db_player_num_info[r];
+
+		while (true)
+		{
+			auto uid = createPlayerUid32(info.dbid(), info.num());
+			if (uid <= 0)
+			{
+				LP_ERROR << "create uid error dbid:" << info.dbid() << "num:" << info.num();
+				m_db_player_num_info.erase(m_db_player_num_info.begin()+r);
+				break;
+			}
+
+			if (m_uid_check.find(uid) != m_uid_check.end())
+			{
+				info.set_num(info.num() + 1);
+				if (info.num() >= info.maxnum())
+				{
+					m_db_player_num_info.erase(m_db_player_num_info.begin() + r);
+					break;
+				}
+				continue;
+			}
+
+			LPMsg::DB_account pb;
+			pb.set_create_time(Loop::GetSecend());
+			pb.set_game_uid(uid);
+			pb.set_platform_uid(uuid);
+			if (!insert_account(pb, m_mysql_module, SQL_BUFF))
+				return 0;
+
+			info.set_num(info.num() + 1);
+			update_db_player_num_info(info, m_mysql_module, SQL_BUFF);
+			if (info.num() >= info.maxnum())
+				m_db_player_num_info.erase(m_db_player_num_info.begin() + r);
+			return uid;
+		}
+	}
+	return 0;
 }

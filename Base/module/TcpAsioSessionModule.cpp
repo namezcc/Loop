@@ -8,7 +8,7 @@
 #include <boost/bind.hpp>
 
 TcpAsioSessionModule::TcpAsioSessionModule(BaseLayer * l):BaseModule(l), m_io_pool(8)
-, m_send_msg_head(NULL), m_send_msg_tail(NULL), m_close_list(NULL)
+, m_send_msg_head(NULL), m_send_msg_tail(NULL), m_close_list(NULL), m_role(0)
 {
 	memset(m_session, 0, sizeof(m_session));
 	for (int32_t i = 0; i < MAX_CLIENT_CONN; i++)
@@ -183,6 +183,8 @@ int32_t TcpAsioSessionModule::AddNewSession(const std::shared_ptr<tcp::socket> &
 	s->m_sock->set_option(tcp::no_delay(true));
 	s->m_buff.makeRoom(ASIO_READ_BUFF_SIZE);
 	s->m_sockId = m_sock_pool.front();
+	if (clien)
+		s->m_role = m_role;
 	m_sock_pool.pop_front();
 
 	if (m_session[s->m_sockId] != NULL)
@@ -196,11 +198,12 @@ int32_t TcpAsioSessionModule::AddNewSession(const std::shared_ptr<tcp::socket> &
 	{
 		auto sock = GET_LAYER_MSG(NetMsg);
 		sock->socket = s->m_sockId;
+		sock->role = s->m_role;
 		m_msgModule->SendMsg(L_SOCKET_CONNET, sock);
 	}
 
 	auto shar = SHARE<AsioSession>(s, [this](AsioSession* p) {
-		pushCloseSock(p->m_sockId);
+		pushCloseSock(p->m_sockId,p->m_role);
 	});
 
 	DoReadData(shar);
@@ -218,6 +221,7 @@ void TcpAsioSessionModule::DoReadData(SHARE<AsioSession> session)
 				auto msg = GET_LAYER_MSG(NetMsg);
 				msg->mid = mid;
 				msg->socket = session->m_sockId;
+				msg->role = session->m_role;
 				msg->push_front(GetLayer(), buff, rlength);
 				pushMsg(msg);
 			}))
@@ -280,6 +284,7 @@ void TcpAsioSessionModule::CloseSession(const int32_t & sock, bool active)
 	{
 		auto sock = GET_LAYER_MSG(NetMsg);
 		sock->socket = session->m_sockId;
+		sock->role = session->m_role;
 		m_msgModule->SendMsg(L_SOCKET_CLOSE, sock);
 	}
 	else if(session->m_active == false)
@@ -333,11 +338,11 @@ void TcpAsioSessionModule::sendMsgToLayer()
 	}
 }
 
-void TcpAsioSessionModule::pushCloseSock(int32_t sock)
+void TcpAsioSessionModule::pushCloseSock(int32_t sock, int32_t role)
 {
 	auto msg = GET_LAYER_MSG(NetMsg);
 	msg->socket = sock;
-
+	msg->role = role;
 	std::lock_guard<std::mutex> _g(m_close_mutex);
 	msg->m_next_data = m_close_list;
 	m_close_list = msg;

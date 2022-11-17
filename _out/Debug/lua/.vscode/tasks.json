@@ -1,0 +1,42 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"windows": {
+        "options": {
+            "shell": {
+                "executable": "cmd.exe",
+                "args": [
+                    "/d", "/c"
+                ]
+            }
+        }
+    },
+	"problemMatcher":[],
+	"tasks": [
+		{
+			"label": "proto make cpp",
+			"type": "shell",
+			"command": "MakeProto.bat np",
+			"options": {
+				"cwd": "${workspaceFolder}/../../../"
+			}
+		},
+		{
+			"label": "proto make cpp base",
+			"type": "shell",
+			"command": "MakeProto.bat np base",
+			"options": {
+				"cwd": "${workspaceFolder}/../../../"
+			}
+		},
+		{
+			"label": "db file",
+			"type": "shell",
+			"command": "lua.exe proto_db_gen.lua",
+			"options": {
+				"cwd": "${workspaceFolder}/../../../tool/luatool"
+			}
+		},
+	]
+}

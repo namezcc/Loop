@@ -19,6 +19,7 @@ struct Conn:public LoopObject
 		buffer.len = 0;
 		buffer.use = 0;
 		conn = NULL;
+		role = 0;
 	}
 
 	void recycle(FactorManager* fm)
@@ -35,6 +36,7 @@ struct Conn:public LoopObject
 	NetModule* netmodule;
 	NetBuffer buffer;
 	int socket;
+	int32_t role;
 };
 
 struct Write_t:public LoopObject
@@ -76,7 +78,7 @@ public:
 	NetModule(BaseLayer* l);
 	~NetModule() {};
 	void SetProtoType(ProtoType ptype);
-	void SetBind(const int& port, uv_loop_t* loop);
+	void SetBind(const int& port, uv_loop_t* loop,int32_t role);
 	void StartListen();
 
 	static void Connection_cb(uv_stream_t* serhand, int status);
@@ -109,6 +111,7 @@ protected:
 	std::list<int32_t> m_sock_pool;
 
 	int32_t m_port;
+	int32_t m_role;
 	uv_tcp_t m_hand;
 	uv_loop_t* m_uvloop;
 };

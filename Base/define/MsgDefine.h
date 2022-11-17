@@ -93,8 +93,8 @@ enum MSG_FROM_NET
 	//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< server msg ----------------------
 
 	
-	N_END_BEFOR = 500,
-	N_END = 3000,
+	N_END_BEFOR = 1000,
+	N_END = 5000,
 };
 //�ͻ����������֮����Ϣid > 10000
 enum BASE_EVENT
