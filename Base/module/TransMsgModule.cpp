@@ -518,6 +518,7 @@ void TransMsgModule::onConnInfo(NetMsg * nmsg)
 
 	auto p = nmsg->m_buff;
 	auto num = p->readInt32();
+	auto selfser = GetLayer()->GetServer();
 
 	for (int32_t i = 0; i < num; i++)
 	{
@@ -540,6 +541,9 @@ void TransMsgModule::onConnInfo(NetMsg * nmsg)
 		ser.socket = -1;
 		ser.activeLink = true;
 		
+		if (ser.type == selfser->type && ser.serid == selfser->serid)
+			continue;
+
 		server.push_back(ser);
 	}
 

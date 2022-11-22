@@ -6,6 +6,7 @@
 class MsgModule;
 class TransMsgModule;
 class NetObjectModule;
+class RedisModule;
 class RoomTransModule;
 
 struct PlayerRoomInfo

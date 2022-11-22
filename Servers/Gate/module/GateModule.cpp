@@ -23,8 +23,12 @@ void GateModule::Init()
 
 	m_event_mod = GET_MODULE(EventModule);
 	m_event_mod->AddEventCall(E_SOCKET_CLOSE, BIND_EVENT(onClientClose, int32_t));
+	m_event_mod->AddEventCall(E_SERVER_CONNECT, BIND_EVENT(onServerConnect, SHARE<NetServer>&));
 
 	m_msg_mod->setCommonCall(BIND_NETMSG(onNetMsg));
+
+	m_msg_mod->AddMsgCall(LPMsg::IM_GATE_PLAYER_LOGIN, BIND_NETMSG(onPlayerReadyInfo));
+	m_msg_mod->AddMsgCall(LPMsg::CM_ENTER_ROOM, BIND_NETMSG(onPlayerLogin));
 }
 
 void GateModule::onServerConnect(SHARE<NetServer>& ser)
@@ -46,7 +50,6 @@ void GateModule::onClientClose(const int32_t & sock)
 	if (rinfo == NULL)
 		return;
 
-	m_readyInfo.erase(rinfo->uid);
 	m_player_sock[sock] = NULL;
 	m_player_num--;
 
@@ -54,7 +57,9 @@ void GateModule::onClientClose(const int32_t & sock)
 	pack->writeInt32(rinfo->uid);
 	pack->writeInt32(0);
 	m_trans_mod->SendToServer(LOOP_ROOM, rinfo->roomsid, LPMsg::IM_ROOM_PLAYER_LOGOUT, pack);
+	sendRoomMgrPlayerLogout(rinfo->uid);
 	sendRoomMgrPlayerNum();
+	m_readyInfo.erase(rinfo->uid);
 }
 
 void GateModule::onNetMsg(NetMsg * msg)
@@ -71,8 +76,8 @@ void GateModule::onNetMsg(NetMsg * msg)
 		if (msg->mid < LPMsg::CM_BEGAN || msg->mid > LPMsg::CM_END)
 		{
 			m_player_sock[msg->socket] = NULL;
-			m_readyInfo.erase(rinfo->uid);
 			m_net_mod->CloseNetObject(msg->socket);
+			m_readyInfo.erase(rinfo->uid);
 			return;
 		}
 
@@ -83,7 +88,7 @@ void GateModule::onNetMsg(NetMsg * msg)
 		m_trans_mod->SendToServer(LOOP_ROOM, rinfo->roomsid, msg->mid,buff);
 	}
 	else {
-		if (msg->mid >= LPMsg::SM_BEGIN && msg->mid >= LPMsg::SM_END)
+		if (msg->mid >= LPMsg::SM_BEGIN && msg->mid <= LPMsg::SM_END)
 		{
 			auto pack = msg->m_buff;
 			auto usize = pack->readInt32();
@@ -160,7 +165,7 @@ void GateModule::onPlayerReadyInfo(NetMsg * msg)
 
 void GateModule::onPlayerLogin(NetMsg * msg)
 {
-	TRY_PARSEPB(LPMsg::CmLogin, msg);
+	TRY_PARSEPB(LPMsg::CmEnterGame, msg);
 	auto it = m_readyInfo.find(pbMsg.uid());
 	if (it == m_readyInfo.end() || it->second.key != pbMsg.key())
 	{
@@ -168,7 +173,7 @@ void GateModule::onPlayerLogin(NetMsg * msg)
 		return;
 	}
 
-	if (it->second.sock > 0)
+	if (it->second.sock > 0 && it->second.sock != msg->socket)
 	{
 		//¶¥ºÅ
 		auto rinfo = m_player_sock[it->second.sock];
@@ -180,10 +185,11 @@ void GateModule::onPlayerLogin(NetMsg * msg)
 			pack->writeInt32(1);
 			m_trans_mod->SendToServer(LOOP_ROOM, rinfo->roomsid, LPMsg::IM_ROOM_PLAYER_LOGOUT, pack);
 			m_player_num--;
+			m_net_mod->CloseNetObject(it->second.sock);
 		}
+		it->second.sock = -1;
 	}
 	
-	it->second.sock = msg->socket;
 	auto pack = LAYER_BUFF;
 	auto server = GetLayer()->GetServer();
 	pack->writeInt32(server->serid);
@@ -194,12 +200,17 @@ void GateModule::onPlayerLogin(NetMsg * msg)
 	{
 		LP_ERROR << "player login roomserver close id:" << it->second.roomsid;
 		m_net_mod->CloseNetObject(msg->socket);
+		sendRoomMgrPlayerLogout(pbMsg.uid());
 		return;
 	}
 	m_net_mod->SendNetMsg(roomser->socket, LPMsg::IM_ROOM_PLAYER_LOGIN, pack);
 	m_player_sock[msg->socket] = &it->second;
-	m_player_num++;
+	if(it->second.sock < 0)
+		m_player_num++;
+
+	it->second.sock = msg->socket;
 	sendRoomMgrPlayerNum();
+	m_net_mod->AcceptConn(msg->socket);
 }
 
 void GateModule::sendRoomMgrPlayerNum()
@@ -210,4 +221,13 @@ void GateModule::sendRoomMgrPlayerNum()
 	pack->writeInt32(server->serid);
 	pack->writeInt32(m_player_num);
 	m_trans_mod->SendToServer(LOOP_ROOM_MANAGER, 0, LPMsg::IM_RMGR_PLAYER_ONLINE_NUM, pack);
+}
+
+void GateModule::sendRoomMgrPlayerLogout(int32_t uid)
+{
+	auto server = GetLayer()->GetServer();
+	auto pack = LAYER_BUFF;
+	pack->writeInt32(uid);
+	pack->writeInt32(server->serid);
+	m_trans_mod->SendToServer(LOOP_ROOM_MANAGER, 0, LPMsg::IM_RMGR_PLAYER_LOGOUT, pack);
 }

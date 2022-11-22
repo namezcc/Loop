@@ -43,6 +43,8 @@ void PlayerOnlineModule::Init()
 	m_room_mgr = GET_MODULE(RoomTransModule);
 
 	m_msg_mod->AddMsgCall(LPMsg::IM_RMGR_PLAYER_LOGIN, BIND_SHARE_CALL(onPlayerOnline));
+	m_msg_mod->AddMsgCall(LPMsg::IM_RMGR_PLAYER_LOGOUT, BIND_NETMSG(onPlayerLogout));
+	
 	m_msg_mod->AddMsgCall(N_TRMM_CHECK_PLAYER_ONLINE, BIND_NETMSG(onCheckPlayerOnline));
 	m_msg_mod->AddMsgCall(N_TRMM_TRANS_MSG_TO_PLAYER, BIND_NETMSG(onPlayerTransMsg));
 	

@@ -6,7 +6,7 @@ LoopState:callFunction("BindTcpCall","OnRead",function(sock, ... )
     NetModule:OnSocketRead(sock,...)
 end)
 LoopState:callFunction("BindTcpCall","OnClose",function(sock, ... )
-	NetModule:OnSocketClose(sock,...)
+	NetModule:OnSocketClose(sock)
 end)
 
 function NetModule:init()
@@ -61,7 +61,7 @@ function NetModule:OnSocketRead(sock,mid,data)
             data = TPB.decode("LPMsg."..handle.pbstr,data)
         end
 
-		handle.func(ply,data,handle.extra)
+		handle.func(ply,data,handle.extra,handle.pbstr)
     end
 end
 
@@ -77,6 +77,10 @@ function NetModule:OnSocketClose(sock)
 	if IS_SINGLE then
 		print("sock close ",sock)
 	end
+end
+
+function NetModule:CloseSock(sock)
+	LoopState:callFunction("closeConn",sock)
 end
 
 function NetModule:AddMsgCallBack(mid,_func,_pbstr,_extra)

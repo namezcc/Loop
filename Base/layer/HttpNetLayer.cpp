@@ -6,5 +6,5 @@ void HttpNetLayer::init()
 	CreateModule<MsgModule>();
 	auto netmod = CreateModule<NetModule>();
 	netmod->SetProtoType(m_protoType);
-	netmod->SetBind(m_port, m_uvloop);
+	netmod->SetBind(m_port, m_uvloop,m_role);
 }

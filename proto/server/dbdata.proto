@@ -18,11 +18,14 @@ message DB_account
 
 message DB_player
 {
-	int64	uid		= 1;
-	int64	pid		= 2;
+	int32	cid		= 1;
+	int32	uid		= 2;
 	string	name	= 3;
 	int32	level	= 4;
 	int32	gold	= 5;
+	int32	login_time	= 6;
+	int32	logout_time	= 7;
+	int32	create_time	= 8;
 }
 
 message DB_roleList
@@ -31,18 +34,22 @@ message DB_roleList
 	repeated	int32		i32ll = 2;
 }
 
-message DB_player_relation
-{
-	int64	pid		= 1;
-	int64	rpid	= 2;
-	int32	time	= 3;
-	int32	type	= 4;
-	string	name	= 5;
-	int32	level	= 6;
-}
-
 message DB_player_all_data
 {
 	DB_player		player = 1;
-	repeated	DB_player_relation		relation = 2;
+
+}
+
+message DB_sql_data
+{
+	int32		table = 1;
+	int32		opt = 2;
+	repeated	string	keys = 3;
+	bytes	data = 4;
+}
+
+message DB_sql_data_list
+{
+	int32	cid = 1;
+	repeated	DB_sql_data	datas = 2;
 }

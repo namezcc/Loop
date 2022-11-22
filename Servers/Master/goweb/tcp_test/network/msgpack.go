@@ -95,7 +95,7 @@ func (_m *Msgpack) expandSize(s int) {
 	} else {
 		_m._max = _m._max * 2
 	}
-	tmp := make([]byte, 0, _m._max)
+	tmp := make([]byte, _m._max)
 	copy(tmp, _m._buff)
 	_m._buff = tmp
 }

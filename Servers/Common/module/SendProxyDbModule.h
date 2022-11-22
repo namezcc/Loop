@@ -7,7 +7,6 @@
 #include "MsgModule.h"
 
 #include "protoPB/base/LPSql.pb.h"
-#include "GameObject.h"
 
 class TransMsgModule;
 
@@ -184,29 +183,6 @@ public:
 			Reflect<T>::SetFieldValue(*t.get(),field[i],val[i]);
 		}
 		return t;
-	}
-
-	template<typename T>
-	typename std::enable_if<!std::is_base_of<GameObject, T>::value>::type SetObjectValue(T& rf, LPMsg::PBSqlParam& param)
-	{
-		if (param.field_size() != param.value_size() || param.field_size() > Reflect<T>::Size())
-			return;
-		for (size_t i = 0; i < param.field_size(); i++)
-		{
-			Reflect<T>::SetFieldValue(rf, param.field(i), param.value(i));
-		}
-	}
-
-	template<typename T>
-	typename std::enable_if<std::is_base_of<GameObject, T>::value>::type SetObjectValue(T& rf, LPMsg::PBSqlParam& param)
-	{
-		if (param.field_size() != param.value_size() || param.field_size() > Reflect<T>::Size())
-			return;
-		for (int32_t i = 0; i < param.field_size(); i++)
-		{
-			Reflect<T>::SetFieldValue(rf, param.field(i), param.value(i));
-		}
-		rf.CopySqlData();
 	}
 
 private:

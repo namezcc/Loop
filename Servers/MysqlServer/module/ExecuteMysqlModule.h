@@ -21,8 +21,11 @@ public:
 	ExecuteMysqlModule(BaseLayer* l);
 	~ExecuteMysqlModule();
 
-	std::string getRedisPlayerKey(int64_t& pid);
-	std::string getRedisFieldKey(int32_t table, std::string key1 = "0", std::string key2 = "0");
+	std::string getRedisPlayerKey(int32_t& cid);
+	std::string getRedisFieldKey(int32_t table);
+	std::string getRedisFieldKey(int32_t table, std::string key1);
+	std::string getRedisFieldKey(int32_t table, std::string key1, std::string key2);
+	std::string getRedisFieldKey(int32_t table, const google::protobuf::RepeatedPtrField<std::string>& keys);
 	int32_t getTableIndexFromKey(const std::string& key);
 
 private:
@@ -50,9 +53,9 @@ private:
 	void opSearchPlayer(SqlOperation * msg);
 	void opSavePlayerToDB(SqlOperation * msg);
 
-	void loadPlayerDataFromDb(LPMsg::DB_player_all_data& pdata, std::map<std::string, std::string>& hval,int64_t& pid);
+	void loadPlayerDataFromDb(LPMsg::DB_player_all_data& pdata, std::map<std::string, std::string>& hval,int32_t& cid);
 	void loadPlayerDataFromRedis(LPMsg::DB_player_all_data& pdata, std::map<std::string, std::string>& hval);
-	void savePlayerDataToDb(int64_t pid);
+	void savePlayerDataToDb(int32_t cid);
 	void updatePlayerData(int32_t table, const std::string& str);
 	void deletePlayerData(int32_t table, const std::string& str);
 protected:

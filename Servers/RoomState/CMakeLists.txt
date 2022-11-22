@@ -18,12 +18,16 @@ add_library(${ProjectName} SHARED ${SOUCE_FILES} ${HEAD_FILES})
 
 if(WIN32)
 set(DBProxylib
+Crypto.lib
 serverpb.lib
+clientpb.lib
 libprotobufd.lib
 )
 else()
 set(DBProxylib
 serverpb.so
+clientpb.so
+Crypto.a
 )
 endif()
 

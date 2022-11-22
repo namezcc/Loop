@@ -36,10 +36,14 @@ end
 
 local games = {}
 local nid = 1
-local checkNum = 500
+local checkNum = 1
 local function CreateGame()
 
-	local account = "zcc"..(GAME_INDEX*checkNum+nid)
+	local cindex = GAME_INDEX*checkNum+nid
+	local account = ACCOUNT --..cindex
+	if not IS_SINGLE then
+		account = account..cindex
+	end
 	local player = {}
 
 	-- print("create ply ",nid)
@@ -50,6 +54,9 @@ local function CreateGame()
 		account = GAME_ADDR[GAME_INDEX].uid
 	end
 
+	print("create ply ",cindex," account:",account)
+
+	player:initdata()
 	player:onNewPlayer(account)
 
     nid = nid + 1

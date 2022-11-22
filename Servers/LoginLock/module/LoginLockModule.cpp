@@ -70,6 +70,8 @@ void LoginLockModule::onPlayerLogin(SHARE<BaseMsg>& msg)
 	else {
 		auto uid = genPlayerUid(pbMsg.val());
 		pb.set_value(uid);
+		if (uid > 0)
+			m_account_info[pbMsg.val()] = uid;
 	}
 	m_netObjModule->ResponseMsg(netmsg->socket, msg, pb);
 }
@@ -241,7 +243,7 @@ void LoginLockModule::loadDbPlayerNum()
 
 	for (auto i:repplayer)
 	{
-		if (i.num() < i.maxnum() || i.maxnum() <= 0)
+		if (i.num() >= i.maxnum() || i.maxnum() <= 0)
 			continue;
 		m_db_player_num_info.push_back(i);
 	}
@@ -302,6 +304,7 @@ int32_t LoginLockModule::genPlayerUid(const std::string& uuid)
 			if (!insert_account(pb, m_mysql_module, SQL_BUFF))
 				return 0;
 
+			m_uid_check.insert(uid);
 			info.set_num(info.num() + 1);
 			update_db_player_num_info(info, m_mysql_module, SQL_BUFF);
 			if (info.num() >= info.maxnum())

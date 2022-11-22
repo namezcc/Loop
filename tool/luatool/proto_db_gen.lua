@@ -1,5 +1,5 @@
-local out_path = "E:/git/Loop/Loop/Servers/Common"
-local out_path2 = "./"
+local out_path = "../../Servers/Common"
+local lua_path = "../../_out/Debug/lua/room/util"
 
 require "split"
 local conf = require "proto_db_conf"
@@ -469,15 +469,45 @@ function getHstr( cfg )
     return str.."\n"
 end
 
+function getTablePbName()
+	local str = [[
+TABLE_PROTO_NAME = {
+%s
+}
+]]
+
+	local name = ""
+	for i,v in pairs(conf) do
+		local s = string.format("\t[%d]=\"LPMsg.%s\",\n",i,v._proto)
+		name = name..s
+	end
+	for i, v in ipairs(LOG_CONF) do
+		local s = string.format("\t[%d]=\"LPMsg.%s\",\n",1000+i,v._proto)
+		name = name..s
+	end
+
+	return string.format(str,name)
+end
+
+local desc = "//文件由配置生成,请执行server/bin/tool/genProtoDb.bat 在proto_db_conf.lua里配置\n"
+local desclua = "--文件由配置生成,请执行server/bin/tool/genProtoDb.bat 在proto_db_conf.lua里配置\n"
+
 function genCpp(path)
 
     local file_h = myfile.new()
     local file_cpp = myfile.new()
     local file_enum = myfile.new()
+	local file_lua = myfile.new()
 
     file_h:open(path.."/proto_sql.h","w")
     file_cpp:open(path.."/proto_sql.cpp","w")
     file_enum:open(path.."/proto_table.h","w")
+	file_lua:open(lua_path.."/table_index.lua","w")
+
+	file_h:write(desc)
+	file_cpp:write(desc)
+	file_enum:write(desc)
+	file_lua:write(desclua)
 
 file_h:write([[
 #ifndef PROTO_SQL_H
@@ -504,20 +534,64 @@ enum TABLE_ENUM{
 
 ]])
 
-    for i,v in ipairs(conf) do
-        file_h:write(getHstr(v))
-        file_cpp:write(getCppStr(v))
-        file_enum:write("TAB_"..v._table.."="..i..",\n")
-    end
+file_lua:write([[
+TABLE_INDEX = {
+]])
 
-    file_h:write("#endif")
-    file_h:close()
-    file_cpp:close()
+	for k,v in pairs(conf) do
+		file_h:write(getHstr(v))
+		file_cpp:write(getCppStr(v))
+		file_enum:write("TAB_"..v._table.."="..k..",\n")
+		file_lua:write("TAB_"..v._table.."="..k..",\n")
+	end
+	file_enum:write("TAB_max,\n")
 
-    file_enum:write("};\n#endif")
-    file_enum:close()
+	for k, v in ipairs(LOG_CONF) do
+		file_h:write(getHstr(v))
+		file_cpp:write(getCppStr(v))
+		local nk = 1000 + k
+		file_enum:write("TAB_"..v._table.."="..nk..",\n")
+		file_lua:write("TAB_"..v._table.."="..nk..",\n")
+	end
+
+	file_h:write("#endif")
+	file_h:close()
+	file_cpp:close()
+
+	file_enum:write("};\n#endif")
+	file_enum:close()
+
+	file_lua:write("}\n")
+
+	file_lua:write(getTablePbName())
+	file_lua:write([[
+REDIS_KEY = {
+]])
+	for i,v in pairs(conf) do
+		local s = "\t[%d]={%s},\n"
+		local k = ""
+		if v._rediskey then
+			for _, f in ipairs(v._rediskey) do
+				k = k..string.format("\"%s\",",f)
+			end
+		end
+		s = string.format(s,i,k)
+		file_lua:write(s)
+	end
+	for i,v in ipairs(LOG_CONF) do
+		local s = "\t[%d]={%s},\n"
+		local k = ""
+		if v._rediskey then
+			for _, f in ipairs(v._rediskey) do
+				k = k..string.format("\"%s\",",f)
+			end
+		end
+		s = string.format(s,1000+i,k)
+		file_lua:write(s)
+	end
+	file_lua:write("}\n")
+	file_lua:close()
 end
 
 genCpp(out_path)
-genCpp(out_path2)
 print("finish ...")

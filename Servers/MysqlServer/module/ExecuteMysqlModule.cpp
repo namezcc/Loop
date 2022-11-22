@@ -22,6 +22,13 @@
 
 #define PLAYER_CHANGE "player_change"
 
+enum DB_OPT
+{
+	DO_INSTERT = 1,
+	DO_UPDATE = 2,
+	DO_DELETE = 3,
+};
+
 ExecuteMysqlModule::ExecuteMysqlModule(BaseLayer * l):BaseModule(l)
 {
 }
@@ -30,10 +37,25 @@ ExecuteMysqlModule::~ExecuteMysqlModule()
 {
 }
 
-std::string ExecuteMysqlModule::getRedisPlayerKey(int64_t & pid)
+std::string ExecuteMysqlModule::getRedisPlayerKey(int32_t & cid)
 {
 	std::string res("player:");
-	res.append(Loop::Cvto<std::string>(pid));
+	res.append(Loop::Cvto<std::string>(cid));
+	return res;
+}
+
+std::string ExecuteMysqlModule::getRedisFieldKey(int32_t table)
+{
+	return std::to_string(table);
+}
+
+std::string ExecuteMysqlModule::getRedisFieldKey(int32_t table, std::string key1)
+{
+	if (key1 == "") key1 = "0";
+
+	std::string res;
+	res.append(Loop::to_string(table));
+	res.append("_").append(key1);
 	return res;
 }
 
@@ -43,10 +65,23 @@ std::string ExecuteMysqlModule::getRedisFieldKey(int32_t table, std::string key1
 	if (key2 == "") key2 = "0";
 
 	std::string res;
-	res.append(Loop::to_string(table)).append("_");
-	res.append(key1).append("_");
-	res.append(key2);
+	res.append(Loop::to_string(table));
+	res.append("_").append(key1);
+	res.append("_").append(key2);
 	return res;
+}
+
+std::string ExecuteMysqlModule::getRedisFieldKey(int32_t table, const google::protobuf::RepeatedPtrField<std::string>& keys)
+{
+	auto fk = std::to_string(table);
+	for (auto &k : keys)
+	{
+		if (k.empty())
+			fk.append("_0");
+		else
+			fk.append("_").append(k);
+	}
+	return fk;
 }
 
 int32_t ExecuteMysqlModule::getTableIndexFromKey(const std::string & key)
@@ -76,7 +111,7 @@ void ExecuteMysqlModule::AfterInit()
 
 void ExecuteMysqlModule::saveAllPlayerChange()
 {
-	RedisModule::vec_str vec;
+	vec_str vec;
 	m_redis_mod->SMembers(PLAYER_CHANGE, vec);
 	if (vec.empty())
 		return;
@@ -86,8 +121,8 @@ void ExecuteMysqlModule::saveAllPlayerChange()
 
 	for (size_t i = 0; i < vec.size(); i++)
 	{
-		auto pid = Loop::Cvto<int64_t>(vec[i]);
-		savePlayerDataToDb(pid);
+		auto cid = Loop::Cvto<int32_t>(vec[i]);
+		savePlayerDataToDb(cid);
 	}
 
 	LP_WARN << "save All change player use tm:" << (Loop::GetMilliSecend() - start) << " over ..............";
@@ -170,7 +205,6 @@ void ExecuteMysqlModule::onSqlOperation(SqlOperation * msg)
 	case SOP_LOAD_PLAYER_DATA:opLoadPlayerData(msg); break;
 	case SOP_SEARCH_PLAYER:opSearchPlayer(msg); break;
 	case SOP_UPDATE_PLAYER_DATA:opUpdatePlayerData(msg); break;
-	case SOP_DELETE_PLAYER_DATA:opDeletePlayerData(msg); break;
 	case SOP_SAVE_PlAYER_TO_DB:opSavePlayerToDB(msg); break;
 		
 	default:
@@ -187,7 +221,7 @@ SqlOperation * ExecuteMysqlModule::getOperation(SqlOperation * msg, const size_t
 {
 	auto opt = GET_LAYER_MSG(SqlOperation);
 	opt->ackId = msg->ackId;
-	opt->path = std::move(msg->path);
+	opt->server_sock = msg->server_sock;
 	opt->buff = GET_LAYER_MSG(BuffBlock);
 	opt->buff->makeRoom(len);
 	return opt;
@@ -197,10 +231,10 @@ SqlOperation * ExecuteMysqlModule::getPlayerOperation(SqlOperation * msg, const 
 {
 	auto opt = GET_LAYER_MSG(SqlOperation);
 	opt->ackId = msg->ackId;
-	opt->path = std::move(msg->path);
+	opt->server_sock = msg->server_sock;
 	opt->buff = GET_LAYER_MSG(BuffBlock);
 	opt->buff->makeRoom(len + sizeof(int64_t) + 2*sizeof(int32_t));
-	opt->buff->writeInt64(msg->pid);
+	opt->buff->writeInt64(msg->cid);
 	opt->buff->writeInt32(msg->optId);
 	opt->buff->writeInt32(msg->ackId);
 	return opt;
@@ -215,14 +249,14 @@ void ExecuteMysqlModule::opRoleSelect(SqlOperation * msg)
 {
 	LPMsg::DB_roleList pb;
 	auto& role = *pb.mutable_roles();
-	select_lp_player(role, m_mysqlModule, SQL_BUFF, msg->pid);
+	select_lp_player(role, m_mysqlModule, SQL_BUFF, msg->cid);
 
 	auto opt = GET_LAYER_MSG(SqlOperation);
 	opt->ackId = msg->ackId;
-	opt->path = std::move(msg->path);
+	opt->server_sock = msg->server_sock;
 	opt->buff = GET_LAYER_MSG(BuffBlock);
 	opt->buff->makeRoom(pb.ByteSize() + sizeof(int64_t));
-	opt->buff->writeInt64(msg->pid);
+	opt->buff->writeInt32(msg->cid);
 	opt->buff->writeProto(pb);
 
 	m_msgModule->SendMsg(L_DB_SQL_OPERATION, opt);
@@ -233,7 +267,7 @@ void ExecuteMysqlModule::opCreateRole(SqlOperation * msg)
 	TRY_PARSE_SQL_PB(LPMsg::DB_player, msg->buff);
 
 	LPMsg::DB_player old;
-	if (select_lp_player(old, m_mysqlModule, SQL_BUFF, msg->pid))
+	if (select_lp_player(old, m_mysqlModule, SQL_BUFF, msg->cid))
 	{
 		return opRoleSelect(msg);
 	}
@@ -246,38 +280,44 @@ void ExecuteMysqlModule::opCreateRole(SqlOperation * msg)
 
 void ExecuteMysqlModule::opUpdatePlayerData(SqlOperation * msg)
 {
-	auto table = msg->buff->readInt32();
-	auto num = msg->buff->readInt32();
-
-	auto key = getRedisPlayerKey(msg->pid);
-	std::vector<std::string> field;
-	std::vector<std::string> vals;
-	std::vector<std::string> opts;
-
-	for (size_t i = 0; i < num; i++)
-	{
-		auto key1 = msg->buff->readString();
-		auto key2 = msg->buff->readString();
-		int32_t slen = 0;
-		auto str = msg->buff->readString(slen);
-
-		field.emplace_back(std::move(getRedisFieldKey(table, key1, key2)));
-		vals.emplace_back(str, slen);
-		opts.push_back("u");
-	}
+	TRY_PARSE_SQL_PB(LPMsg::DB_sql_data_list, msg->buff);
+	auto key = getRedisPlayerKey(msg->cid);
 
 	if (m_redis_mod->haveKey(key))
 	{
+		std::vector<std::string> field;
+		std::vector<std::string> optfield;
+		std::vector<std::string> vals;
+		std::vector<std::string> opts;
+
+		for (auto& val : pbMsg.datas())
+		{
+			auto fk = getRedisFieldKey(val.table(), val.keys());
+			if (val.opt() == DO_DELETE)
+			{
+				optfield.emplace_back(fk);
+				opts.emplace_back("d");
+			}
+			else
+			{
+				field.emplace_back(fk);
+				vals.emplace_back(val.data());
+				optfield.emplace_back(fk);
+				opts.emplace_back("u");
+			}
+		}
 		m_redis_mod->HMSet(key, field, vals);
-		m_redis_mod->HMSet("opt:" + key, field, opts);
-		m_redis_mod->SAdd(PLAYER_CHANGE, Loop::to_string(msg->pid));
+		m_redis_mod->HMSet("opt:" + key, optfield, opts);
+		m_redis_mod->SAdd(PLAYER_CHANGE, Loop::to_string(msg->cid));
 	}
 	else
 	{
-		for (size_t i = 0; i < field.size(); i++)
+		for (auto& val : pbMsg.datas())
 		{
-			auto table = getTableIndexFromKey(field[i]);
-			updatePlayerData(table, vals[i]);
+			if (val.opt() == DO_UPDATE || val.opt() == DO_INSTERT)
+				updatePlayerData(val.table(), val.data());
+			else
+				deletePlayerData(val.table(), val.data());
 		}
 	}
 }
@@ -286,7 +326,7 @@ void ExecuteMysqlModule::opDeletePlayerData(SqlOperation * msg)
 {
 	auto table = msg->buff->readInt32();
 	auto num = msg->buff->readInt32();
-	auto key = getRedisPlayerKey(msg->pid);
+	auto key = getRedisPlayerKey(msg->cid);
 
 	std::vector<std::string> field;
 	std::vector<std::string> vals;
@@ -307,7 +347,7 @@ void ExecuteMysqlModule::opDeletePlayerData(SqlOperation * msg)
 	if (m_redis_mod->haveKey(key))
 	{
 		m_redis_mod->HMSet("opt:" + key, field,opts);
-		m_redis_mod->SAdd(PLAYER_CHANGE, Loop::to_string(msg->pid));
+		m_redis_mod->SAdd(PLAYER_CHANGE, Loop::to_string(msg->cid));
 	}
 	else
 	{
@@ -321,7 +361,12 @@ void ExecuteMysqlModule::opDeletePlayerData(SqlOperation * msg)
 
 void ExecuteMysqlModule::opLoadPlayerData(SqlOperation * msg)
 {
-	auto key = getRedisPlayerKey(msg->pid);
+	auto key = getRedisPlayerKey(msg->cid);
+
+	if (m_redis_mod->haveKey("opt:" + key))
+	{
+		savePlayerDataToDb(msg->cid);
+	}
 
 	LPMsg::DB_player_all_data playerdata;
 	std::map<std::string, std::string> hval;
@@ -329,7 +374,7 @@ void ExecuteMysqlModule::opLoadPlayerData(SqlOperation * msg)
 
 	if (hval.empty())
 	{
-		loadPlayerDataFromDb(playerdata, hval,msg->pid);
+		loadPlayerDataFromDb(playerdata, hval,msg->cid);
 		m_redis_mod->HMSet(key, hval);
 	}
 	else
@@ -339,7 +384,7 @@ void ExecuteMysqlModule::opLoadPlayerData(SqlOperation * msg)
 
 	auto opt = GET_LAYER_MSG(SqlOperation);
 	opt->ackId = msg->ackId;
-	opt->path = std::move(msg->path);
+	opt->server_sock = msg->server_sock;
 	opt->buff = GET_LAYER_MSG(BuffBlock);
 	opt->buff->makeRoom(playerdata.ByteSize());
 	opt->buff->writeProto(playerdata);
@@ -347,9 +392,9 @@ void ExecuteMysqlModule::opLoadPlayerData(SqlOperation * msg)
 }
 void ExecuteMysqlModule::opSearchPlayer(SqlOperation * msg)
 {
-	auto pid = msg->buff->readInt64();
+	auto cid = msg->buff->readInt32();
 
-	auto key = getRedisPlayerKey(pid);
+	auto key = getRedisPlayerKey(cid);
 	auto fkey = getRedisFieldKey(TAB_lp_player);
 	std::string redisdata;
 	m_redis_mod->HGet(key, fkey, redisdata);
@@ -358,7 +403,7 @@ void ExecuteMysqlModule::opSearchPlayer(SqlOperation * msg)
 
 	if (redisdata.empty())
 	{
-		select_lp_player(player, m_mysqlModule, SQL_BUFF,pid);
+		select_lp_player(player, m_mysqlModule, SQL_BUFF,cid);
 	}
 	else
 	{
@@ -372,28 +417,17 @@ void ExecuteMysqlModule::opSearchPlayer(SqlOperation * msg)
 
 void ExecuteMysqlModule::opSavePlayerToDB(SqlOperation * msg)
 {
-	savePlayerDataToDb(msg->pid);
+	savePlayerDataToDb(msg->cid);
 }
 //每行sql数据作为每个hashval
-void ExecuteMysqlModule::loadPlayerDataFromDb(LPMsg::DB_player_all_data & pdata, std::map<std::string, std::string>& hval, int64_t& pid)
+void ExecuteMysqlModule::loadPlayerDataFromDb(LPMsg::DB_player_all_data & pdata, std::map<std::string, std::string>& hval, int32_t& cid)
 {
 	{
 		auto pmsg = pdata.mutable_player();
-		select_lp_player(*pmsg, m_mysqlModule, SQL_BUFF, pid);
+		select_lp_player(*pmsg, m_mysqlModule, SQL_BUFF, cid);
 		auto k = getRedisFieldKey(TAB_lp_player);
 		hval[k] = std::move(pmsg->SerializeAsString());
 	}
-	{
-		auto pmsg = pdata.mutable_relation();
-		select_lp_player_relation(*pmsg, m_mysqlModule, SQL_BUFF, pid);
-
-		for (auto it:*pmsg)
-		{
-			auto k = getRedisFieldKey(TAB_lp_player_relation, Loop::to_string(it.rpid()));
-			hval[k] = std::move(it.SerializeAsString());
-		}
-	}
-
 }
 
 void ExecuteMysqlModule::loadPlayerDataFromRedis(LPMsg::DB_player_all_data & pdata, std::map<std::string, std::string>& hval)
@@ -409,26 +443,20 @@ void ExecuteMysqlModule::loadPlayerDataFromRedis(LPMsg::DB_player_all_data & pda
 			auto pmsg = pdata.mutable_player();
 			pmsg->ParseFromString(it.second);
 		}
-			break;
-		case TAB_lp_player_relation:
-		{
-			auto pmsg = pdata.mutable_relation();
-			pmsg->Add()->ParseFromString(it.second);
-			break;
-		}
+		break;
 		default:
 			break;
 		}
 	}
 }
 
-void ExecuteMysqlModule::savePlayerDataToDb(int64_t pid)
+void ExecuteMysqlModule::savePlayerDataToDb(int32_t cid)
 {
-	auto key = getRedisPlayerKey(pid);
+	auto key = getRedisPlayerKey(cid);
 
 	std::map<std::string, std::string> pdata;
 	std::map<std::string, std::string> opts;
-	RedisModule::vec_str dels;
+	vec_str dels;
 
 	m_redis_mod->HGetAll(key, pdata);
 	m_redis_mod->HGetAll("opt:" + key, opts);
@@ -463,7 +491,7 @@ void ExecuteMysqlModule::savePlayerDataToDb(int64_t pid)
 		m_redis_mod->HMDel(key, dels);
 
 	m_redis_mod->Del("opt:" + key);
-	m_redis_mod->SRem(PLAYER_CHANGE, Loop::to_string(pid));
+	m_redis_mod->SRem(PLAYER_CHANGE, Loop::to_string(cid));
 }
 
 #define PB_FROM_STR(t,s) t pb; \
@@ -480,15 +508,9 @@ void ExecuteMysqlModule::updatePlayerData(int32_t table, const std::string & str
 	case TAB_lp_player:
 	{
 		PB_FROM_STR(LPMsg::DB_player, str);
-		insert_lp_player(pb, m_mysqlModule, SQL_BUFF);
+		update_lp_player(pb, m_mysqlModule, SQL_BUFF);
 	}
-		break;
-	case TAB_lp_player_relation:
-	{
-		PB_FROM_STR(LPMsg::DB_player_relation, str);
-		insert_lp_player_relation(pb, m_mysqlModule, SQL_BUFF);
-		break;
-	}
+	break;
 	default:
 		break;
 	}
@@ -498,12 +520,6 @@ void ExecuteMysqlModule::deletePlayerData(int32_t table, const std::string & str
 {
 	switch (table)
 	{
-	case TAB_lp_player_relation:
-	{
-		PB_FROM_STR(LPMsg::DB_player_relation, str);
-		delete_lp_player_relation(pb, m_mysqlModule, SQL_BUFF);
-		break;
-	}
 	default:
 		break;
 	}

@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "proto"
+		},
+		{
+			"path": "_out/Debug/commonconf"
 		}
 	],
 	"settings": {

@@ -5,13 +5,17 @@ local _smsg = SERVER_MSG
 local _msg_f = MSG_FUNC
 local _log = LOG
 local _pack = PACK
+local _pbencode = pb.encode
 
 function db_mgr_module:init()
 
 	self._ply_mgr = MOD.player_mgr_module
 	self._db_ack = {}
 
-	_msg_f.bind_mod_pack_func(_smsg.N_TROM_DB_PLAYER_OPERATION,self,self.onDbPlayerOperation)
+end
+
+function db_mgr_module:init_func()
+	
 end
 
 function db_mgr_module:bind_player_db_ack_func(opt,f)
@@ -38,12 +42,22 @@ function db_mgr_module:bind_player_db_ack_proto_func(opt,f,proto)
 	end
 end
 
-function db_mgr_module:doPlayerDB_Opt(pid,opt,pack)
+function db_mgr_module:doPlayerDB_Opt(pid,opt,pack,ackid)
+	ackid = ackid or 0
 	local buff = nil
 	if pack then
 		buff = pack:buff()
 	end
-	_func.CallCFunc(_lc.LTOC_DO_SQL_OPERATION,pid,opt,buff,_smsg.N_TROM_DB_PLAYER_OPERATION)
+	_func.CallCFunc(_lc.LTOC_DO_SQL_OPERATION,pid,opt,buff,ackid)
+end
+
+function db_mgr_module:sendDbOptProto(cid,opt,pbmsg,pbname,ackid)
+	ackid = ackid or 0
+	local buf = _pbencode("LPMsg."..pbname,pbmsg)
+	if buf == nil then
+		return
+	end
+	_func.CallCFunc(_lc.LTOC_DO_SQL_OPERATION_PROTO,cid,opt,buf,ackid)
 end
 
 function db_mgr_module:dbUpdatePlayerData(pid,tabindex,pb,proto,k1,k2)

@@ -48,15 +48,15 @@ void NetModule::SetBind(const int & port, uv_loop_t * loop, int32_t role)
 void NetModule::StartListen()
 {
 	struct sockaddr_in addr;
-	ASSERT(0 == uv_ip4_addr("0.0.0.0", m_port, &addr));
+	ASSERT(0 == uv_ip4_addr("0.0.0.0", m_port, &addr),"");
 	int r;
 	r = uv_tcp_init(m_uvloop, &m_hand);
-	ASSERT(r == 0);
+	ASSERT(r == 0,uv_strerror(r));
 	r = uv_tcp_bind(&m_hand, (const struct sockaddr*) &addr, 0);
-	ASSERT(r == 0);
+	ASSERT(r == 0, uv_strerror(r));
 	m_hand.data = this;
 	r = uv_listen((uv_stream_t*)&m_hand, SOMAXCONN, Connection_cb);
-	ASSERT(r == 0);
+	ASSERT(r == 0, uv_strerror(r));
 	LP_INFO << "start listen :"<< getLocalIp() << " port:" << m_port;
 }
 
@@ -119,7 +119,10 @@ void NetModule::Connected(uv_tcp_t* conn, bool client)
 	}
 
 	int r = uv_read_start((uv_stream_t*)conn, read_alloc, after_read);
-	ASSERT(r == 0);
+	if (r != 0)
+	{
+		uv_close((uv_handle_t*)conn, NetModule::OnActiveClose);
+	}
 }
 
 void NetModule::read_alloc(uv_handle_t * client, size_t suggested_size, uv_buf_t * buf)
@@ -280,17 +283,17 @@ void NetModule::OnConnectServer(NetServer * ser)
 	connect_req->data = this;
 	int r;
 
-	ASSERT(0 == uv_ip4_addr(ser->ip.c_str(), ser->port, &addr));
+	ASSERT(0 == uv_ip4_addr(ser->ip.c_str(), ser->port, &addr),"");
 
 	r = uv_tcp_init(m_uvloop, client);
-	ASSERT(r == 0);
+	ASSERT(r == 0,uv_strerror(r));
 
 	auto tmpser = GET_LAYER_MSG(NetServer);
 	*tmpser = *ser;
 	client->data = tmpser;
 
 	r = uv_tcp_connect(connect_req, client, (const struct sockaddr*) &addr, ConnectServerBack);
-	ASSERT(r == 0);
+	ASSERT(r == 0, uv_strerror(r));
 }
 
 void NetModule::ConnectServerBack(uv_connect_t * req, int status)

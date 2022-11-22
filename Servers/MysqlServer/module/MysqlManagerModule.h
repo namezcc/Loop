@@ -7,6 +7,8 @@
 class MysqlModule;
 class MsgModule;
 class TransMsgModule;
+class NetObjectModule;
+class EventModule;
 
 struct LMsgSqlParam;
 struct SqlOperation;
@@ -41,18 +43,20 @@ private:
 	virtual void AfterInit() override;
 	virtual void BeforExecute() override;
 
-	void OnGetAccountInfo(NetMsg* msg, c_pull& pull, SHARE<BaseCoro>& coro);
-	void onSqlOperation(NetServerMsg* msg);
+	void onServerConnect(SHARE<NetServer>& ser);
+
+	void onSqlOperation(NetMsg* msg);
 	void onSqlOperationRes(SqlOperation* msg);
-	int32_t getSendLayerId(int64_t uid);
+	int32_t getSendLayerId(int32_t cid);
 
 protected:
 	MysqlModule* m_mysqlmodule;
 	MsgModule*	m_msgmodule;
 	TransMsgModule* m_transModule;
+	NetObjectModule* m_net_module;
+	EventModule* m_event_mod;
 
 	char m_sql_buff[4096];
-	ServerNode m_lock_server;
 
 	uint32_t m_index;
 	int m_sqlLayerNum;

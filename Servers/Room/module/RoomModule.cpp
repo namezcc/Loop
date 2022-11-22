@@ -8,6 +8,8 @@
 
 #include "help_function.h"
 
+#include "protoPB/server/server_msgid.pb.h"
+
 RoomModuloe::RoomModuloe(BaseLayer * l) :BaseModule(l)
 {
 }
@@ -34,32 +36,37 @@ void RoomModuloe::Init()
 	m_net_mod = GET_MODULE(NetObjectModule);
 	m_event_mod = GET_MODULE(EventModule);
 
-
-	m_event_mod->AddEventCall(E_SERVER_CONNECT, BIND_EVENT(onServerConnect, SHARE<NetServer>&));
-
 	m_room_state = SBS_NORMAL;
 
+	m_event_mod->AddEventCall(E_SERVER_CLOSE, BIND_EVENT(onServerClose, SHARE<NetServer>&));
+	m_msg_mod->AddMsgCall(LPMsg::IM_ROOM_REG_DBID, BIND_NETMSG(onRegDbidToSerid));
+	
 	m_db_path.push_back(*GetLayer()->GetServer());
 	m_db_path.push_back(ServerNode{ SERVER_TYPE::LOOP_PROXY_DB,0 });
 	m_db_path.push_back(ServerNode{ SERVER_TYPE::LOOP_MYSQL,1 });
 }
 
-void RoomModuloe::onServerConnect(SHARE<NetServer>& ser)
+void RoomModuloe::onServerClose(SHARE<NetServer>& ser)
 {
-	if (ser->type == LOOP_ROOM_MANAGER)
+	if (ser->type == LOOP_MYSQL)
 	{
-		sendRoomMgrPlayerNum();
+		for (auto it = m_dbid_to_dbser.begin();it!=m_dbid_to_dbser.end();it++)
+		{
+			if (it->second == ser->serid)
+			{
+				m_dbid_to_dbser.erase(it);
+				return;
+			}
+		}
 	}
 }
 
-void RoomModuloe::onServerClose(SHARE<NetServer>& ser)
+void RoomModuloe::onRegDbidToSerid(NetMsg * msg)
 {
-
-}
-
-void RoomModuloe::sendRoomMgrPlayerNum()
-{
-
+	auto pack = msg->m_buff;
+	auto dbid = pack->readInt32();
+	auto serid = pack->readInt32();
+	m_dbid_to_dbser[dbid] = serid;
 }
 
 ServerPath & RoomModuloe::getDbPath(int64_t uid)
@@ -70,28 +77,70 @@ ServerPath & RoomModuloe::getDbPath(int64_t uid)
 	return m_db_path;
 }
 
-void RoomModuloe::doSqlOperation(int64_t uid, int32_t opt, const google::protobuf::Message & pb, int32_t ackId)
+int32_t RoomModuloe::getDbserid(int32_t cid)
 {
+	auto dbid = getDbidFromCid32(cid);
+	auto it = m_dbid_to_dbser.find(dbid);
+	if(it == m_dbid_to_dbser.end())
+		return 0;
+	return it->second;
+}
+
+void RoomModuloe::doSqlOperation(int32_t cid, int32_t opt, const google::protobuf::Message & pb, int32_t ackId)
+{
+	auto serid = getDbserid(cid);
+	if (serid <= 0)
+	{
+		LP_ERROR << "get dbserid error cid:" << cid;
+		return;
+	}
+
 	auto pack = GET_LAYER_MSG(BuffBlock);
 	pack->makeRoom(pb.ByteSize() + sizeof(int32_t) * 2 + sizeof(int64_t));
 	pack->writeInt32(opt);
 	pack->writeInt32(ackId);
-	pack->writeInt64(uid);
+	pack->writeInt32(cid);
 	pack->write(pb);
 
-	m_trans_mod->SendToServer(getDbPath(uid), N_TDB_SQL_OPERATION, pack);
+	m_trans_mod->SendToServer(LOOP_MYSQL, serid, LPMsg::IM_DB_SQL_OPERATION, pack);
 }
 
-void RoomModuloe::doSqlOperation(int64_t uid, int32_t opt, BuffBlock * buf, int32_t ackId)
+void RoomModuloe::doSqlOperation(int32_t cid, int32_t opt, const char * buf, int32_t buflen, int32_t ackId)
 {
+	auto serid = getDbserid(cid);
+	if (serid <= 0)
+	{
+		LP_ERROR << "get dbserid error cid:" << cid;
+		return;
+	}
+
+	auto pack = GET_LAYER_MSG(BuffBlock);
+	pack->makeRoom(sizeof(int32_t) * 3 + buflen);
+	pack->writeInt32(opt);
+	pack->writeInt32(ackId);
+	pack->writeInt32(cid);
+	pack->writeBuff(buf, buflen);
+
+	m_trans_mod->SendToServer(LOOP_MYSQL, serid, LPMsg::IM_DB_SQL_OPERATION, pack);
+}
+
+void RoomModuloe::doSqlOperation(int32_t cid, int32_t opt, BuffBlock * buf, int32_t ackId)
+{
+	auto serid = getDbserid(cid);
+	if (serid <= 0)
+	{
+		LP_ERROR << "get dbserid error cid:" << cid;
+		return;
+	}
+
 	auto pack = GET_LAYER_MSG(BuffBlock);
 	pack->makeRoom(sizeof(int32_t) * 2 + sizeof(int64_t));
 	pack->writeInt32(opt);
 	pack->writeInt32(ackId);
-	pack->writeInt64(uid);
+	pack->writeInt32(cid);
 	pack->m_next = buf;
 
-	m_trans_mod->SendToServer(getDbPath(uid), N_TDB_SQL_OPERATION, pack);
+	m_trans_mod->SendToServer(LOOP_MYSQL, serid, LPMsg::IM_DB_SQL_OPERATION, pack);
 }
 
 void RoomModuloe::updatePlayerData(int64_t pid, const google::protobuf::Message & pb, int32_t table, std::string key1, std::string key2)
@@ -108,7 +157,7 @@ void RoomModuloe::updatePlayerData(int64_t pid, const google::protobuf::Message 
 	pack->writeString(key2);
 	pack->writeString(pb);
 
-	m_trans_mod->SendToServer(getDbPath(pid), N_TDB_SQL_OPERATION, pack);
+	m_trans_mod->SendToServer(getDbPath(pid), LPMsg::IM_DB_SQL_OPERATION, pack);
 }
 
 void RoomModuloe::updatePlayerData(int64_t pid, const std::string & pb, int32_t table, std::string key1, std::string key2)
@@ -125,7 +174,7 @@ void RoomModuloe::updatePlayerData(int64_t pid, const std::string & pb, int32_t 
 	pack->writeString(key2);
 	pack->writeString(pb);
 
-	m_trans_mod->SendToServer(getDbPath(pid), N_TDB_SQL_OPERATION, pack);
+	m_trans_mod->SendToServer(getDbPath(pid), LPMsg::IM_DB_SQL_OPERATION, pack);
 }
 
 void RoomModuloe::deletePlayerData(int64_t pid, const std::string & pb, int32_t table, std::string key1, std::string key2)
@@ -142,7 +191,7 @@ void RoomModuloe::deletePlayerData(int64_t pid, const std::string & pb, int32_t 
 	pack->writeString(key2);
 	pack->writeString(pb);
 
-	m_trans_mod->SendToServer(getDbPath(pid), N_TDB_SQL_OPERATION, pack);
+	m_trans_mod->SendToServer(getDbPath(pid), LPMsg::IM_DB_SQL_OPERATION, pack);
 }
 
 void RoomModuloe::deletePlayerData(int64_t uid, int32_t rid, int32_t table, int32_t key1, int32_t key2)
@@ -159,7 +208,7 @@ void RoomModuloe::deletePlayerData(int64_t uid, int32_t rid, int32_t table, int3
 	pack->writeInt32(key1);
 	pack->writeInt32(key2);
 
-	m_trans_mod->SendToServer(getDbPath(uid), N_TDB_SQL_OPERATION, pack);
+	m_trans_mod->SendToServer(getDbPath(uid), LPMsg::IM_DB_SQL_OPERATION, pack);
 }
 
 void RoomModuloe::updatePlayerData(int64_t uid, int32_t rid, int32_t table, std::vector<int32Pair>& keys, std::vector<gpb::Message>& pb)
@@ -189,7 +238,7 @@ void RoomModuloe::updatePlayerData(int64_t uid, int32_t rid, int32_t table, std:
 		pack->writeString(pb[i]);
 	}
 
-	m_trans_mod->SendToServer(getDbPath(uid), N_TDB_SQL_OPERATION, pack);
+	m_trans_mod->SendToServer(getDbPath(uid), LPMsg::IM_DB_SQL_OPERATION, pack);
 }
 
 void RoomModuloe::deletePlayerData(int64_t uid, int32_t rid, int32_t table, std::vector<int32Pair>& keys)
@@ -212,5 +261,5 @@ void RoomModuloe::deletePlayerData(int64_t uid, int32_t rid, int32_t table, std:
 		pack->writeInt32(keys[i].second);
 	}
 
-	m_trans_mod->SendToServer(getDbPath(uid), N_TDB_SQL_OPERATION, pack);
+	m_trans_mod->SendToServer(getDbPath(uid), LPMsg::IM_DB_SQL_OPERATION, pack);
 }

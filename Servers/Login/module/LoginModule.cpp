@@ -31,7 +31,6 @@ void LoginModule::Init()
 {
 	m_msgModule= GET_MODULE(MsgModule);
 	m_netModule= GET_MODULE(NetObjectModule);
-	m_sendProxyDb = GET_MODULE(SendProxyDbModule);
 	m_redisModule = GET_MODULE(RedisModule);
 	m_roomModule = GET_MODULE(RoomStateModule);
 	m_transModule = GET_MODULE(TransMsgModule);
@@ -41,8 +40,8 @@ void LoginModule::Init()
 
 	m_msgModule->AddAsynMsgCall(LPMsg::CM_LOGIN,BIND_ASYN_CALL(OnClientLogin));
 
-	m_msgModule->AddMsgCall(501, BIND_NETMSG(OnTestPing));
-	m_msgModule->AddAsynMsgCall(500, BIND_ASYN_NETMSG(onTestAsyncPing));
+	//m_msgModule->AddMsgCall(501, BIND_NETMSG(OnTestPing));
+	//m_msgModule->AddAsynMsgCall(500, BIND_ASYN_NETMSG(onTestAsyncPing));
 
 	m_eventModule->AddEventCall(E_SOCKEK_CONNECT,BIND_EVENT(OnClientConnect,int32_t));
 

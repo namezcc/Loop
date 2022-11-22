@@ -6,7 +6,7 @@ extern "C" {
 }
 #include <iostream>
 
-LuaState::LuaState():m_module(NULL)
+LuaState::LuaState():m_module(NULL), m_common_ref(0), m_deal_error_ref(0)
 {
 	m_L = luaL_newstate();
 	luaL_openlibs(m_L);
@@ -16,9 +16,6 @@ LuaState::LuaState():m_module(NULL)
 	RegistCallFunc();
 	PushSelf();
 	lua_settop(m_L, 0);
-
-	m_dt = new LuaVInt64();
-	m_update_arg.m_arg.push_back(m_dt);
 }
 
 LuaState::~LuaState()
@@ -26,22 +23,20 @@ LuaState::~LuaState()
 	lua_close(m_L);
 }
 
-void LuaState::Run(int64_t dt)
-{
-	m_dt->m_val = dt;
-	for (auto& ref: m_loopRef)
-	{
-		callRegistFunc(ref, m_update_arg);
-		//CallRegistFunc(ref,dt);
-	}
-}
-
 void LuaState::RunScript(const std::string & file)
 {
-	auto status = luaL_dofile(m_L, file.c_str());
+	lua_rawgeti(m_L, LUA_REGISTRYINDEX, m_errIndex);
+	int status = luaL_loadfile(m_L, file.c_str());
+	if (status)
+	{
+		report(m_L);
+		return;
+	}
+
+	status = lua_pcall(m_L, 0, LUA_MULTRET, lua_gettop(m_L) - 1);
 	if (status != 0)
 	{
-		report(m_L, status);
+		report(m_L);
 	}
 }
 
@@ -50,7 +45,7 @@ void LuaState::RunString(const std::string & trunk)
 	auto status = luaL_dostring(m_L, trunk.c_str());
 	if (status != 0)
 	{
-		report(m_L, status);
+		report(m_L);
 	}
 }
 
@@ -64,6 +59,18 @@ void LuaState::initLuaCommonFunc(const std::string & name)
 		return;
 	}
 	m_common_ref = luaL_ref(m_L, LUA_REGISTRYINDEX);
+}
+
+void LuaState::setDealErrorFunc(const std::string & name)
+{
+	ExitLuaClearStack _call(m_L);
+	lua_getglobal(m_L, name.c_str());
+	if (!lua_isfunction(m_L, -1))
+	{
+		LP_ERROR << "initLuaCommonFunc error can not find func " << name;
+		return;
+	}
+	m_deal_error_ref = luaL_ref(m_L, LUA_REGISTRYINDEX);
 }
 
 void LuaState::initLToCIndex(uint32_t _began, uint32_t _end)
@@ -125,7 +132,7 @@ bool LuaState::callLuaFunc(int32_t findex, LuaArgs & arg)
 	return callRegistFunc(m_cTolRef[findex - m_cToLBegIndex], arg);
 }
 
-bool LuaState::callRegistFunc(int32_t ref, LuaArgs & arg)
+bool LuaState::callRegistFunc(int32_t ref, LuaArgs & arg, bool errcall)
 {
 	ExitLuaClearStack _call(m_L);
 
@@ -144,6 +151,11 @@ bool LuaState::callRegistFunc(int32_t ref, LuaArgs & arg)
 	if (lua_pcall(m_L, anum, rnum, es) != LUA_OK)
 	{
 		PrintError();
+		if (errcall && m_deal_error_ref != 0)
+		{
+			LuaArgs earg;
+			callRegistFunc(m_deal_error_ref, earg, false);
+		}
 		return false;
 	}
 	for (int32_t i = 0; i < rnum; i++)
@@ -206,13 +218,107 @@ int LuaState::open_callFunc(lua_State* L)
 	return 1;
 }
 
+std::string errparam;
+char tracebuff[4096] = { 0 };
+
+static int l_traceback(lua_State *L) {
+	size_t msgsz;
+	const char *msg = luaL_checklstring(L, 1, &msgsz);
+	int level = (int)luaL_optinteger(L, 2, 1);
+	int max = (int)luaL_optinteger(L, 3, 20) + level;
+
+	lua_Debug ar;
+	int top = lua_gettop(L);
+	if (msg)
+		lua_pushfstring(L, "%s\n", msg);
+	luaL_checkstack(L, 10, NULL);
+	lua_pushliteral(L, "STACK TRACEBACK:");
+	int n;
+	const char *name;
+
+	errparam.clear();
+
+	while (lua_getstack(L, level++, &ar)) {
+		lua_getinfo(L, "Slntu", &ar);
+		lua_pushfstring(L, "\n=> %s:%d in ", ar.short_src, ar.currentline);
+		if (ar.name)
+			lua_pushstring(L, ar.name);
+		else if (ar.what[0] == 'm')
+			lua_pushliteral(L, "mainchunk");
+		else
+			lua_pushliteral(L, "?");
+		if (ar.istailcall)
+			lua_pushliteral(L, "\n(...tail calls...)");
+		lua_concat(L, lua_gettop(L) - top);     // <str>
+
+		errparam.append("\n--\n");
+		// varargs
+		n = -1;
+		while ((name = lua_getlocal(L, &ar, n--)) != NULL) {    // <str|value>
+
+			sprintf(tracebuff, "\n    %s = ", name);
+			errparam.append(tracebuff);
+			size_t plen = 0;
+			auto pam = luaL_tolstring(L, -1, &plen);
+			errparam.append(pam, plen <= 1024 ? plen : 1024);
+
+			//lua_pushfstring(L, "\n    %s = ", name);        // <str|value|name>
+			//luaL_tolstring(L, -2, NULL);    // <str|value|name|valstr>
+			//lua_remove(L, -3);  // <str|name|valstr>
+			//lua_concat(L, lua_gettop(L) - top);     // <str>
+			lua_pop(L, 2);
+		}
+
+		// arg and local
+		n = 1;
+		while ((name = lua_getlocal(L, &ar, n++)) != NULL) {    // <str|value>
+			if (name[0] == '(') {
+				lua_pop(L, 1);      // <str>
+			}
+			else {
+				int vt = lua_type(L, -1);
+				if (vt == LUA_TTABLE || vt == LUA_TFUNCTION)
+				{
+					lua_pop(L, 1);
+					continue;
+				}
+				if (n <= ar.nparams + 1)
+				{
+					//lua_pushfstring(L, "\n    param %s = ", name);      // <str|value|name>
+					sprintf(tracebuff, "\n    param %s = ", name);
+					errparam.append(tracebuff);
+				}
+				else
+				{
+					//lua_pushfstring(L, "\n    local %s = ", name);      // <str|value|name>
+					sprintf(tracebuff, "\n    local %s = ", name);
+					errparam.append(tracebuff);
+				}
+				size_t plen = 0;
+				auto pam = luaL_tolstring(L, -1, &plen);
+				errparam.append(pam, plen <= 1024 ? plen : 1024);
+				//luaL_tolstring(L, -2, NULL);    // <str|value|name|valstr>
+				//lua_remove(L, -3);  // <str|name|valstr>
+				//lua_concat(L, lua_gettop(L) - top);     // <str>
+				lua_pop(L, 2);
+			}
+		}
+
+		if (level > max)
+			break;
+	}
+	lua_concat(L, lua_gettop(L) - top);
+	return 1;
+}
+
 int LuaState::traceback(lua_State * L)
 {
-	const char *msg = lua_tostring(L, -1);
+	/*const char *msg = lua_tostring(L, -1);
 	if (msg)
 		luaL_traceback(L, L, msg, 1);
 	else
-		lua_pushliteral(L, "no message");
+		lua_pushliteral(L, "no message");*/
+	l_traceback(L);
 	return 1;
 }
 
@@ -517,11 +623,33 @@ void LuaState::printLuaFuncStack(lua_State * L, const char * msg)
 	lua_pop(L, 1);
 }
 
+void LuaState::l_message(const char * msg)
+{
+	LP_ERROR_SP << "Lua error: " << msg;
+	if (errparam.size() > 0)
+	{
+		LP_ERROR_SP << "Lua error param: " << errparam;
+	}
+
+	if (m_error_log_func)
+	{
+		m_error_log_func(std::string(msg), errparam.data());
+	}
+	errparam.clear();
+}
+
 void LuaState::PrintError()
 {
 	LuaVString str;
 	str.pullValue(m_L, -1);
 	LP_ERROR_SP << "Lua error:" << str.m_val;
+	LP_ERROR_SP << "Lua error param:" << errparam;
+
+	if (m_error_log_func)
+	{
+		m_error_log_func(str.m_val, errparam);
+	}
+	errparam.clear();
 }
 
 int LuaState::callFunction2(lua_State * L)

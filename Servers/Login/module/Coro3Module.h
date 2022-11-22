@@ -5,7 +5,6 @@
 
 class MsgModule;
 class ScheduleModule;
-class SendProxyDbModule;
 
 template<typename T>
 struct DiePrint
@@ -33,7 +32,6 @@ protected:
 private:
 	MsgModule * m_msgModule;
 	ScheduleModule* m_schedule;
-	SendProxyDbModule* m_sendProxyDb;
 };
 
 #endif

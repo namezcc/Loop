@@ -1,115 +1,82 @@
 local _msg_func = MSG_FUNC
 
 local player_mgr_module = {}
-local ply_tab = ALL_PLAYER
-local sock_tab = PLAYER_SOCK
+local _player_table = ALL_PLAYER
+local _player_gate = PLAYER_GATE
 local lfunc = LFUNC
 local _log = LOG
 local _pack = PACK
 local _room_ser = ROOM_MGR_SERVER
 local _SMSG_ID = SERVER_MSG
+local _sm = SM
+local _cm = CM
+
+local _pb = pb
+
+local _net = nil
+local _db = nil
 
 function player_mgr_module:init()
-	
-	self._net = MOD.net_mgr_module
-	self._db = MOD.db_mgr_module
+	_net = MOD.net_mgr_module
+	_db = MOD.db_mgr_module
+	self._player = {}
 
-	self._player_tab = {}
 
-	_msg_func.bind_mod_func(CTOL.CTOL_SET_PLAYER_SOCK,self,self.onSetPlayerSock)
+end
+
+function player_mgr_module:init_func()
+	_msg_func.bind_mod_func(CTOL.CTOL_SET_PLAYER_GATE_INFO,self,self.onSetPlayerGate)
 	_msg_func.bind_mod_func(CTOL.CTOL_PLAYER_OFFLINE,self,self.onPlayerOffline)
-	
-	_msg_func.bind_mod_proto_func(SERVER_MSG.N_TROM_LOAD_ROLE_DATA,self,self.onLoadPlayerData,"DB_player_all_data")
+	_msg_func.bind_mod_proto_func(SERVER_MSG.IM_ROOM_LOAD_ROLE_INFO,self,self.onLoadPlayerData,"DB_player_all_data")
+end
 
-
+function player_mgr_module:onSetPlayerGate(uid,gateid)
+	_player_gate[uid] = gateid
 end
 
 function player_mgr_module:onLoadPlayerData(pdata)
 	local uid = pdata.player.uid
+	local cid = pdata.player.cid
+	local gateid = _player_gate[uid]
+	_log.info("player load data uid:%d cid:%d gateid:%d",uid,cid,gateid)
 
-	local sock = self:getPlayerSock(uid)
-	if sock == nil then
-		_log.error("player not have sock uid:",uid)
+	local player = {}
+	player.uid = uid
+	player.cid = cid
+	player.gateid = gateid
+
+	setPlayerImpFunc(player)
+
+	player:initDB(pdata)
+	player:afterInit()
+
+	local sendmsg = {}
+	player:sendClienMsg(sendmsg)
+	player:sendMsg(_sm.SM_PLAYER_ALL_INFO,sendmsg,"SmPlayerAllMsg")
+
+	_player_table[uid] = player
+	self._player[cid] = player
+end
+
+function player_mgr_module:onPlayerOffline(uid)
+	local player = self:getPlayerByUid(uid)
+	if player == nil then
 		return
 	end
-
-	_log.info("player load data uid:%d",uid)
-
-	local ply = {}
-	ply.uid = pdata.player.uid
-	ply.pid = pdata.player.pid
-	ply.sock = sock
-	ply.player = table.clone(pdata.player)
-
-	setPlayerImpFunc(ply)
-
-	ply:initDB(pdata)
-
-	ply_tab[sock] = ply
-	self._player_tab[ply.pid] = ply
-
-	self:sendPlayerOnline(ply.pid)
+	player:logout()
+	_player_table[uid] = nil
+	self._player[player.cid] = nil
+	_log.info("player offline uid:%d cid:%d",uid,player.cid)
+	-- 保存数据库
+	_db:doPlayerDB_Opt(player.cid,SQL_OPRATION.SOP_SAVE_PlAYER_TO_DB)
 end
 
-function player_mgr_module:onSetPlayerSock(uid,sock)
-	if sock_tab[uid] ~= nil then
-		_log.warn("old sock not nil uid:%d",uid)
-	end
-
-	_log.info("set player sock uid: %d,sock:%d",uid,sock)
-
-	sock_tab[uid] = sock
-end
-
-function player_mgr_module:onPlayerOffline(uid,sock)
-	sock_tab[uid] = nil
-
-	local pack = _pack.buffpack()
-	pack:writeint64(uid)
-
-	local player = self:getPlayerBySock(sock)
-	if player then
-
-		player:logout()
-
-		pack:writeint64(player.pid)
-		ply_tab[sock] = nil
-		self._player_tab[player.pid] = nil
-		-- 保存数据库
-		self._db:doPlayerDB_Opt(player.pid,SQL_OPRATION.SOP_SAVE_PlAYER_TO_DB)
-	else
-		pack:writeint64(0)
-	end
-
-	self._net:sendToServer(_room_ser,_SMSG_ID.N_TRMM_PLAYER_LOGOUT,pack)
-end
-
-function player_mgr_module:getPlayerSock(uid)
-	return sock_tab[uid]
+function player_mgr_module:getPlayerByCid(cid)
+	return self._player[cid]
 end
 
 function player_mgr_module:getPlayerByUid(uid)
-	local sock = sock_tab[uid]
-	if sock then
-		return ply_tab[sock]
-	end
-end
-
-function player_mgr_module:getPlayerByPid(pid)
-	return self._player_tab[pid]
-end
-
-function player_mgr_module:getPlayerBySock(sock)
-	return ply_tab[sock]
-end
-
-function player_mgr_module:sendPlayerOnline(pid)
-	local buff = _pack.buffpack()
-
-	buff:writeint32(1)
-	buff:writeint64(pid)
-
-	self._net:sendToServer(_room_ser,_SMSG_ID.N_TRMM_PLAYER_ONLINE,buff)
+	return _player_table[uid]
 end
 
 return player_mgr_module

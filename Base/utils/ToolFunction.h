@@ -21,7 +21,7 @@ struct CoroTool
 std::string getLocalIp();
 
 template<typename T>
-int32_t randWeightPair(const std::vector<std::pair<int32_t, T>>& vec)
+size_t randWeightPair(const std::vector<std::pair<int32_t, T>>& vec)
 {
 	auto rval = rand() % vec[vec.size() - 1].first;
 	for (size_t i = 0; i < vec.size(); i++)

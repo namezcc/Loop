@@ -8,7 +8,7 @@ function LoginModule:init()
 	Event:AddEvent(EventID.ON_CONNECT_ROOM_SERVER,self.OnConnectRoom)
 
 	_Net:AddMsgCallBack(SMCODE.SM_LOGIN_RES,self.onLogin,"RoomInfo")
-	_Net:AddMsgCallBack(SMCODE.SM_SELF_ROLE_INFO,self.onGetRole,"RoleList")
+	_Net:AddMsgCallBack(SMCODE.SM_SELF_ROLE_INFO,self.onGetRole,"SmRoleList")
 	-- self._Net:AddMsgCallBack(SMCODE.SM_CLIENT_REPLY,self.OnCreateReply,self,"ServerMsgClientReply")
 	-- self._Net:AddMsgCallBack(3888,self.OnTest,self,"ClientMsgLogin")
 
@@ -17,6 +17,7 @@ function LoginModule:init()
     CMD:AddCmdCall(self.DoLogin,"l","login game")
 	CMD:AddCmdCall(self.DoConnectServer,"c","connect game")
 	CMD:AddCmdCall(self.DoEnterRoom,"room","enter room")
+	CMD:AddCmdCall(self.DoCloseConnect,"close","close connect")
 end
 
 function LoginModule:onNewPlayer(account)
@@ -42,10 +43,6 @@ function LoginModule:getCid()
     return self._cid
 end
 
-function LoginModule:getSid()
-    return ACCOUNT_SID[self._account] or 1
-end
-
 function LoginModule:genToken()
     return "testToken1"
 end
@@ -66,7 +63,7 @@ function LoginModule:DoConnectServer()
 		if AUTO_ENTER then
 			print("connect fail try after 3s...")
 		end
-		if AUTO_ENTER then
+		if AUTO_RECONNECT then
 			Schedule:AddIntervalTask(function()
 				self:DoConnectServer()
 			end,0,3000,1)
@@ -101,10 +98,10 @@ function LoginModule:OnConnectRoom(sock)
 
 	Schedule:AddIntervalTask(function()
 		local pb = {
-			uid = self._room.pid,
+			uid = self._room.uid,
 			key = self._room.key
 		}
-		self:SendGameData("ReqEnterRoom",CMCODE.CM_ENTER_ROOM,pb)
+		self:SendGameData("CmEnterGame",CMCODE.CM_ENTER_ROOM,pb)
 	end,0,500,1)
 end
 
@@ -170,7 +167,7 @@ end
 function LoginModule:CreateRole(_name)
     local pb = {
         name = _name or self._account,
-		pid = self._room.pid
+		cid = self._room.uid,
     }
     self:SendGameData("ReqCreateRole",CMCODE.CM_CREATE_ROLE,pb)
 end
@@ -188,11 +185,15 @@ function LoginModule:DoEnterRoom()
     _Net:Connect(self._room.ip,self._room.port,EventID.ON_CONNECT_ROOM_SERVER,self)
 end
 
+function LoginModule:DoCloseConnect()
+	_Net:CloseSock(self._sock)
+end
+
 function LoginModule:EnterGame(role)
     local pb = {
-        data = role.pid,
+        value = role.cid,
     }
-    self:SendGameData("propertyInt64",CMCODE.CM_ENTER_GAME,pb)
+    self:SendGameData("Int32Value",CMCODE.CM_ENTER_GAME,pb)
 	print(role.name," enter room ------->> ",self._room.ip,"   ",NOW_TICK - BEG_TIME," ms")
 end
 

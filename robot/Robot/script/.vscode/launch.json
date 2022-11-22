@@ -5,21 +5,14 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "start server",
+			"name": "start robot",
 			"type": "lua",
 			"request": "launch",
 			"stopOnEntry": false,
 			"cwd": "${workspaceFolder}/../",
-			"runtimeExecutable": "${workspaceFolder}/../Server.exe",
-			"runtimeArgs": "-t 0 -n 1 -t 2 -n 1 -t 3 -n 1 -t 8 -n 1 -t 9 -n 1 -t 10 -n 1",
+			"runtimeExecutable": "${workspaceFolder}/../Robot.exe",
+			"runtimeArgs": "0",
 			"consoleCoding": "utf8"
-		},
-		{
-			"name": "attach",
-			"type": "lua",
-			"request":"attach",
-			"stopOnEntry": false,
-			"processId": "${command:pickProcess}"
 		}
 	]
 }

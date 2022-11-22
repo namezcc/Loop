@@ -29,7 +29,6 @@ public:
 	LuaState();
 	~LuaState();
 
-	void Run(int64_t dt);
 	inline void Init(LuaModule* m) { m_module = m; };
 	LuaModule* luaModule() { return m_module; }
 	void RunScript(const std::string& file);
@@ -37,13 +36,14 @@ public:
 	lua_State* GetLuaState() { return m_L; };
 
 	void initLuaCommonFunc(const std::string& name);
+	void setDealErrorFunc(const std::string& name);
 	void initLToCIndex(uint32_t _began, uint32_t _end);
 	void initCToLIndex(uint32_t _began, uint32_t _end);
 	void bindLToCFunc(int32_t findex, const LuaCallHandle& func);
 
 	bool callLuaCommonFunc(LuaArgs& arg);
 	bool callLuaFunc(int32_t findex, LuaArgs& arg);
-	bool callRegistFunc(int32_t ref, LuaArgs& arg);
+	bool callRegistFunc(int32_t ref, LuaArgs& arg,bool errcall=true);
 	bool callGloableFunc(const std::string& f, LuaArgs& arg);
 	bool getRefFunc(int32_t ref);
 
@@ -180,18 +180,12 @@ public:
 		return PullLuaArgs<LuaReflect<T>>::PullVal(m_L);
 	}
 
-	static void l_message(const char *pname, const char *msg) {
-		if (pname) lua_writestringerror("%s: ", pname);
-		lua_writestringerror("%s\n", msg);
-	}
-
-	static int report(lua_State *L, int status) {
-		if (status != LUA_OK) {
-			const char *msg = lua_tostring(L, -1);
-			l_message("server", msg);
-			lua_pop(L, 1);  /* remove message */
-		}
-		return status;
+	void report(lua_State *L) {
+		const char *msg = lua_tostring(L, -1);
+		if (msg == NULL)
+			return;
+		l_message(msg);
+		lua_pop(L, 1);  /* remove message */
 	}
 
 	/*template<typename T, typename F>
@@ -262,6 +256,7 @@ public:
 	void printLuaStack();
 	static void printLuaFuncStack(lua_State *L, const char* msg);
 protected:
+	void l_message(const char *msg);
 	void PrintError();
 
 	//static int callFunction(lua_State* L);
@@ -282,14 +277,13 @@ private:
 	LuaModule* m_module;
 	std::vector<int32_t> m_loopRef;
 
-	LuaVInt64* m_dt;
-	LuaArgs m_update_arg;
 	//std::unordered_map<std::string, std::function<int(lua_State*)>> m_luaCallFunc;
 
 	int32_t m_argIndex;
 
 	std::function<int(int32_t, LuaState*)> m_luaCallFunc;
 	std::function<int(int32_t, LuaState*)> m_luaBindFunc;
+	std::function<void(const std::string&, const std::string&)> m_error_log_func;
 
 	int32_t m_beginIndex;
 	int32_t m_endIndex;
@@ -300,7 +294,7 @@ private:
 	int32_t* m_cTolRef;
 
 	int32_t m_common_ref;
-
+	int32_t m_deal_error_ref;
 };
 
 #endif

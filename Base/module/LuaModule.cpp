@@ -26,12 +26,6 @@ void LuaModule::Init()
 
 void LuaModule::Execute()
 {
-	auto dt = Loop::GetMilliSecend();
-	for (auto& ls:m_stats)
-	{
-		ls->Run(dt);
-	}
-
 	if (!m_buff_send_cash.empty())
 	{
 		LP_WARN << "buff cash need recycle size:" << m_buff_send_cash.size();
@@ -90,17 +84,6 @@ LuaState* LuaModule::CreateLuaState()
 	m_stats.push_back(state);
 	m_curState = state.get();
 	return m_curState;
-}
-
-void LuaModule::onNetMsg(NetMsg * msg)
-{
-	LuaArgs arg;
-
-	arg.pushArg(msg->mid);
-	arg.pushArg(msg->socket);
-	arg.pushArg(msg);
-
-	m_curState->callLuaFunc(CTOL_NET_MSG, arg);
 }
 
 int LuaModule::onLuaSendMsg(LuaState * l)

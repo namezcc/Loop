@@ -26,7 +26,7 @@ EXPORT void DLL_START_NAME(int argc,char* args[], int* stop)
 	
 	if (ser.getServerNode().type == LOOP_MYSQL)
 	{
-		for (size_t i = 0; i < 4; i++)
+		for (size_t i = 0; i < 1; i++)
 		{
 			auto ml = ser.CreateLayer<MysqlLayer>();
 			ser.BuildPipe(ll, ml);

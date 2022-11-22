@@ -6,7 +6,16 @@ message Int32Value
     int32   value = 1;
 }
 
+message VEmpty
+{
+}
+
 message VString
 {
 	string	val = 1;
+}
+
+message Int32Array
+{
+	repeated int32	data = 1;
 }

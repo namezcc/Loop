@@ -23,6 +23,14 @@
 			}
 		},
 		{
+			"label": "proto make lua",
+			"type": "shell",
+			"command": "makeluaproto.bat np",
+			"options": {
+				"cwd": "${workspaceFolder}/../../../"
+			}
+		},
+		{
 			"label": "proto make cpp base",
 			"type": "shell",
 			"command": "MakeProto.bat np base",
@@ -34,6 +42,14 @@
 			"label": "db file",
 			"type": "shell",
 			"command": "lua.exe proto_db_gen.lua",
+			"options": {
+				"cwd": "${workspaceFolder}/../../../tool/luatool"
+			}
+		},
+		{
+			"label": "msg enum",
+			"type": "shell",
+			"command": "lua.exe make_msg_enum.lua",
 			"options": {
 				"cwd": "${workspaceFolder}/../../../tool/luatool"
 			}

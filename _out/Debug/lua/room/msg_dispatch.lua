@@ -1,5 +1,5 @@
 local _log = LOG
-
+local _pbdecode = pb.decode
 local msg_func_tab = {}
 -- 服务器->本地玩家消息
 local trans_msg_func_tab = {}			
@@ -9,9 +9,8 @@ local pack = PACK
 
 local function bind_mod_proto_func(mid,mod,f,proto)
 	local _pro = "LPMsg."..proto
-	msg_func_tab[mid] = function (sock,netmsg)
-		local netpack = pack.netpack(netmsg)
-		local mdata = netpack:decode(_pro)
+	msg_func_tab[mid] = function (netbuf,buffpack)
+		local mdata = _pbdecode(_pro,netbuf)
 		if mdata then
 			f(mod,mdata)
 		end
@@ -20,14 +19,13 @@ end
 
 local function bind_player_proto_func(mid,f,proto)
 	local _pro = "LPMsg."..proto
-	msg_func_tab[mid] = function (sock,netmsg)
-		local ply = all_player[sock]
+	msg_func_tab[mid] = function (uid,netbuf)
+		local ply = all_player[uid]
 		if ply == nil then
-			_log.error("no player in lua sock:%d",sock)
+			_log.error("no player in lua uid:%d",uid)
 			return
 		end
-		local netpack = pack.netpack(netmsg)
-		local mdata = netpack:decode(_pro)
+		local mdata = _pbdecode(_pro,netbuf)
 		if mdata then
 			f(ply,mdata)
 		end
@@ -37,15 +35,15 @@ end
 
 local function bind_player_server_msg(mid,f)
 	local ply_mgr = MOD.player_mgr_module
-	msg_func_tab[mid] = function (sock,netmsg)
+	msg_func_tab[mid] = function (netbuf,netmsg)
 		local netpack = pack.netpack(netmsg)
-		local pid = netpack:readint64()
-		local player = ply_mgr:getPlayerByPid(pid)
+		local cid = netpack:readint32()
+		local player = ply_mgr:getPlayerByCid(cid)
 
 		if player then
 			f(player,netpack)
 		else
-			_log.error("on player server msg player nil mid:%d pid:%d",mid,pid)
+			_log.error("on player server msg player nil mid:%d pid:%d",mid,cid)
 		end
 	end
 end
@@ -53,10 +51,10 @@ end
 local function bind_player_server_proto(mid,f,proto)
 	local ply_mgr = MOD.player_mgr_module
 	local _pro = "LPMsg."..proto
-	msg_func_tab[mid] = function (sock,netmsg)
+	msg_func_tab[mid] = function (netbuf,netmsg)
 		local netpack = pack.netpack(netmsg)
-		local pid = netpack:readint64()
-		local player = ply_mgr:getPlayerByPid(pid)
+		local cid = netpack:readint32()
+		local player = ply_mgr:getPlayerByCid(cid)
 		local mdata = netpack:decode(_pro)
 
 		if player then
@@ -64,7 +62,7 @@ local function bind_player_server_proto(mid,f,proto)
 				f(player,mdata)
 			end
 		else
-			_log.error("on player server proto player nil mid:%d pid:%d",mid,pid)
+			_log.error("on player server proto player nil mid:%d pid:%d",mid,cid)
 		end
 	end
 
@@ -72,7 +70,7 @@ local function bind_player_server_proto(mid,f,proto)
 end
 
 local function bind_mod_pack_func(mid,mod,f)
-	msg_func_tab[mid] = function (sock,msg)
+	msg_func_tab[mid] = function (netbuf,msg)
 		local netpack = pack.netpack(msg)
 		f(mod,netpack)
 	end
@@ -84,10 +82,10 @@ local function bind_mod_func(mid,mod,f)
 	end
 end
 
-local function onNetMsg(mid,sock,netmsg)
+local function onNetMsg(mid,...)
 	local f = msg_func_tab[mid]
 	if f then
-		f(sock,netmsg)
+		f(...)
 	else
 		_log.error("netmsg not bind func %d",mid)
 	end

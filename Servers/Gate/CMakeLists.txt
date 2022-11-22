@@ -10,10 +10,14 @@ file(GLOB_RECURSE HEAD_FILES ${PROJECT_SOURCE_DIR}/*.h)
 
 if(WIN32)
 set(gatelib
+serverpb.lib
+clientpb.lib
+libprotobufd.lib
 )
 else()
 set(gatelib
 serverpb.so
+clientpb.so
 )
 endif()
 

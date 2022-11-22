@@ -21,6 +21,7 @@ public:
 	int BindTcpCall(lua_State* L);
 	int AddConnect(const int32_t& id,const std::string& ip,const int32_t& port);
 	int SendData(const int32_t& id, const int32_t& mid, const std::string& data);
+	int closeConn(const int32_t& id);
 	int SendStreamData(lua_State* L);
 
 protected:

@@ -10,15 +10,6 @@ function net_module:init()
 
 end
 
-function net_module:sendMsg(mid,pb,pbname)
-	pbname = "LPMsg."..pbname
-
-	local buff = _pack.buffpack()
-	buff:writepb(pb,pbname)
-
-	func.CallCFunc(SEND_MSG_ID,self.sock,mid,buff:buff())
-end
-
 function net_module:sendToServer(ser,mid,pack)
 	_net_mgr:sendToServer(ser,mid,pack)
 end

@@ -15,10 +15,11 @@ const (
 )
 
 type serverInfo struct {
-	stype  int32
-	sid    int32
-	state  int32
-	connid int
+	stype   int32
+	sid     int32
+	state   int32
+	connid  int
+	addrkey string
 }
 
 type MasterModule struct {
@@ -154,7 +155,7 @@ func (m *MasterModule) onServerRegist(msg handle.BaseMsg) {
 	broadcid := make([]int, 0, 10)
 	for _, v := range noticeser {
 		cid, ok := m._server_conn[v]
-		if ok {
+		if ok && cid != p.ConnId() {
 			broadcid = append(broadcid, cid)
 		}
 	}
@@ -166,17 +167,16 @@ func (m *MasterModule) onServerRegist(msg handle.BaseMsg) {
 		m._net.BroadPackMsg(broadcid, handle.N_CONN_SERVER_INFO, pack)
 	}
 
-	// info := serverInfo{
-	// 	stype:  ser_type,
-	// 	sid:    ser_id,
-	// 	state:  0,
-	// 	connid: p.ConnId(),
-	// }
+	info := serverInfo{
+		stype:   0,
+		sid:     0,
+		state:   0,
+		connid:  p.ConnId(),
+		addrkey: string(addrkey),
+	}
 
-	// pb := LPMsg.ServerInfo{}
-	// proto.Unmarshal(p.ReadBuff(), &pb)
-
-	fmt.Printf("server reg %s", addrkey)
+	m.servers[info.connid] = info
+	fmt.Printf("server reg %s\n", addrkey)
 }
 
 func (m *MasterModule) onGetServerState(msg handle.BaseMsg) {
@@ -196,10 +196,11 @@ func (m *MasterModule) onGetServerState(msg handle.BaseMsg) {
 func (m *MasterModule) onServerClose(d interface{}) {
 	cid := d.(int)
 
-	_, ok := m.servers[cid]
+	info, ok := m.servers[cid]
 
 	if ok {
 		delete(m.servers, cid)
+		delete(m._server_conn, info.addrkey)
 	}
 }
 

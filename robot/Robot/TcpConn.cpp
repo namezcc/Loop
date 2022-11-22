@@ -40,7 +40,7 @@ void TcpConn::SendPackData(const int32_t& mid,const char * buff, const int32_t &
 
 void TcpConn::Close()
 {
-	//auto self(shared_from_this());
+	auto self(shared_from_this());
 	as::post(m_context, [this]() {
 		DoClose();
 	});
@@ -71,10 +71,10 @@ bool TcpConn::RealConnect()
 
 void TcpConn::DoRecv()
 {
-	//auto self(shared_from_this());
+	auto self(shared_from_this());
 
 	as::async_read(m_socket, as::buffer(m_cashBuff, MsgHead::HEAD_SIZE),
-		[this](as::error_code ec, std::size_t recvsize) {
+		[this, self](as::error_code ec, std::size_t recvsize) {
 		if (!ec && recvsize == MsgHead::HEAD_SIZE)
 		{
 			if (DoReadHead())
@@ -88,9 +88,9 @@ void TcpConn::DoRecv()
 
 void TcpConn::DoWrite()
 {
-	//auto self(shared_from_this());
+	auto self(shared_from_this());
 	as::async_write(m_socket, as::buffer(m_writeBuff.front()->buf, m_writeBuff.front()->use), 
-	[this](as::error_code ec,std::size_t) {
+	[this, self](as::error_code ec,std::size_t) {
 		if (!ec)
 		{
 			if(!m_writeBuff.empty())
@@ -122,11 +122,11 @@ bool TcpConn::DoReadHead()
 		return false;
 	}
 
-	//auto self(shared_from_this());
+	auto self(shared_from_this());
 	auto bodysize = m_msghead.size - MsgHead::HEAD_SIZE;
 	m_recvBuff.MakeRoome(bodysize);
 	as::async_read(m_socket, as::buffer(m_recvBuff.buf, bodysize),
-		[this](as::error_code ec, std::size_t recvsize) {
+		[this, self](as::error_code ec, std::size_t recvsize) {
 		if (!ec)
 		{
 			if (DoReadBody())

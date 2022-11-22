@@ -1,10 +1,6 @@
 syntax = "proto3";
 package LPMsg;
 
-message clientEmpty
-{
-}
-
 message propertyInt32
 {
     int32   data = 1;
@@ -28,17 +24,4 @@ message propertyFloat
 message propertyDouble
 {
     double   data = 1;
-}
-
-message property
-{
-    string      proName = 1;
-    int32       protype = 2;
-    bytes       data = 3;
-}
-
-message GameObject
-{
-    int64               id = 1;
-    repeated property   prolist = 2;
 }

@@ -28,6 +28,11 @@ int32_t createPlayerUid32(int32_t dbidx,int32_t num)
 	return dbidx * 100000 + num;
 }
 
+int32_t getDbidFromCid32(int32_t cid)
+{
+	return cid / 100000;
+}
+
 int32_t getPlayerDbIndexFromUid(int64_t uid)
 {
 	return (uid >> 42) & 0xFFFFF;

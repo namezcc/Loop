@@ -12,6 +12,7 @@ void TcpClientModule::init()
 	
 	m_luaState->BindLuaCall("AddTcpConnect", this, &TcpClientModule::AddConnect);
 	m_luaState->BindLuaCall("SendTcpData", this, &TcpClientModule::SendData);
+	m_luaState->BindLuaCall("closeConn", this, &TcpClientModule::closeConn);
 }
 
 void TcpClientModule::Loop_Once()
@@ -65,6 +66,16 @@ int TcpClientModule::SendData(const int32_t & id, const int32_t & mid, const std
 		return 0;
 
 	it->second->SendPackData(mid,data.c_str(), data.size());
+	return 0;
+}
+
+int TcpClientModule::closeConn(const int32_t & id)
+{
+	auto it = m_conns.find(id);
+	if (it == m_conns.end())
+		return 0;
+
+	it->second->Close();
 	return 0;
 }
 

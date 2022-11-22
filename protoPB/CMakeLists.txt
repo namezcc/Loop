@@ -28,6 +28,8 @@ if(WIN32)
 set(lib_link
 libprotobufd.lib
 )
+
+add_compile_options(/wd4251)
 else()
 set(lib_link
 protobuf

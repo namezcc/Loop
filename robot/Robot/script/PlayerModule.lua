@@ -3,14 +3,12 @@ local _Net = NetModule
 
 function PlayerModule:init()
 
-	_Net:AddMsgCallBack(SMCODE.SM_RELATION_INFO,self.onRelationInfo,"PlayerSimpleInfoList")
-	_Net:AddMsgCallBack(SMCODE.SM_TEAM_INFO,self.onTeamInfo,"TeamInfo")
-	_Net:AddMsgCallBack(SMCODE.SM_TEAM_ASK_JOIN,self.onTeamAskJoinInfo,"PlayerSimpleInfo")
-	
+	_Net:AddMsgCallBack(SMCODE.SM_PLAYER_ALL_INFO,self.onShowData,"SmPlayerAllMsg","SM_PLAYER_ALL_INFO")
+	_Net:AddMsgCallBack(SMCODE.SM_PLAYER_INFO,self.onShowData,"SmPlayerInfo","SM_PLAYER_INFO")
 	
 	-----------------
-	CMD:AddCmdCall(self.DoSetPrint,"p","pam: : set print")
 	CMD:AddCmdCall(self.ShowMid,"pmid","show msg id")
+	CMD:AddCmdCall(self.doDebug,"db","send cmd debug")
 	CMD:AddCmdCall(self.DoSerchPlayer,"sp","uid: serch player...")
 	CMD:AddCmdCall(self.doAddFriend,"fr","uid: add friend...")
 	CMD:AddCmdCall(self.doApplyFriend,"rfr","uid res : reply friend...")
@@ -29,24 +27,13 @@ function PlayerModule:OnShowMsgInfo( data,msg )
 	printTable(data)
 end
 
-function PlayerModule:onRelationInfo(data)
+function PlayerModule:onShowData(data,ext,pbstr)
 	if not IS_SINGLE then
 		return
 	end
-
-	print("relation info ...")
+	print("")
+	print(ext or "\t","\t",pbstr)
 	printTable(data)
-end
-
-function PlayerModule:onTeamInfo(data)
-	print("team info ---")
-	printTable(data)
-end
-
-function PlayerModule:onTeamAskJoinInfo(data)
-	print("team ask join ...")
-	printTable(data)
-	self._ask_pid = data.pid
 end
 
 ----------------  CMD ---------------------
@@ -80,6 +67,24 @@ function PlayerModule:DoSerchPlayer(pam)
 	print("seach ",pb.data)
 
 	self:SendGameData("propertyInt64",CMCODE.CM_SEARCH_PLAYER,pb)
+end
+
+local CMD_TYPE = {
+	level = 1,
+}
+
+function PlayerModule:doDebug(pam)
+	local data = {}
+
+	for i, v in ipairs(pam) do
+		if i == 1 then
+			data[i] = CMD_TYPE[v]
+		else
+			data[i] = TN(v)
+		end
+	end
+
+	self:sendMsg(CMCODE.CM_DEBUG,{data=data},"Int32Array")
 end
 
 function PlayerModule:doAddFriend(pam)
@@ -143,6 +148,54 @@ end
 
 function PlayerModule:sendMsg(mid,pb,proto)
 	self:SendGameData(proto,mid,pb)
+end
+
+function PlayerModule:doSendMsg(pam,ext)
+	local proc = ext[1]
+	local proto = ext[2]
+	local ischat = ext[3] or false
+
+	local pb = {}
+
+	if proto == "Int32Value" then
+		pb.value = TN(pam[1])
+	elseif proto == "ProtoInt32Array" then
+		local vec = {}
+		for i, v in ipairs(pam) do
+			vec[#vec+1] = TN(v)
+		end
+		pb.i32 = vec
+	elseif proto == "ProtoPairInt32Array" then
+		local vec = {}
+		for i = 1, #pam, 2 do
+			vec[#vec+1] = {
+				data1 = TN(pam[i]),
+				data2 = TN(pam[i+1]),
+			}
+		end
+		pb.list = vec
+	elseif proto == "PInt64" then
+		pb.data = TN(pam[1])
+	elseif proto == "PInt64Array" then
+		local vec = {}
+		for i, v in ipairs(pam) do
+			vec[#vec+1] = TN(v)
+		end
+		pb.data = vec
+	elseif proto == "PInt64Pair32Array" then
+		pb.i64 = TN(pam[1])
+		local vec = {}
+		for i = 2, #pam,2 do
+			vec[#vec+1] = {
+				data1 = TN(pam[i]),
+				data2 = TN(pam[i+1]),
+			}
+		end
+		pb.array = vec
+	elseif proto == "VString" then
+		pb.val = pam[1]
+	end
+	self:sendMsg(proc,pb,proto)
 end
 
 ------------------------------------------

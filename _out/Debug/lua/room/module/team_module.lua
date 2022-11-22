@@ -23,12 +23,7 @@ function team_module:init()
 	_msg_func.bind_player_proto_func(_cm.CM_TEAM_QUIT,self.onTeamQuit,"clientEmpty")
 	_msg_func.bind_player_proto_func(_cm.CM_TEAM_ASK_JOIN,self.onTeamAskJoin,"propertyInt64")
 	_msg_func.bind_player_proto_func(_cm.CM_TEAM_REPLY_JOIN,self.onTeamReplyJoin,"ReplyTeamJoin")
-
-	_msg_func.bind_player_server_msg(_smsg.N_TROM_TEAM_INFO,self.onUpdateTeamInfo)
-	_msg_func.bind_player_server_msg(_smsg.N_TROM_TEAM_DISBAND,self.onGetTeamDisband)
-
-	_msg_func.bind_player_server_proto(_smsg.N_TROM_TEAM_ASK_JOIN,self.onTeamGetAskJoin,"PlayerSimpleInfo")
-	_msg_func.bind_player_server_proto(_smsg.N_TROM_TEAM_GET_REPLY_ASK_JOIN,self.onTeamGetReplyAskJoin,"TeamNode")
+	
 end
 
 -- 登出处理

@@ -77,7 +77,12 @@ void MsgModule::MsgCallBack(void* msg)
 	}
 	else
 	{
-		LP_ERROR << "error misId:" << smsg->msgId;
+		if (m_common_call)
+			m_common_call(shamsg);
+		else
+		{
+			LP_ERROR << "error misId:" << smsg->msgId;
+		}
 	}
 }
 

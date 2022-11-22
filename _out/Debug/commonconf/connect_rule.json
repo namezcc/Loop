@@ -5,6 +5,5 @@
 	{"group":true,"server":"Gate","to_server":"RoomState","type":1,"param":0,"desc":"gate->room_mgr"},
 	{"group":true,"server":"Gate","to_server":"Room","type":1,"param":0,"desc":"gate->room_mgr"},
 	{"group":true,"server":"Room","to_server":"RoomState","type":1,"param":0,"desc":"room->room_manager所有"},
-	{"group":true,"server":"Room","to_server":"db_proxy","type":1,"param":0,"desc":"room->dbproxy所有"},
-	{"group":true,"server":"MysqlServer","to_server":"db_proxy","type":1,"param":0,"desc":"mysql->dbproxy所有"}
+	{"group":true,"server":"MysqlServer","to_server":"Room","type":1,"param":0,"desc":"mysql->room所有"}
 ]

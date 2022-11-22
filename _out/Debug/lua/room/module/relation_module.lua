@@ -25,12 +25,6 @@ function relation_module:init()
 	_msg_func.bind_player_proto_func(_cm.CM_OPT_FRIEND_APPLY,self.onReplyFriend,"ReplyFriend")
 	_msg_func.bind_player_proto_func(_cm.CM_DELETE_FRIEND,self.onDeleteFriend,"propertyInt64")
 
-	_msg_func.bind_player_server_proto(_smsg.N_TROM_ASK_ADD_FRIEND,self.onGetAskAddFriend,"DB_player_relation")
-	_msg_func.bind_player_server_proto(_smsg.N_TROM_AGREE_ADD_FRIEND,self.onAgreeAddFriend,"DB_player_relation")
-	
-
-	_msg_func.bind_player_server_msg(_smsg.N_TRMM_CHECK_PLAYER_ONLINE,self.onCheckPlayerOnline)
-
 	_db_mgr:bind_player_db_ack_proto_func(SQL_OPRATION.SOP_SEARCH_PLAYER,self.onGetSearchPlayer,"DB_player")
 	
 
@@ -42,21 +36,21 @@ function relation_module:initDB(pdata)
 
 	self._realtion = {}
 
-	if #pdata.relation == 0 then
-		self:sendRelation()
-	else
-		local pack = _pack.buffpack()
-		pack:writeint64(self.pid)
-		pack:writeint32(1)
-		pack:writeint32(#pdata.relation)
+	-- if #pdata.relation == 0 then
+	-- 	self:sendRelation()
+	-- else
+	-- 	local pack = _pack.buffpack()
+	-- 	pack:writeint64(self.pid)
+	-- 	pack:writeint32(1)
+	-- 	pack:writeint32(#pdata.relation)
 
-		for i, v in ipairs(pdata.relation) do
-			self._realtion[v.rpid] = table.clone(v)
-			pack:writeint64(v.rpid)
-		end
+	-- 	for i, v in ipairs(pdata.relation) do
+	-- 		self._realtion[v.rpid] = table.clone(v)
+	-- 		pack:writeint64(v.rpid)
+	-- 	end
 
-		self:sendToServer(_room_mgr,_smsg.N_TRMM_CHECK_PLAYER_ONLINE,pack)
-	end
+	-- 	self:sendToServer(_room_mgr,_smsg.N_TRMM_CHECK_PLAYER_ONLINE,pack)
+	-- end
 end
 
 function relation_module:sendRelation(pid)

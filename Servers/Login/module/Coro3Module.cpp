@@ -1,7 +1,6 @@
 #include "Coro3Module.h"
 #include "MsgModule.h"
 #include "ScheduleModule.h"
-#include "SendProxyDbModule.h"
 
 #include "protoPB/base/LPBase.pb.h"
 
@@ -17,7 +16,6 @@ void Coro3Module::Init()
 {
 	m_msgModule = GET_MODULE(MsgModule);
 	m_schedule = GET_MODULE(ScheduleModule);
-	m_sendProxyDb = GET_MODULE(SendProxyDbModule);
 
 	m_schedule->AddInterValTask(BIND_TIME(OnBeginTest), 3000, -1, 3000);
 }
@@ -39,9 +37,9 @@ void Coro3Module::CoroTest1(c_pull & pull, SHARE<BaseCoro>& coro)
 	msg.set_id(base);
 	msg.set_type(0);
 
-	auto msg2 = m_sendProxyDb->RequestToProxyDb(msg, hash, N_CORO_TEST_1, pull, coro);
+	/*auto msg2 = m_sendProxyDb->RequestToProxyDb(msg, hash, N_CORO_TEST_1, pull, coro);
 	auto netmsg = (NetServerMsg*)msg2->m_data;
 	TRY_PARSEPB(LPMsg::ServerInfo, netmsg);
 	std::cout << "coro 'login' test get:" << pbMsg.id() << std::endl;
-	std::cout << "--------------------------------" << std::endl;
+	std::cout << "--------------------------------" << std::endl;*/
 }

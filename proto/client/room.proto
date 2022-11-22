@@ -26,13 +26,6 @@ message AckEnterBattle
     int64   key = 4;
 }
 
-message RoleInfo
-{
-	int64	pid		= 1;
-	string	name	= 2;
-	int32	level	= 3;
-}
-
 message PlayerSimpleInfo
 {
 	int64	pid		= 1;
@@ -45,11 +38,6 @@ message PlayerSimpleInfo
 message PlayerSimpleInfoList
 {
 	repeated	PlayerSimpleInfo	data = 1;
-}
-
-message RoleList
-{
-	repeated	RoleInfo	roles = 1;
 }
 
 message ReplyFriend

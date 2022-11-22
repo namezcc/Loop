@@ -37,6 +37,7 @@ private:
 	void onPlayerLogin(NetMsg* msg);
 
 	void sendRoomMgrPlayerNum();
+	void sendRoomMgrPlayerLogout(int32_t uid);
 
 
 	EventModule* m_event_mod;

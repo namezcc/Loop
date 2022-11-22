@@ -37,7 +37,7 @@ void LogModule::AfterInit()
 	auto loopser = getLoopServer();
 	auto sername = loopser->getServerName(ser->type);
 	stringstream cons;
-	cons << "std" << sername << "-" << ser->serid;
+	cons << "s " << sername << "-" << ser->serid;
 	m_console = spdlog::stdout_color_st(cons.str());
 	string dir = LoopFile::GetExecutePath();
 	dir.append("logs/");

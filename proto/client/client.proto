@@ -15,8 +15,34 @@ message RoomInfo
 	int32		key = 4;
 }
 
-message CmLogin
+message CmEnterGame
 {
 	int32	uid = 1;
 	int32	key = 2;
+}
+
+message RoleInfo
+{
+	int32	cid		= 1;
+	string	name	= 2;
+	int32	level	= 3;
+}
+
+message SmRoleList
+{
+	repeated	RoleInfo	roles = 1;
+}
+
+message SmPlayerInfo
+{
+	int32	cid		= 1;
+	int32	uid		= 2;
+	string	name	= 3;
+	int32	level	= 4;
+	int32	gold	= 5;
+}
+
+message SmPlayerAllMsg
+{
+	SmPlayerInfo	player_info = 1;
 }

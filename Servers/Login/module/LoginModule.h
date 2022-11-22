@@ -42,7 +42,6 @@ private:
 private:
 	MsgModule * m_msgModule;
 	NetObjectModule* m_netModule;
-	SendProxyDbModule* m_sendProxyDb;
 	RedisModule* m_redisModule;
 	RoomStateModule* m_roomModule;
 	TransMsgModule* m_transModule;

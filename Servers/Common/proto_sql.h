@@ -1,3 +1,4 @@
+//文件由配置生成,请执行server/bin/tool/genProtoDb.bat 在proto_db_conf.lua里配置
 #ifndef PROTO_SQL_H
 #define PROTO_SQL_H
 
@@ -12,12 +13,7 @@ bool select_account(gopb::RepeatedPtrField<LPMsg::DB_account>& pb,MysqlModule* d
 
 bool insert_lp_player(LPMsg::DB_player& pb,MysqlModule* db,char* _buff,size_t _size);
 bool update_lp_player(LPMsg::DB_player& pb,MysqlModule* db,char* _buff,size_t _size);
-bool select_lp_player(gopb::RepeatedPtrField<LPMsg::DB_player>& pb,MysqlModule* db,char* _buff,size_t _size,int64_t _uid);
-bool select_lp_player(LPMsg::DB_player& pb,MysqlModule* db,char* _buff,size_t _size,int64_t _pid);
-
-bool select_lp_player_relation(gopb::RepeatedPtrField<LPMsg::DB_player_relation>& pb,MysqlModule* db,char* _buff,size_t _size,int64_t _pid);
-bool insert_lp_player_relation(LPMsg::DB_player_relation& pb,MysqlModule* db,char* _buff,size_t _size);
-bool update_lp_player_relation(LPMsg::DB_player_relation& pb,MysqlModule* db,char* _buff,size_t _size);
-bool delete_lp_player_relation(LPMsg::DB_player_relation& pb,MysqlModule* db,char* _buff,size_t _size);
+bool select_lp_player(gopb::RepeatedPtrField<LPMsg::DB_player>& pb,MysqlModule* db,char* _buff,size_t _size,int32_t _uid);
+bool select_lp_player(LPMsg::DB_player& pb,MysqlModule* db,char* _buff,size_t _size,int32_t _uid);
 
 #endif

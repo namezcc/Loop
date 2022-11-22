@@ -19,14 +19,14 @@
 
 #include <stdlib.h>
 
-#define ASSERT(expr)                                      \
+#define ASSERT(expr,msg)                                      \
  do {                                                     \
   if (!(expr)) {                                          \
     fprintf(stderr,                                       \
-            "Assertion failed in %s on line %d: %s\n",    \
+            "Assertion failed in %s on line %d: %s msg:%s\n",    \
             __FILE__,                                     \
             __LINE__,                                     \
-            #expr);                                       \
+            #expr,msg);                                       \
     abort();                                              \
   }                                                       \
  } while (0)

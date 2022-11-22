@@ -1,13 +1,14 @@
-package.path = package.path..";../../lua/room/?.lua;"
+package.path = package.path..";lua/room/?.lua;"
 
 collectgarbage("setpause", 200)  --200
 collectgarbage("setstepmul", 5000)
 
 --------- load proto
-pb.loadfile("../../lua/room/proto/allproto.pb")
+pb.loadfile("lua/room/proto/allproto.pb")
 
-PLAYER_SOCK = {}
+PLAYER_GATE = {}
 ALL_PLAYER = {}
+SAVE_CASH = {}		-- 保存缓存
 
 require("class")
 
@@ -19,28 +20,60 @@ require("util.data_define")
 require("util.table_index")
 require("function")
 require("util.pack")
-
 require("msg_dispatch")
+require("util.sync_func")
+require("util.sync_client_func")
 
 
 MOD = {}
-local mod = require("lua_module")
-local modlist = {}
-for i,v in ipairs(mod.mgr_module) do
-	local m = require("module."..v)
-    MOD[v] = m
-	modlist[#modlist+1] = m
-end
+local mod_name = require("lua_module")
+local modmgr = {}
+local modplayer = {}
+local mgrupdatemod = {}
 
-for i,v in ipairs(mod.player_module) do
-	local m = require("module."..v)
-    MOD[v] = m
-	modlist[#modlist+1] = m
-	bind_player_func(m)
-end
-
-for i, v in ipairs(modlist) do
-	v:init()
+function initModule()
+	for i,v in ipairs(mod_name.mgr_module) do
+		local m = require("module."..v)
+		m.name = v
+		MOD[v] = m
+		modmgr[#modmgr+1] = m
+	
+		if m.update then
+			mgrupdatemod[#mgrupdatemod+1] = m
+		end
+	end
+	
+	for i,v in ipairs(mod_name.player_module) do
+		local m = require("module."..v)
+		m.name = v
+		MOD[v] = m
+		modplayer[#modplayer+1] = m
+		bind_player_func(m,v)
+	end
+	
+	for i, v in ipairs(modmgr) do
+		if v.init == nil then
+			LOG.error("mod %s need init func",v.name)
+		else
+			v:init()
+		end
+	end
+	
+	for i, v in ipairs(modmgr) do
+		if v.init_func == nil then
+			LOG.error("mgr %s mod need init_func",v.name)
+		else
+			v:init_func()
+		end
+	end
+	
+	for i, v in ipairs(modplayer) do
+		if v.init == nil then
+			LOG.error("mod %s need init func",v.name)
+		else
+			v:init()
+		end
+	end
 end
 
 function ReloadModule( module_name )
@@ -69,9 +102,39 @@ function gc_collect()
 	LOG.info("after gc %f k",collectgarbage("count"))
 end
 
-function update(dt)
-	
 
+-- update
+local _time = TIME_DATA
+function onFrameUpdate(tick,now)
+	_time.TICK_TIME_STAMEP = tick
+	local old = _time.TIME_STAMEP
+	_time.TIME_STAMEP = now
+
+	if old ~= now then
+		for i, m in ipairs(mgrupdatemod) do
+			m:update(now)
+		end
+	end
+
+end
+BindLuaFunc(CTOL.CTOL_FRAME_UPDATE,onFrameUpdate)
+
+function main(id)
+	_time.TIME_STAMEP = os.time()
+	_time.TICK_TIME_STAMEP = os.time()*1000
+
+	SELF_SERVER.id = id
+
+	initModule()
+	math.randomseed(tostring(os.time()):reverse():sub(1, 6))
+end
+
+-- lua报错之后的处理,清理一些东西
+function luaErrorCall()
+	if not table.empty(SAVE_CASH) then
+		SAVE_CASH = {}
+		print("clear save cash")
+	end
 end
 
 print("load game main lua ...")

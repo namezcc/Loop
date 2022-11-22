@@ -49,10 +49,10 @@ public:
 	bool callLuaMsg(LuaArgs& arg);
 	void addCashSendBuff(BuffBlock* b);
 	void removeSendBuff(BuffBlock* b);
+	LuaState* getLuaState() { return m_curState; }
 protected:
 	LuaState* CreateLuaState();
 
-	void onNetMsg(NetMsg* msg);
 	int onLuaSendMsg(LuaState* l);
 	int onLuaSendServerMsg(LuaState* l);
 

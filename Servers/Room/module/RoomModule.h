@@ -21,17 +21,17 @@ public:
 private:
 	virtual void Init() override;
 
-	void onServerConnect(SHARE<NetServer>& ser);
 	void onServerClose(SHARE<NetServer>& ser);
-	void sendRoomMgrPlayerNum();
-
+	void onRegDbidToSerid(NetMsg* msg);
 
 	ServerPath& getDbPath(int64_t uid);
+	int32_t getDbserid(int32_t cid);
 
 public:
 
-	void doSqlOperation(int64_t uid, int32_t opt, const google::protobuf::Message& pb, int32_t ackId = 0);
-	void doSqlOperation(int64_t uid, int32_t opt, BuffBlock* buf, int32_t ackId = 0);
+	void doSqlOperation(int32_t cid, int32_t opt, const google::protobuf::Message& pb, int32_t ackId = 0);
+	void doSqlOperation(int32_t cid, int32_t opt, const char* buf,int32_t buflen, int32_t ackId = 0);
+	void doSqlOperation(int32_t cid, int32_t opt, BuffBlock* buf, int32_t ackId = 0);
 	void updatePlayerData(int64_t pid, const google::protobuf::Message& pb, int32_t table, std::string key1 = "0", std::string key2 = "0");
 	void updatePlayerData(int64_t pid,const std::string& pb, int32_t table, std::string key1 = "0", std::string key2 = "0");
 
@@ -50,6 +50,7 @@ private:
 
 	ServerPath m_db_path;
 	int32_t m_room_state;
+	std::map<int32_t, int32_t> m_dbid_to_dbser;
 };
 
 

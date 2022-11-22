@@ -8,6 +8,7 @@ local player_module = {
 	"relation_module",
 	"team_module",
 	"net_module",
+	"player_module",
 }
 
 return {

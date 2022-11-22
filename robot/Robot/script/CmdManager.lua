@@ -2,13 +2,14 @@ local CmdManager = {
     cmdList = {}
 }
 
-function CmdManager:AddCmdCall(_func,cmdName,_desc)
+function CmdManager:AddCmdCall(_func,cmdName,_desc,_ext)
     if self.cmdList[cmdName] ~= nil then
         return
     end
     self.cmdList[cmdName] = {
         func = _func,
         desc = _desc,
+		ext = _ext,
     }
 end
 
@@ -23,8 +24,17 @@ function CmdManager:ShowHelp(cmdName)
             print("\t"..k..":"..(v.desc or " "))
         end
     else
-        if self.cmdList[cmdName] == nil then
-            print("nil cmdName ",cmdName)
+		if self.cmdList[cmdName] == nil then
+			local find = false
+			for name, v in pairs(self.cmdList) do
+				if string.find(name,cmdName) then
+					find = true
+					print("\t"..name.."\t"..v.desc)
+				end
+			end
+			if not find then
+				print("nil cmdName ",cmdName)
+			end
             return
         end
         print("\t"..self.cmdList[cmdName].desc)
@@ -35,6 +45,7 @@ function CmdManager:DoCmd( cmdName,ply,pams )
     local cmd = self.cmdList[cmdName]
     if cmd == nil then
         print("no this cmdName",cmdName)
+		self:ShowHelp(cmdName)
         return
     end
 	local res = cmd.func(ply,pams)
